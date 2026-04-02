@@ -1106,6 +1106,7 @@ body.dark .metric-change {
                             else if (type === 'Справочно') mappedType = 'Справочная';
                             else continue;
                             
+
                             processed.push({ 
                                 компания: company || 'A', 
                                 год: year, 
@@ -1118,23 +1119,66 @@ body.dark .metric-change {
                             });
                         }
                         
-                        console.log('Обработано строк:', processed.length);
-                        console.log('Пример первых 5 строк:', processed.slice(0, 5));
-                        
-                        if (processed.length === 0) {
-                            reject(new Error('Не найдено данных для анализа. Проверьте структуру файла.'));
-                        } else {
-                            resolve(processed);
+                        // ========== ПРЕОБРАЗОВАНИЕ НДС (ПОСЛЕ основного цикла!) ==========
+                const ndsPairs = new Map();
+                
+                // Собираем пары НДС исходящий/входящий
+                for (const row of processed) {
+                    if (row.статья === 'НДС исходящий' || row.статья === 'НДС входящий') {
+                        const key = `${row.компания}|${row.год}|${row.месяц}|${row.канал}`;
+                        if (!ndsPairs.has(key)) {
+                            ndsPairs.set(key, { исходящий: 0, входящий: 0, row: row });
                         }
-                    } catch (error) { 
-                        console.error('Ошибка парсинга:', error);
-                        reject(error); 
+                        const data = ndsPairs.get(key);
+                        if (row.статья === 'НДС исходящий') data.исходящий += row.сумма;
+                        if (row.статья === 'НДС входящий') data.входящий += row.сумма;
                     }
-                };
-                reader.onerror = (error) => { reject(error); };
-                reader.readAsArrayBuffer(file);
-            });
-        }
+                }
+                
+                // Создаём новый массив без старых НДС строк
+                const newProcessed = [];
+                for (const row of processed) {
+                    if (row.статья !== 'НДС исходящий' && row.статья !== 'НДС входящий') {
+                        newProcessed.push(row);
+                    }
+                }
+                
+                // Добавляем рассчитанные НДС к уплате/возмещению
+                for (const [key, data] of ndsPairs.entries()) {
+                    const calculatedNds = data.исходящий - data.входящий;
+                    if (calculatedNds !== 0) {
+                        newProcessed.push({
+                            компания: data.row.компания,
+                            год: data.row.год,
+                            месяц: data.row.месяц,
+                            статья: 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ',
+                            канал: data.row.канал,
+                            подканал: 'НДС',
+                            тип: 'НДС',
+                            сумма: calculatedNds
+                        });
+                    }
+                }
+                
+                // Заменяем processed на newProcessed
+                processed.length = 0;
+                processed.push(...newProcessed);
+                
+                console.log('Обработано строк:', processed.length);
+                
+                if (processed.length === 0) {
+                    reject(new Error('Не найдено данных для анализа. Проверьте структуру файла.'));
+                } else {
+                    resolve(processed);
+                }
+            } catch (error) { 
+                reject(error); 
+            }
+        };
+        reader.onerror = (error) => { reject(error); };
+        reader.readAsArrayBuffer(file);
+    });
+}
         
         function formatCurrency(value) { return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(Math.abs(value)); }
           
@@ -1769,6 +1813,9 @@ const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
     </div>
     <div>
         <div class="metric-value" id="mainNdsValue">${formatCurrency(f.totalNDS)}</div>
+<div class="metric-sub" style="font-size: 12px; margin-top: 4px;">
+    ${f.totalNDS >= 0 ? '↗ НДС к уплате' : '↙ НДС к возмещению'}
+</div>
         ${ndsChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(ndsChange)}</span>` : ''}
     </div>
     <div class="nds-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
