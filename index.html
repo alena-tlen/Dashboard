@@ -1120,7 +1120,48 @@ body.dark .metric-change {
                         }
                         
                         // ========== ПРЕОБРАЗОВАНИЕ НДС (ПОСЛЕ основного цикла!) ==========
+// ========== ПРЕОБРАЗОВАНИЕ НДС ==========
+// Сохраняем исходные НДС исходящий для расчёта чистой выручки
+window._originalNdsOut = new Map();
 
+const ndsPairs = new Map();
+
+// Собираем пары НДС исходящий/входящий
+for (const row of processed) {
+    if (row.статья === 'НДС исходящий' || row.статья === 'НДС входящий') {
+        const key = `${row.компания}|${row.год}|${row.месяц}|${row.канал}`;
+        if (!ndsPairs.has(key)) {
+            ndsPairs.set(key, { исходящий: 0, входящий: 0, row: row });
+        }
+        const data = ndsPairs.get(key);
+        if (row.статья === 'НДС исходящий') {
+            data.исходящий += row.сумма;
+            // Сохраняем исходный НДС исходящий для расчёта чистой выручки
+            window._originalNdsOut.set(key, row.сумма);
+        }
+        if (row.статья === 'НДС входящий') data.входящий += row.сумма;
+    }
+}
+
+// Добавляем рассчитанные НДС к уплате/возмещению (НЕ удаляя исходные!)
+for (const [key, data] of ndsPairs.entries()) {
+    const calculatedNds = data.исходящий - data.входящий;
+    if (calculatedNds !== 0) {
+        processed.push({
+            компания: data.row.компания,
+            год: data.row.год,
+            месяц: data.row.месяц,
+            статья: 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ',
+            канал: data.row.канал,
+            подканал: 'НДС',
+            тип: 'НДС',
+            сумма: calculatedNds
+        });
+    }
+}
+
+console.log('Обработано строк:', processed.length);
+console.log('Сохранено НДС исходящих:', window._originalNdsOut.size);
 // 🔥 НОВОЕ: сохраняем исходные НДС исходящий для расчёта чистой выручки
 //window._originalNdsOut = new Map(); // ключ: компания|год|месяц|канал
 
@@ -1177,7 +1218,7 @@ body.dark .metric-change {
 //processed.length = 0;
 //processed.push(...newProcessed);
                 
-                console.log('Обработано строк:', processed.length);
+             //   console.log('Обработано строк:', processed.length);
                 
                 if (processed.length === 0) {
                     reject(new Error('Не найдено данных для анализа. Проверьте структуру файла.'));
@@ -1234,16 +1275,17 @@ body.dark .metric-change {
     const layout = { margin: { t: 5, l: 5, r: 5, b: 5 }, height: 40, xaxis: { showticklabels: false, showgrid: false }, yaxis: { showticklabels: false, showgrid: false }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' };
     Plotly.newPlot(elementId, [trace], layout, { displayModeBar: false });
 }
-        
         function calculateFinancials(data, channelKey = null) {
     let totalRevenue = 0, totalNdsOut = 0, totalExpenses = 0;
     let filtered = data;
     
+    // Фильтрация по каналу (если указан)
     if (channelKey && channelMapping[channelKey]) {
         const targetChannel = channelMapping[channelKey].displayName;
         filtered = data.filter(row => row.канал === targetChannel);
     }
     
+    // Собираем доходы, расходы и НДС исходящий
     filtered.forEach(row => {
         if (row.тип === 'Доход') {
             totalRevenue += row.сумма;
@@ -1256,15 +1298,15 @@ body.dark .metric-change {
         }
     });
     
+    // Чистая выручка = Доход - НДС исходящий
     const netRevenue = totalRevenue - totalNdsOut;
     const profit = netRevenue - totalExpenses;
     const profitability = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
     
+    // Общий НДС для карточки (сумма всех НДС статей)
     let totalNDS = 0;
     filtered.forEach(row => {
-        if (row.статья === 'НДС исходящий' || row.статья === 'НДС входящий') {
-            totalNDS += row.сумма;
-        }
+        if (row.тип === 'НДС') totalNDS += row.сумма;
     });
     
     return { totalRevenue, netRevenue, totalNDS, totalExpenses, profit, profitability };
