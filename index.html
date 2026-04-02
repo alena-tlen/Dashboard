@@ -1138,6 +1138,11 @@ for (const row of processed) {
             data.исходящий += row.сумма;
             // 🔥 СОХРАНЯЕМ исходный НДС исходящий
             window._originalNdsOut.set(key, row.сумма);
+          if (row.статья === 'НДС исходящий') {
+    data.исходящий += row.сумма;
+    window._originalNdsOut.set(key, row.сумма);
+    console.log(`Сохранён НДС исх: ${key} = ${row.сумма}`);
+}
         }
         if (row.статья === 'НДС входящий') data.входящий += row.сумма;
     }
@@ -1240,14 +1245,22 @@ processed.push(...newProcessed);
         filtered = data.filter(row => row.канал === targetChannel);
     }
     
-    // Собираем доходы и расходы
+    // Собираем доходы, расходы и НДС исходящий
     filtered.forEach(row => {
-        if (row.тип === 'Доход') totalRevenue += row.сумма;
-        else if (row.тип === 'Расход') totalExpenses += Math.abs(row.сумма);
+        if (row.тип === 'Доход') {
+            totalRevenue += row.сумма;
+        }
+        else if (row.тип === 'Расход') {
+            totalExpenses += Math.abs(row.сумма);
+        }
+        else if (row.тип === 'НДС' && row.статья === 'НДС исходящий') {
+            totalNdsOut += row.сумма;
+        }
     });
     
-    // Для расчёта чистой выручки используем сохранённые исходные НДС исходящий
-    if (window._originalNdsOut && window._originalNdsOut.size > 0) {
+    // Если в текущих данных нет НДС исходящий (после преобразования), 
+    // используем сохранённые значения
+    if (totalNdsOut === 0 && window._originalNdsOut && window._originalNdsOut.size > 0) {
         for (const [key, ndsAmount] of window._originalNdsOut.entries()) {
             const [company, year, month, channel] = key.split('|');
             
@@ -1258,7 +1271,7 @@ processed.push(...newProcessed);
                 channelMatch = (channel === targetChannel);
             }
             
-            // Проверяем, есть ли эта строка в отфильтрованных данных
+            // Проверяем, есть ли эта строка в отфильтрованных данных (по периоду)
             let inFilteredData = false;
             if (channelMatch) {
                 inFilteredData = filtered.some(row => 
@@ -1279,11 +1292,13 @@ processed.push(...newProcessed);
     const profit = netRevenue - totalExpenses;
     const profitability = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
     
-    // totalNDS возвращаем для карточки НДС (уже преобразованное значение)
+    // totalNDS возвращаем для карточки НДС (сумма всех НДС статей)
     let totalNDS = 0;
     filtered.forEach(row => {
         if (row.тип === 'НДС') totalNDS += row.сумма;
     });
+    
+    console.log(`💰 Расчет для канала ${channelKey || 'все'}: Доход=${totalRevenue}, НДС исх=${totalNdsOut}, Расходы=${totalExpenses}, Чистая выручка=${netRevenue}`);
     
     return { totalRevenue, netRevenue, totalNDS, totalExpenses, profit, profitability };
 }
