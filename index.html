@@ -1415,12 +1415,12 @@ const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
                 }
                 
                 function getChangeHtml(change, isExpense = false) {
-                    if (!change) return '<span style="font-size: 11px; color: var(--text-secondary);">нет данных для сравнения</span>';
-                    let isPositive = change.isPositive;
-                    if (isExpense) isPositive = !isPositive;
-                    const colorClass = isPositive ? 'change-positive' : 'change-negative';
-                    return `<span class="metric-change ${colorClass}" style="font-size: 11px; padding: 2px 6px; border-radius: 12px; display: inline-block;">${change.formatted}</span>`;
-                }
+    if (!change) return '';  // Просто возвращаем пустую строку, ничего не показываем
+    let isPositive = change.isPositive;
+    if (isExpense) isPositive = !isPositive;
+    const colorClass = isPositive ? 'change-positive' : 'change-negative';
+    return `<span class="metric-change ${colorClass}" style="font-size: 11px; padding: 2px 6px; border-radius: 12px; display: inline-block; margin-left: 8px;">${change.formatted}</span>`;
+}
                 
                 function createCollapsibleBlock(title, icon, total, totalChange, channels, isExpense = false) {
     const channelItemsHtml = channels.map((channel, channelIdx) => {
@@ -1516,35 +1516,98 @@ const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
         ${expensesHtml}
     </div>
     <div class="metrics-grid" style="margin-top: 24px;">
-        <div class="metric-card">
-            <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 18px;">📈</span>
-                    <span>Маржинальная прибыль</span>
-                </div>
-                <button class="toggle-channels-profit-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; transition: all 0.2s;">
-                    <span>▶</span> Показать по каналам
-                </button>
+    <div class="metric-card">
+        <div class="metric-title">💸 НДС</div>
+        <div>
+            <div class="metric-value" id="mainNdsValue">${formatCurrency(f.totalNDS)}</div>
+            ${ndsChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(ndsChange)}</span>` : ''}
+        </div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-title">📊 Выручка чистая</div>
+        <div>
+            <div class="metric-value" id="mainNetRevenueValue">${formatCurrency(f.netRevenue)}</div>
+            ${netRevenueChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(netRevenueChange)}</span>` : ''}
+        </div>
+        <div class="mini-chart" id="miniNetRevenueChart"></div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">📈</span>
+                <span>Маржинальная прибыль</span>
             </div>
-            <div><div class="metric-value ${f.profit>=0?'positive':'negative'}" id="mainProfitValue">${formatCurrency(f.profit)}</div>${getChangeHtml(profitChange)}</div>
-            <div class="metric-sub" style="margin-top: 4px;">Рентабельность: <span id="mainProfitabilityValue">${f.profitability.toFixed(1)}</span>% ${getChangeHtml(profitabilityChange)}</div>
-            <div class="mini-chart" id="miniProfitChart" style="margin-top: 12px;"></div>
-            <div class="profit-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
-                <div style="padding-top: 16px;">
-                    ${generateProfitByChannels(f, revenueChannelsList, expenseChannelsList)}
-                </div>
+            <button class="toggle-channels-profit-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; transition: all 0.2s;">
+                <span>▶</span> Показать по каналам
+            </button>
+        </div>
+        <div>
+            <div class="metric-value ${f.profit>=0?'positive':'negative'}" id="mainProfitValue">${formatCurrency(f.profit)}</div>
+            ${profitChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(profitChange)}</span>` : ''}
+        </div>
+        <div class="metric-sub" style="margin-top: 4px;">
+            Рентабельность: <span id="mainProfitabilityValue">${f.profitability.toFixed(1)}</span>%
+            ${profitabilityChange ? `<span style="font-size: 11px; margin-left: 8px;">${getChangeHtml(profitabilityChange)}</span>` : ''}
+        </div>
+        <div class="mini-chart" id="miniProfitChart" style="margin-top: 12px;"></div>
+        
+        <div class="profit-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+            <div style="padding-top: 16px;">
+                ${generateProfitByChannels(f, revenueChannelsList, expenseChannelsList)}
             </div>
         </div>
-        <div class="metric-card"><div class="metric-title">💸 НДС</div><div><div class="metric-value" id="mainNdsValue">${formatCurrency(f.totalNDS)}</div>${getChangeHtml(ndsChange)}</div></div>
-        <div class="metric-card"><div class="metric-title">📊 Выручка чистая</div><div><div class="metric-value" id="mainNetRevenueValue">${formatCurrency(f.netRevenue)}</div>${getChangeHtml(netRevenueChange)}</div><div class="mini-chart" id="miniNetRevenueChart"></div></div>
-        <div class="metric-card"><div class="metric-title">📊 Эффективность</div><div><div class="metric-value" id="mainEfficiencyValue">${(f.profit / (f.totalExpenses || 1)).toFixed(2)} ₽</div>${getChangeHtml(efficiencyChange)}</div><div class="metric-sub">прибыли на 1 рубль расходов</div></div>
     </div>
+    
+    <div class="metric-card">
+        <div class="metric-title">📊 Эффективность</div>
+        <div>
+            <div class="metric-value" id="mainEfficiencyValue">${(f.profit / (f.totalExpenses || 1)).toFixed(2)} ₽</div>
+            ${efficiencyChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(efficiencyChange)}</span>` : ''}
+        </div>
+        <div class="metric-sub">прибыли на 1 рубль расходов</div>
+    </div>
+</div>
     <div class="metrics-grid" style="margin-top: 24px;">
-        <div class="metric-card"><div class="metric-title">📦 Продажи (шт)</div><div><div class="metric-value" id="mainSalesValue">${new Intl.NumberFormat('ru-RU').format(salesData)}</div>${getChangeHtml(salesChange)}</div><div class="mini-chart" id="dashboardSalesChart"></div><div class="metric-sub">всего за период</div></div>
-        <div class="metric-card"><div class="metric-title">💰 Средний чек</div><div><div class="metric-value" id="mainAvgCheckValue">${formatCurrency(avgCheck)}</div>${getChangeHtml(avgCheckChange)}</div><div class="metric-sub">на 1 продажу</div></div>
-        <div class="metric-card"><div class="metric-title">🏭 Себестоимость сырья</div><div><div class="metric-value" id="mainCostValue">${formatCurrency(costData)}</div>${getChangeHtml(costChange, true)}</div><div class="mini-chart" id="dashboardCostChart"></div><div class="metric-sub">общая за период</div></div>
-        <div class="metric-card"><div class="metric-title">📊 Себестоимость 1 шт</div><div><div class="metric-value" id="mainAvgCostValue">${formatCurrency(avgCost)}</div>${getChangeHtml(avgCostChange, true)}</div><div class="metric-sub">на единицу товара</div></div>
+    <div class="metric-card">
+        <div class="metric-title">📦 Продажи (шт)</div>
+        <div>
+            <div class="metric-value" id="mainSalesValue">${new Intl.NumberFormat('ru-RU').format(salesData)}</div>
+            ${salesChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(salesChange)}</span>` : ''}
+        </div>
+        <div class="mini-chart" id="dashboardSalesChart"></div>
+        <div class="metric-sub">всего за период</div>
     </div>
+    
+    <div class="metric-card">
+        <div class="metric-title">💰 Средний чек</div>
+        <div>
+            <div class="metric-value" id="mainAvgCheckValue">${formatCurrency(avgCheck)}</div>
+            ${avgCheckChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(avgCheckChange)}</span>` : ''}
+        </div>
+        <div class="metric-sub">на 1 продажу</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-title">🏭 Себестоимость сырья</div>
+        <div>
+            <div class="metric-value" id="mainCostValue">${formatCurrency(costData)}</div>
+            ${costChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(costChange, true)}</span>` : ''}
+        </div>
+        <div class="mini-chart" id="dashboardCostChart"></div>
+        <div class="metric-sub">общая за период</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-title">📊 Себестоимость 1 шт</div>
+        <div>
+            <div class="metric-value" id="mainAvgCostValue">${formatCurrency(avgCost)}</div>
+            ${avgCostChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(avgCostChange, true)}</span>` : ''}
+        </div>
+        <div class="metric-sub">на единицу товара</div>
+    </div>
+</div>
 `;
 
 // Добавляем обработчик для кнопки "Показать по каналам"
