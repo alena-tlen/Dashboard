@@ -729,7 +729,7 @@ body.dark .metric-change {
     </div>
     <div class="nav-submenu" id="channelsSubmenu">
         <div class="nav-subitem" data-channel="wildberries"><span class="nav-icon">🛍️</span><span>Wildberries</span></div>
-        <div class="nav-subitem" data-channel="ozon"><span class="nav-icon">📦</span><span>OZON</span></div>
+        <div class="nav-subitem" data-channel="ozon"><span class="nav-icon">📦</span><span>Ozon</span></div>
         <div class="nav-subitem" data-channel="detsky-mir"><span class="nav-icon">🧸</span><span>Детский мир</span></div>
         <div class="nav-subitem" data-channel="lamoda"><span class="nav-icon">👗</span><span>Lamoda</span></div>
     </div>
@@ -1058,11 +1058,11 @@ body.dark .metric-change {
         const monthsOrder = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
         
         const channelMapping = {
-            'wildberries': { name: '1.1 Wildberries', displayName: 'Wildberries', prefix: '1.', ndsArticle: 'НДС от выручки 1.1' },
-            'ozon': { name: '2.1 OZON', displayName: 'OZON', prefix: '2.', ndsArticle: 'НДС от выручки 2.1' },
-            'detsky-mir': { name: '3.1 Детский мир', displayName: 'Детский мир', prefix: '3.', ndsArticle: 'НДС от выручки 3.1' },
-            'lamoda': { name: '4.1 Lamoda', displayName: 'Lamoda', prefix: '4.', ndsArticle: 'НДС от выручки 4.1' }
-        };
+    'wildberries': { displayName: 'Wildberries' },
+    'ozon': { displayName: 'Ozon' },
+    'detsky-mir': { displayName: 'Детский мир' },
+    'lamoda': { displayName: 'Lamoda' }
+};
         
         function readExcelFile(file) {
             return new Promise((resolve, reject) => {
@@ -1234,13 +1234,10 @@ processed.push(...newProcessed);
     let totalRevenue = 0, totalNdsOut = 0, totalExpenses = 0;
     let filtered = data;
     
+    // Фильтрация по каналу (если указан)
     if (channelKey && channelMapping[channelKey]) {
-        const channel = channelMapping[channelKey];
-        filtered = data.filter(row => {
-            if (row.статья.startsWith(channel.prefix)) return true;
-            if (row.статья === channel.ndsArticle) return true;
-            return false;
-        });
+        const targetChannel = channelMapping[channelKey].displayName;
+        filtered = data.filter(row => row.канал === targetChannel);
     }
     
     // Собираем доходы и расходы
@@ -1249,9 +1246,8 @@ processed.push(...newProcessed);
         else if (row.тип === 'Расход') totalExpenses += Math.abs(row.сумма);
     });
     
-    // 🔥 Для расчёта чистой выручки используем сохранённые исходные НДС исходящий
+    // Для расчёта чистой выручки используем сохранённые исходные НДС исходящий
     if (window._originalNdsOut && window._originalNdsOut.size > 0) {
-        // Если есть фильтр по каналу, суммируем только по этому каналу
         for (const [key, ndsAmount] of window._originalNdsOut.entries()) {
             const [company, year, month, channel] = key.split('|');
             
@@ -1277,13 +1273,6 @@ processed.push(...newProcessed);
                 totalNdsOut += ndsAmount;
             }
         }
-    } else {
-        // Fallback: если нет сохранённых данных, ищем в текущих данных (но их там уже нет после преобразования)
-        filtered.forEach(row => {
-            if (row.тип === 'НДС' && row.статья === 'НДС исходящий') {
-                totalNdsOut += row.сумма;
-            }
-        });
     }
     
     const netRevenue = totalRevenue - totalNdsOut;
@@ -2241,38 +2230,36 @@ if (toggleNdsBtn && ndsContainer) {
         }
         
         function renderChannelPage(channelKey) {
-            const channel = channelMapping[channelKey];
-            if (!channel) return;
-            const f = calculateFinancials(currentData, channelKey);
-            const salesData = currentData.find(d => d.статья === 'Продажи шт.')?.сумма || 0;
-            const costData = Math.abs(currentData.find(d => d.статья === 'Себестоимость сырья')?.сумма || 0);
-            const avgCheck = salesData > 0 ? f.netRevenue / salesData : 0;
-            const avgCost = salesData > 0 ? costData / salesData : 0;
-            
-            const content = `
-                <div class="metrics-grid">
-                    <div class="metric-card"><div class="metric-title">💰 Выручка (с НДС)</div><div class="metric-value">${formatCurrency(f.totalRevenue)}</div><div class="mini-chart" id="chRevenueChart"></div></div>
-                    <div class="metric-card"><div class="metric-title">💸 НДС</div><div class="metric-value">${formatCurrency(f.totalNDS)}</div><div class="mini-chart" id="chNdsChart"></div></div>
-                    <div class="metric-card"><div class="metric-title">📊 Выручка чистая</div><div class="metric-value">${formatCurrency(f.netRevenue)}</div><div class="mini-chart" id="chNetRevenueChart"></div></div>
-                    <div class="metric-card"><div class="metric-title">📉 Расходы</div><div class="metric-value">${formatCurrency(f.totalExpenses)}</div><div class="metric-sub">${((f.totalExpenses/f.netRevenue)*100).toFixed(1)}%</div></div>
-                    <div class="metric-card"><div class="metric-title">📈 Прибыль</div><div class="metric-value ${f.profit>=0?'positive':'negative'}">${formatCurrency(f.profit)}</div><div class="metric-sub">Рентабельность: ${f.profitability.toFixed(1)}%</div></div>
-                    <div class="metric-card"><div class="metric-title">📊 Маржинальность</div><div class="metric-value">${f.profitability.toFixed(1)}%</div></div>
-                </div>
-                <div class="metrics-grid" style="margin-top:20px">
-                    <div class="metric-card"><div class="metric-title">📦 Продажи (шт)</div><div class="metric-value">${new Intl.NumberFormat('ru-RU').format(salesData)}</div><div class="mini-chart" id="chSalesChart"></div></div>
-                    <div class="metric-card"><div class="metric-title">💰 Средний чек</div><div class="metric-value">${formatCurrency(avgCheck)}</div></div>
-                    <div class="metric-card"><div class="metric-title">🏭 Себестоимость</div><div class="metric-value">${formatCurrency(costData)}</div><div class="mini-chart" id="chCostChart"></div></div>
-                    <div class="metric-card"><div class="metric-title">📊 Себестоимость 1 шт</div><div class="metric-value">${formatCurrency(avgCost)}</div></div>
-                </div>
-            `;
-            document.getElementById(`channel${channelKey.charAt(0).toUpperCase() + channelKey.slice(1)}Metrics`).innerHTML = content;
-            renderMiniChart('chRevenueChart', [f.totalRevenue], '#48bb78');
-            renderMiniChart('chNdsChart', [f.totalNDS], '#f59e0b');
-            renderMiniChart('chNetRevenueChart', [f.netRevenue], '#4299e1');
-            renderMiniChart('chProfitChart', [f.profit], '#667eea');
-            renderMiniChart('chSalesChart', [salesData], '#48bb78');
-            renderMiniChart('chCostChart', [costData], '#f56565');
-        }
+    const channel = channelMapping[channelKey];
+    if (!channel) return;
+    const f = calculateFinancials(currentData, channelKey);
+    const salesData = currentData
+        .filter(d => d.канал === channel.displayName && d.статья === 'Продажи шт.')
+        .reduce((sum, d) => sum + (d.сумма || 0), 0);
+    const costData = currentData
+        .filter(d => d.канал === channel.displayName && d.статья === 'Себестоимость сырья')
+        .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
+    const avgCheck = salesData > 0 ? f.netRevenue / salesData : 0;
+    const avgCost = salesData > 0 ? costData / salesData : 0;
+    
+    const content = `
+        <div class="metrics-grid">
+            <div class="metric-card"><div class="metric-title">💰 Выручка (с НДС)</div><div class="metric-value">${formatCurrency(f.totalRevenue)}</div></div>
+            <div class="metric-card"><div class="metric-title">💸 НДС</div><div class="metric-value">${formatCurrency(f.totalNDS)}</div></div>
+            <div class="metric-card"><div class="metric-title">📊 Выручка чистая</div><div class="metric-value">${formatCurrency(f.netRevenue)}</div></div>
+            <div class="metric-card"><div class="metric-title">📉 Расходы</div><div class="metric-value">${formatCurrency(f.totalExpenses)}</div></div>
+            <div class="metric-card"><div class="metric-title">📈 Прибыль</div><div class="metric-value ${f.profit>=0?'positive':'negative'}">${formatCurrency(f.profit)}</div></div>
+            <div class="metric-card"><div class="metric-title">📊 Маржинальность</div><div class="metric-value">${f.profitability.toFixed(1)}%</div></div>
+        </div>
+        <div class="metrics-grid" style="margin-top:20px">
+            <div class="metric-card"><div class="metric-title">📦 Продажи (шт)</div><div class="metric-value">${new Intl.NumberFormat('ru-RU').format(salesData)}</div></div>
+            <div class="metric-card"><div class="metric-title">💰 Средний чек</div><div class="metric-value">${formatCurrency(avgCheck)}</div></div>
+            <div class="metric-card"><div class="metric-title">🏭 Себестоимость</div><div class="metric-value">${formatCurrency(costData)}</div></div>
+            <div class="metric-card"><div class="metric-title">📊 Себестоимость 1 шт</div><div class="metric-value">${formatCurrency(avgCost)}</div></div>
+        </div>
+    `;
+    document.getElementById(`channel${channelKey.charAt(0).toUpperCase() + channelKey.slice(1)}Metrics`).innerHTML = content;
+}
 
 
 
