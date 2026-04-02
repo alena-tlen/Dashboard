@@ -587,6 +587,58 @@ body.dark .filter-group-sidebar select {
 .profit-progress-bar {
     transition: width 0.5s ease-out;
 }
+
+.metric-change {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #1a1a2e !important;
+    margin-left: 12px !important;
+    vertical-align: middle !important;
+}
+
+.change-positive {
+    background: linear-gradient(135deg, #48bb78, #38a169) !important;
+    box-shadow: 0 2px 4px rgba(72,187,120,0.3);
+}
+
+.change-negative {
+    background: linear-gradient(135deg, #f56565, #e53e3e) !important;
+    box-shadow: 0 2px 4px rgba(245,101,101,0.3);
+}
+
+body.dark .metric-change {
+    color: #1a1a2e !important;
+}
+
+/* ========== РАЗБИВКА ПО КАНАЛАМ ДЛЯ ВСЕХ БЛОКОВ ========== */
+.breakdown-channel-item {
+    transition: all 0.3s ease;
+}
+
+.breakdown-channel-item:hover {
+    background: rgba(102,126,234,0.05);
+    border-radius: 8px;
+    padding: 4px;
+    margin: -4px;
+}
+
+.toggle-breakdown-btn {
+    transition: all 0.2s;
+}
+
+.toggle-breakdown-btn:hover {
+    background: rgba(102,126,234,0.1);
+    transform: translateY(-1px);
+}
+
+.breakdown-progress-bar {
+    transition: width 0.5s ease-out;
+}
     </style>
 </head>
 <body>
@@ -1055,6 +1107,35 @@ body.dark .filter-group-sidebar select {
         }
         
         function formatCurrency(value) { return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(Math.abs(value)); }
+          
+
+  // верная
+        function animateNumber(element, start, end, duration = 600, isCurrency = true, isPercent = false) {
+                    if (!element) return Promise.resolve();
+                    if (element._animationFrame) cancelAnimationFrame(element._animationFrame);
+                    return new Promise((resolve) => {
+                        const startTime = performance.now();
+                        function update(currentTime) {
+                            const elapsed = currentTime - startTime;
+                            const progress = Math.min(elapsed / duration, 1);
+                            const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+                            const currentValue = start + (end - start) * easeOutCubic;
+                            if (isPercent) element.innerHTML = currentValue.toFixed(1);
+                            else if (isCurrency) element.innerHTML = formatCurrency(currentValue);
+                            else element.innerHTML = currentValue.toFixed(2);
+                            if (progress < 1) element._animationFrame = requestAnimationFrame(update);
+                            else { 
+                                if (isPercent) element.innerHTML = end.toFixed(1);
+                                else if (isCurrency) element.innerHTML = formatCurrency(end);
+                                else element.innerHTML = end.toFixed(2);
+                                delete element._animationFrame;
+                                resolve();
+                            }
+                        }
+                        element._animationFrame = requestAnimationFrame(update);
+                    });
+                }
+
         
         function renderMiniChart(elementId, data, color) {
     if (!data || data.length === 0) return;
@@ -1090,10 +1171,7 @@ body.dark .filter-group-sidebar select {
         }
 
         function generateProfitByChannels(f, revenueChannels, expenseChannels) {
-    // Собираем данные по каналам
     const channelsProfit = [];
-    
-    // Все возможные каналы
     const allChannels = ['Wildberries', 'OZON', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
     
     allChannels.forEach(channel => {
@@ -1105,7 +1183,6 @@ body.dark .filter-group-sidebar select {
         const profit = revenue - expense;
         const profitability = revenue > 0 ? (profit / revenue) * 100 : 0;
         
-        // Показываем только каналы с ненулевой прибылью или убытком
         if (profit !== 0 && revenue > 0) {
             channelsProfit.push({
                 name: channel,
@@ -1117,51 +1194,115 @@ body.dark .filter-group-sidebar select {
         }
     });
     
-    // Сортируем по прибыли (от большей к меньшей)
     channelsProfit.sort((a, b) => b.profit - a.profit);
+    const totalProfit = channelsProfit.reduce((sum, ch) => sum + ch.profit, 0);
     
     if (channelsProfit.length === 0) {
         return '<div style="text-align: center; padding: 16px; color: var(--text-secondary);">Нет данных по каналам</div>';
     }
     
-    // Генерируем HTML для каждого канала
     const channelsHtml = channelsProfit.map((channel, idx) => {
         const profitClass = channel.profit >= 0 ? 'positive' : 'negative';
-        const profitIcon = channel.profit >= 0 ? '📈' : '📉';
-        const profitPercent = (channel.profit / f.totalProfit) * 100;
+        const profitPercent = totalProfit > 0 ? (channel.profit / totalProfit) * 100 : 0;
+        const barWidth = Math.min(Math.abs(profitPercent), 100);
         
         return `
             <div class="profit-channel-item" style="margin-bottom: 16px; opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; transition-delay: ${idx * 0.05}s;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 16px;">${getChannelIcon(channel.name)}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 2;">
                         <span style="font-weight: 600; font-size: 14px;">${channel.name}</span>
+                        <span class="${profitClass}" style="font-weight: 700; font-size: 13px;">${formatCurrency(channel.profit)}</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span class="${profitClass}" style="font-weight: 600; font-size: 14px;">${profitIcon} ${formatCurrency(channel.profit)}</span>
-                        <span style="font-size: 12px; color: var(--text-secondary); background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end;">
+                        <span style="font-size: 12px; font-weight: 600;">Рентабельность: ${channel.profitability.toFixed(1)}%</span>
+                        <span style="font-size: 11px; color: var(--text-secondary); background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">
                             ${profitPercent.toFixed(1)}% от общей
                         </span>
                     </div>
                 </div>
-                <div style="margin-bottom: 4px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">
-                        <span>Рентабельность: ${channel.profitability.toFixed(1)}%</span>
-                        <span>Выручка: ${formatCurrency(channel.revenue)}</span>
-                        <span>Расходы: ${formatCurrency(channel.expense)}</span>
-                    </div>
-                </div>
-                <div style="background: rgba(102,126,234,0.1); height: 6px; border-radius: 3px; overflow: hidden;">
-                    <div class="profit-progress-bar" style="width: ${Math.abs(profitPercent)}%; height: 100%; background: ${channel.profit >= 0 ? 'linear-gradient(90deg, #48bb78, #38a169)' : 'linear-gradient(90deg, #f56565, #ed8936)'}; border-radius: 3px;"></div>
+                <div style="background: rgba(102,126,234,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div class="profit-progress-bar" style="width: 0%; height: 100%; background: ${channel.profit >= 0 ? 'linear-gradient(90deg, #48bb78, #38a169)' : 'linear-gradient(90deg, #f56565, #ed8936)'}; border-radius: 4px; transition: width 0.5s ease-out;"></div>
                 </div>
             </div>
         `;
     }).join('');
     
+    setTimeout(() => {
+        document.querySelectorAll('.profit-progress-bar').forEach((bar, i) => {
+            const targetWidth = channelsProfit[i] ? Math.min(Math.abs((channelsProfit[i].profit / totalProfit) * 100), 100) : 0;
+            setTimeout(() => { bar.style.width = targetWidth + '%'; }, 100);
+        });
+    }, 200);
+    
     return `
         <div class="profit-channels-list">
             <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(102,126,234,0.2);">
                 <span style="font-size: 12px; font-weight: 600; color: #667eea;">РАЗБИВКА ПО КАНАЛАМ</span>
+            </div>
+            ${channelsHtml}
+        </div>
+    `;
+}
+
+function generateChannelBreakdown(title, dataKey, channels, formatAsCurrency = true, suffix = '') {
+    const channelsData = [];
+    const allChannels = ['Wildberries', 'OZON', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
+    
+    allChannels.forEach(channel => {
+        const channelData = channels.find(c => c.name === channel);
+        const value = channelData ? channelData[dataKey] : 0;
+        
+        if (value !== 0) {
+            channelsData.push({
+                name: channel,
+                value: value
+            });
+        }
+    });
+    
+    channelsData.sort((a, b) => b.value - a.value);
+    const totalValue = channelsData.reduce((sum, ch) => sum + ch.value, 0);
+    
+    if (channelsData.length === 0) {
+        return '<div style="text-align: center; padding: 16px; color: var(--text-secondary);">Нет данных по каналам</div>';
+    }
+    
+    const channelsHtml = channelsData.map((channel, idx) => {
+        const percent = totalValue > 0 ? (channel.value / totalValue) * 100 : 0;
+        const barWidth = Math.min(percent, 100);
+        const formattedValue = formatAsCurrency ? formatCurrency(channel.value) : channel.value.toLocaleString('ru-RU') + suffix;
+        
+        return `
+            <div class="breakdown-channel-item" style="margin-bottom: 16px; opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; transition-delay: ${idx * 0.05}s;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 2;">
+                        <span style="font-weight: 600; font-size: 14px;">${channel.name}</span>
+                        <span style="font-weight: 700; font-size: 13px;">${formattedValue}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end;">
+                        <span style="font-size: 11px; color: var(--text-secondary); background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">
+                            ${percent.toFixed(1)}% от общего
+                        </span>
+                    </div>
+                </div>
+                <div style="background: rgba(102,126,234,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div class="breakdown-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 4px; transition: width 0.5s ease-out;"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    setTimeout(() => {
+        document.querySelectorAll('.breakdown-progress-bar').forEach((bar, i) => {
+            const targetPercent = channelsData[i] ? (channelsData[i].value / totalValue) * 100 : 0;
+            setTimeout(() => { bar.style.width = Math.min(targetPercent, 100) + '%'; }, 100);
+        });
+    }, 200);
+    
+    return `
+        <div class="breakdown-list">
+            <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(102,126,234,0.2);">
+                <span style="font-size: 12px; font-weight: 600; color: #667eea;">${title}</span>
             </div>
             ${channelsHtml}
         </div>
@@ -1365,31 +1506,6 @@ const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
                     expenseChannels: expenseChannelsList, revenueChannels: revenueChannelsList
                 };
                 
-                function animateNumber(element, start, end, duration = 600, isCurrency = true, isPercent = false) {
-                    if (!element) return Promise.resolve();
-                    if (element._animationFrame) cancelAnimationFrame(element._animationFrame);
-                    return new Promise((resolve) => {
-                        const startTime = performance.now();
-                        function update(currentTime) {
-                            const elapsed = currentTime - startTime;
-                            const progress = Math.min(elapsed / duration, 1);
-                            const easeOutCubic = 1 - Math.pow(1 - progress, 3);
-                            const currentValue = start + (end - start) * easeOutCubic;
-                            if (isPercent) element.innerHTML = currentValue.toFixed(1);
-                            else if (isCurrency) element.innerHTML = formatCurrency(currentValue);
-                            else element.innerHTML = currentValue.toFixed(2);
-                            if (progress < 1) element._animationFrame = requestAnimationFrame(update);
-                            else { 
-                                if (isPercent) element.innerHTML = end.toFixed(1);
-                                else if (isCurrency) element.innerHTML = formatCurrency(end);
-                                else element.innerHTML = end.toFixed(2);
-                                delete element._animationFrame;
-                                resolve();
-                            }
-                        }
-                        element._animationFrame = requestAnimationFrame(update);
-                    });
-                }
                 
                 function animateProgressBar(bar, oldPercent, newPercent, duration = 500) {
                     if (!bar) return Promise.resolve();
@@ -1525,13 +1641,26 @@ const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
     </div>
     
     <div class="metric-card">
-        <div class="metric-title">📊 Выручка чистая</div>
-        <div>
-            <div class="metric-value" id="mainNetRevenueValue">${formatCurrency(f.netRevenue)}</div>
-            ${netRevenueChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(netRevenueChange)}</span>` : ''}
+    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📊</span>
+            <span>Выручка чистая</span>
         </div>
-        <div class="mini-chart" id="miniNetRevenueChart"></div>
+        <button class="toggle-breakdown-btn" data-type="netRevenue" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; transition: all 0.2s;">
+            <span>▶</span> Показать по каналам
+        </button>
     </div>
+    <div>
+        <div class="metric-value" id="mainNetRevenueValue">${formatCurrency(f.netRevenue)}</div>
+        ${netRevenueChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(netRevenueChange)}</span>` : ''}
+    </div>
+    <div class="mini-chart" id="miniNetRevenueChart"></div>
+    <div class="netrevenue-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+        <div style="padding-top: 16px;">
+            ${generateChannelBreakdown('ВЫРУЧКА ЧИСТАЯ ПО КАНАЛАМ', 'total', revenueChannelsList, true, '')}
+        </div>
+    </div>
+</div>
     
     <div class="metric-card">
         <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
@@ -1610,11 +1739,11 @@ const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
 </div>
 `;
 
-// Добавляем обработчик для кнопки "Показать по каналам"
+// Добавляем обработчики для всех кнопок разбивки
 setTimeout(() => {
+    // Обработчик для маржинальной прибыли
     const toggleProfitBtn = document.querySelector('.toggle-channels-profit-btn');
     const profitChannelsContainer = document.querySelector('.profit-channels-container');
-    
     if (toggleProfitBtn && profitChannelsContainer) {
         toggleProfitBtn.onclick = () => {
             if (profitChannelsContainer.style.maxHeight && profitChannelsContainer.style.maxHeight !== '0px') {
@@ -1623,18 +1752,33 @@ setTimeout(() => {
             } else {
                 profitChannelsContainer.style.maxHeight = profitChannelsContainer.scrollHeight + 'px';
                 toggleProfitBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                
                 const items = profitChannelsContainer.querySelectorAll('.profit-channel-item');
                 items.forEach((item, idx) => {
-                    setTimeout(() => {
-                        item.style.opacity = '1';
-                        item.style.transform = 'translateX(0)';
-                    }, idx * 50);
+                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
                 });
             }
         };
     }
-}, 150);
+    
+    // Обработчик для выручки чистой
+    const toggleBreakdownBtn = document.querySelector('.toggle-breakdown-btn');
+    const netRevenueContainer = document.querySelector('.netrevenue-channels-container');
+    if (toggleBreakdownBtn && netRevenueContainer) {
+        toggleBreakdownBtn.onclick = () => {
+            if (netRevenueContainer.style.maxHeight && netRevenueContainer.style.maxHeight !== '0px') {
+                netRevenueContainer.style.maxHeight = '0';
+                toggleBreakdownBtn.innerHTML = '<span>▶</span> Показать по каналам';
+            } else {
+                netRevenueContainer.style.maxHeight = netRevenueContainer.scrollHeight + 'px';
+                toggleBreakdownBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
+                const items = netRevenueContainer.querySelectorAll('.breakdown-channel-item');
+                items.forEach((item, idx) => {
+                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+                });
+            }
+        };
+    }
+}, 200);
 
       
                 
@@ -1867,7 +2011,9 @@ setTimeout(() => {
             renderMiniChart('chSalesChart', [salesData], '#48bb78');
             renderMiniChart('chCostChart', [costData], '#f56565');
         }
-        
+
+
+
     function initApp() {
     // Ждем загрузки Plotly
     if (typeof Plotly === 'undefined') {
@@ -1889,24 +2035,23 @@ setTimeout(() => {
         return;
     }
     
-    // Добавляем обработчик для сворачивания фильтров с проверкой
-    setTimeout(() => {
-        const filtersSidebarToggle = document.getElementById('filtersSidebarToggle');
-        const filtersSidebarContent = document.getElementById('filtersSidebarContent');
-        
-        if (filtersSidebarToggle && filtersSidebarContent) {
-            const toggleIconSidebar = filtersSidebarToggle.querySelector('.toggle-icon');
-            filtersSidebarToggle.onclick = () => {
-                filtersSidebarContent.classList.toggle('collapsed');
-                if (toggleIconSidebar) {
-                    toggleIconSidebar.style.transform = filtersSidebarContent.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
-                }
-            };
-        } else {
-            console.log('Элементы фильтров не найдены, пропускаем настройку');
-        }
-    }, 100);
+// Добавляем обработчик для сворачивания фильтров с проверкой
+setTimeout(() => {
+    const filtersSidebarToggle = document.getElementById('filtersSidebarToggle');
+    const filtersSidebarContent = document.getElementById('filtersSidebarContent');
     
+    if (filtersSidebarToggle && filtersSidebarContent) {
+        const toggleIconSidebar = filtersSidebarToggle.querySelector('.toggle-icon');
+        filtersSidebarToggle.onclick = () => {
+            filtersSidebarContent.classList.toggle('collapsed');
+            if (toggleIconSidebar) {
+                toggleIconSidebar.style.transform = filtersSidebarContent.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+        };
+    }
+}, 100);
+
+
     function loadData(data) {
         originalData = data;
         currentData = [...data];
