@@ -740,7 +740,7 @@ body.dark .filter-group-sidebar select {
     let usersLoaded = false;
     
     // ПУТЬ К ФАЙЛУ НА КОМПЬЮТЕРЕ (ИЗМЕНИТЕ ПОД СЕБЯ)
-    const USERS_FILE_PATH = 'users.xslx';  // ← ЗДЕСЬ ВАШ ПУТЬ
+    const USERS_FILE_PATH = 'users.xlsx';  // ← ЗДЕСЬ ВАШ ПУТЬ
     
     // ========== ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ ИЗ EXCEL ==========
     async function loadUsersFromFile() {
@@ -872,10 +872,9 @@ body.dark .filter-group-sidebar select {
         }
     }
     
-    // Регистрация отключена
     function register(fio, email, password) {
-        return { success: false, error: 'Регистрация отключена.};
-    }
+    return { success: false, error: 'Регистрация отключена.' };
+}
     
     // ========== ИНИЦИАЛИЗАЦИЯ АВТОРИЗАЦИИ ==========
     async function initAuth() {
@@ -944,9 +943,9 @@ body.dark .filter-group-sidebar select {
                 }
                 
                 if (!usersLoaded || authUsers.length === 0) {
-                    if (authError) authError.textContent = 'База пользователей не загружена. Проверьте файл;
-                    return;
-                }
+    if (authError) authError.textContent = 'База пользователей не загружена. Проверьте файл users.xlsx';
+    return;
+}
                 
                 const result = login(email, password);
                 if (result.success) {
@@ -1058,11 +1057,15 @@ body.dark .filter-group-sidebar select {
         function formatCurrency(value) { return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(Math.abs(value)); }
         
         function renderMiniChart(elementId, data, color) {
-            if (!data || data.length === 0) return;
-            const trace = { y: data, type: 'scatter', mode: 'lines+markers', line: { color, width: 2 }, fill: 'tozeroy', fillcolor: color + '20' };
-            const layout = { margin: { t: 5, l: 5, r: 5, b: 5 }, height: 40, xaxis: { showticklabels: false, showgrid: false }, yaxis: { showticklabels: false, showgrid: false }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' };
-            Plotly.newPlot(elementId, [trace], layout, { displayModeBar: false });
-        }
+    if (!data || data.length === 0) return;
+    if (typeof Plotly === 'undefined') {
+        console.warn('Plotly не загружен, пропускаем рендер графика');
+        return;
+    }
+    const trace = { y: data, type: 'scatter', mode: 'lines+markers', line: { color, width: 2 }, fill: 'tozeroy', fillcolor: color + '20' };
+    const layout = { margin: { t: 5, l: 5, r: 5, b: 5 }, height: 40, xaxis: { showticklabels: false, showgrid: false }, yaxis: { showticklabels: false, showgrid: false }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' };
+    Plotly.newPlot(elementId, [trace], layout, { displayModeBar: false });
+}
         
         function calculateFinancials(data, channelKey = null) {
             let totalRevenue = 0, totalNDS = 0, totalExpenses = 0;
@@ -1803,6 +1806,13 @@ setTimeout(() => {
         }
         
         function initApp() {
+    function initApp() {
+    // Ждем загрузки Plotly
+    if (typeof Plotly === 'undefined') {
+        console.log('Ожидание загрузки Plotly...');
+        setTimeout(initApp, 200);
+        return;
+    }
     // Проверяем существование всех необходимых элементов
     const fileInput = document.getElementById('fileInput');
     const uploadArea = document.getElementById('uploadArea');
@@ -1989,6 +1999,27 @@ setTimeout(() => {
         else { body.classList.remove('light'); body.classList.add('dark'); themeToggle.classList.add('active'); }
     };
     body.classList.add('dark');
+}
+
+function showAdminPanel() {
+    if (currentUser && currentUser.isAdmin) {
+        const tbody = document.getElementById('adminTableBody');
+        if (tbody) {
+            tbody.innerHTML = '';
+            for (const user of authUsers) {
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = user.fio;
+                row.insertCell(1).textContent = user.email;
+                row.insertCell(2).textContent = user.blocked ? '🔴 Заблокирован' : '🟢 Активен';
+                const actionCell = row.insertCell(3);
+                actionCell.textContent = '📝 Редактировать в Excel';
+                actionCell.style.color = '#f59e0b';
+            }
+        }
+        document.getElementById('adminPanel').classList.add('active');
+    } else {
+        alert('Доступ запрещен. Только для администратора.\n\nУправление пользователями - через файл users.xlsx');
+    }
 }
         
         // ========== ЗАПУСК ==========
