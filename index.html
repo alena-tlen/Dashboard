@@ -734,191 +734,239 @@ body.dark .filter-group-sidebar select {
     </div>
 
     <script>
-        // ========== АВТОРИЗАЦИЯ ==========
-        let currentUser = null;
+    // ========== АВТОРИЗАЦИЯ - ТОЛЬКО ИЗ ФАЙЛА /users.xlsx ==========
+    let currentUser = null;
+    let authUsers = [];
+    let usersLoaded = false;
+    
+    // ПУТЬ К ФАЙЛУ НА КОМПЬЮТЕРЕ (ИЗМЕНИТЕ ПОД СЕБЯ)
+    const USERS_FILE_PATH = 'users.xslx';  // ← ЗДЕСЬ ВАШ ПУТЬ
+    
+    // ========== ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ ИЗ EXCEL ==========
+    async function loadUsersFromFile() {
+        const authError = document.getElementById('authError');
+        const authInfo = document.getElementById('authSuccess');
         
-        function resetAllData() {
-            localStorage.clear();
-            alert('Все данные сброшены! Обновите страницу.');
+        try {
+            const response = await fetch(USERS_FILE_PATH);
+            if (!response.ok) {
+                if (authError) authError.textContent = `❌ Файл ${USERS_FILE_PATH} не найден. Обратитесь к администратору.`;
+                return false;
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "", raw: true });
+            
+            const users = [];
+            for (const row of jsonData) {
+                let email = row['почта'] || row['email'] || row['Email'] || '';
+                let password = row['пароль'] || row['password'] || row['Пароль'] || '';
+                let fio = row['фио'] || row['ФИО'] || row['name'] || '';
+                let access = row['доступ'] || row['access'] || row['Доступ'] || '';
+                
+                email = String(email).trim().toLowerCase();
+                password = String(password).trim();
+                fio = String(fio).trim();
+                access = String(access).trim().toLowerCase();
+                
+                if (!email || !password) continue;
+                
+                const isBlocked = access === 'заблокирован' || access === 'blocked' || access === 'нет';
+                const isAllowed = access === 'разрешён' || access === 'разрешен' || access === 'да' || access === 'yes';
+                
+                users.push({
+                    email: email,
+                    password: password,
+                    fio: fio || email.split('@')[0],
+                    isAdmin: false,  // Никто не админ по умолчанию
+                    blocked: isBlocked || (!isAllowed && access !== ''),
+                });
+            }
+            
+            if (users.length === 0) {
+                if (authError) authError.textContent = '❌ Файл не содержит данных. Нужны колонки: почта, пароль, фио, доступ';
+                return false;
+            }
+            
+            authUsers = users;
+            usersLoaded = true;
+            
+            // Показываем статус (без паролей!)
+            const activeCount = users.filter(u => !u.blocked).length;
+            if (authInfo) {
+                authInfo.textContent = `✅ Загружено ${users.length} пользователей (${activeCount} активных)`;
+                authInfo.style.color = '#48bb78';
+                setTimeout(() => { if (authInfo) authInfo.textContent = ''; }, 3000);
+            }
+            
+            // Обновляем статус в интерфейсе
+            updateStatusDisplay();
+            return true;
+            
+        } catch (error) {
+            console.error('Ошибка загрузки:', error);
+            if (authError) authError.textContent = `❌ Ошибка загрузки файла: ${error.message}`;
+            return false;
+        }
+    }
+    
+    // Обновление отображения статуса
+    function updateStatusDisplay() {
+        const authTitle = document.getElementById('authTitle');
+        if (!authTitle) return;
+        
+        let statusDiv = document.getElementById('autoStatusDiv');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.id = 'autoStatusDiv';
+            statusDiv.style.cssText = 'background: #0f0f1a; border-radius: 8px; padding: 10px; margin-bottom: 16px; font-size: 13px; color: #ffffff !important; border: 1px solid #2d2d3a;';
+            authTitle.insertAdjacentElement('afterend', statusDiv);
+        }
+        
+        if (authUsers.length > 0) {
+            const activeCount = authUsers.filter(u => !u.blocked).length;
+            statusDiv.innerHTML = `📁 База пользователей: ${authUsers.length} чел. (✅ ${activeCount} активных)`;
+            statusDiv.style.color = '#ffffff';
+        } else if (!usersLoaded) {
+            statusDiv.innerHTML = `📁 Загрузка базы пользователей...`;
+        } else {
+            statusDiv.innerHTML = `📁 База пользователей: не загружена`;
+        }
+    }
+    
+    // Функция входа (проверка по загруженной базе)
+    function login(email, password) {
+        if (!usersLoaded || authUsers.length === 0) {
+            return { success: false, error: 'База пользователей не загружена. Обратитесь к администратору.' };
+        }
+        
+        const user = authUsers.find(u => u.email === email.toLowerCase() && u.password === password);
+        if (!user) return { success: false, error: 'Неверный email или пароль' };
+        if (user.blocked) return { success: false, error: 'Ваш аккаунт заблокирован. Обратитесь к администратору.' };
+        
+        // Не сохраняем пароль в сессии!
+        return { success: true, user: { 
+            email: user.email, 
+            fio: user.fio, 
+            isAdmin: user.isAdmin,
+            blocked: user.blocked 
+        } };
+    }
+    
+    function logout() {
+        currentUser = null;
+        localStorage.removeItem('dashboard_current_user');
+        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('authContainer').style.display = 'flex';
+        document.getElementById('authEmail').value = '';
+        document.getElementById('authPassword').value = '';
+    }
+    
+    function resetAllData() {
+        if (confirm('Сбросить финансовые данные? Пользователи НЕ будут удалены.')) {
+            localStorage.removeItem('dashboard_financial_data');
+            alert('Финансовые данные сброшены! Страница обновится.');
             location.reload();
         }
+    }
+    
+    // Регистрация отключена
+    function register(fio, email, password) {
+        return { success: false, error: 'Регистрация отключена.};
+    }
+    
+    // ========== ИНИЦИАЛИЗАЦИЯ АВТОРИЗАЦИИ ==========
+    async function initAuth() {
+        // Показываем индикатор загрузки
+        updateStatusDisplay();
         
-        function loadUsers() {
-            const users = localStorage.getItem('dashboard_users');
-            if (!users) {
-                const defaultUsers = {
-                    'admin@dashboard.com': {
-                        fio: 'Администратор',
-                        email: 'admin@dashboard.com',
-                        password: 'admin123',
-                        isAdmin: true,
-                        blocked: false,
-                        createdAt: new Date().toISOString()
-                    }
-                };
-                localStorage.setItem('dashboard_users', JSON.stringify(defaultUsers));
-                return defaultUsers;
-            }
-            return JSON.parse(users);
-        }
+        // Загружаем пользователей из файла
+        await loadUsersFromFile();
         
-        function saveUsers(users) { localStorage.setItem('dashboard_users', JSON.stringify(users)); }
-        
-        function register(fio, email, password) {
-            const users = loadUsers();
-            if (users[email]) return { success: false, error: 'Пользователь с таким email уже существует' };
-            if (password.length < 6) return { success: false, error: 'Пароль должен быть не менее 6 символов' };
-            users[email] = { fio, email, password, isAdmin: false, blocked: false, createdAt: new Date().toISOString() };
-            saveUsers(users);
-            return { success: true };
-        }
-        
-        function login(email, password) {
-            const users = loadUsers();
-            const user = users[email];
-            if (!user) return { success: false, error: 'Пользователь не найден' };
-            if (user.password !== password) return { success: false, error: 'Неверный пароль' };
-            if (user.blocked) return { success: false, error: 'Ваш аккаунт заблокирован' };
-            return { success: true, user };
-        }
-        
-        function updateAdminTable() {
-            const users = loadUsers();
-            const tbody = document.getElementById('adminTableBody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            for (const [email, user] of Object.entries(users)) {
-                const row = tbody.insertRow();
-                row.insertCell(0).textContent = user.fio;
-                row.insertCell(1).textContent = email;
-                row.insertCell(2).textContent = user.blocked ? '🔴 Заблокирован' : '🟢 Активен';
-                const actionCell = row.insertCell(3);
-                if (email !== 'admin@dashboard.com') {
-                    const btn = document.createElement('button');
-                    btn.textContent = user.blocked ? 'Разблокировать' : 'Заблокировать';
-                    btn.className = user.blocked ? 'unblock-btn' : 'block-btn';
-                    btn.onclick = () => {
-                        const usersData = loadUsers();
-                        usersData[email].blocked = !usersData[email].blocked;
-                        saveUsers(usersData);
-                        updateAdminTable();
-                        if (currentUser && currentUser.email === email) {
-                            alert('Ваш статус изменен. Вы будете выйдены из системы.');
-                            logout();
-                        }
-                    };
-                    actionCell.appendChild(btn);
-                } else {
-                    actionCell.textContent = 'Администратор';
-                }
-            }
-        }
-        
-        function showAdminPanel() {
-            if (currentUser && currentUser.isAdmin) {
-                updateAdminTable();
-                document.getElementById('adminPanel').classList.add('active');
-            } else {
-                alert('Доступ запрещен. Только для администратора.');
-            }
-        }
-        
-        function logout() {
-            currentUser = null;
-            localStorage.removeItem('dashboard_current_user');
-            document.getElementById('mainApp').style.display = 'none';
-            document.getElementById('authContainer').style.display = 'flex';
-            document.getElementById('authEmail').value = '';
-            document.getElementById('authPassword').value = '';
-            document.getElementById('authFio').value = '';
-        }
-        
-        function initAuth() {
-            const savedUser = localStorage.getItem('dashboard_current_user');
-            if (savedUser) {
-                const users = loadUsers();
+        const savedUser = localStorage.getItem('dashboard_current_user');
+        if (savedUser && usersLoaded && authUsers.length > 0) {
+            try {
                 const userData = JSON.parse(savedUser);
-                if (users[userData.email] && !users[userData.email].blocked) {
-                    currentUser = users[userData.email];
+                // Проверяем, не заблокирован ли пользователь в актуальной базе
+                const currentUserData = authUsers.find(u => u.email === userData.email);
+                if (currentUserData && !currentUserData.blocked) {
+                    currentUser = {
+                        email: currentUserData.email,
+                        fio: currentUserData.fio,
+                        isAdmin: currentUserData.isAdmin,
+                        blocked: currentUserData.blocked
+                    };
                     document.getElementById('mainApp').style.display = 'block';
                     document.getElementById('authContainer').style.display = 'none';
-                    document.getElementById('userInfo').innerHTML = `👤 ${currentUser.fio} ${currentUser.isAdmin ? '(Админ)' : ''}`;
-                    if (currentUser.isAdmin) document.getElementById('adminBtn').style.display = 'block';
-                    initApp();
+                    document.getElementById('userInfo').innerHTML = `👤 ${currentUser.fio}`;
+                    initApp(); // Ваша функция дашборда
                     return;
                 }
-            }
-            document.getElementById('mainApp').style.display = 'none';
-            document.getElementById('authContainer').style.display = 'flex';
-            setupAuthForms();
+            } catch(e) {}
         }
         
-        function setupAuthForms() {
-            let isLogin = true;
-            const authTitle = document.getElementById('authTitle');
-            const authFio = document.getElementById('authFio');
-            const authSubmitBtn = document.getElementById('authSubmitBtn');
-            const authToggle = document.getElementById('authToggle');
-            const authError = document.getElementById('authError');
-            const authSuccess = document.getElementById('authSuccess');
-            const resetDataBtn = document.getElementById('resetDataBtn');
-            
-            resetDataBtn.onclick = resetAllData;
-            
-            authToggle.onclick = () => {
-                isLogin = !isLogin;
-                authTitle.textContent = isLogin ? '🔐 Вход в систему' : '📝 Регистрация';
-                authFio.style.display = isLogin ? 'none' : 'block';
-                authSubmitBtn.textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
-                authToggle.textContent = isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти';
-                authError.textContent = '';
-                authSuccess.textContent = '';
-                document.getElementById('authEmail').value = '';
-                document.getElementById('authPassword').value = '';
-                document.getElementById('authFio').value = '';
-            };
-            
+        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('authContainer').style.display = 'flex';
+        setupAuthForms();
+    }
+    
+    function setupAuthForms() {
+        const authTitle = document.getElementById('authTitle');
+        const authFio = document.getElementById('authFio');
+        const authSubmitBtn = document.getElementById('authSubmitBtn');
+        const authToggle = document.getElementById('authToggle');
+        const authError = document.getElementById('authError');
+        const authSuccess = document.getElementById('authSuccess');
+        const resetDataBtn = document.getElementById('resetDataBtn');
+        const authEmail = document.getElementById('authEmail');
+        const authPassword = document.getElementById('authPassword');
+        
+        // Скрываем регистрацию
+        if (authToggle) authToggle.style.display = 'none';
+        if (authFio) authFio.style.display = 'none';
+        if (authTitle) authTitle.textContent = '🔐 Вход в систему';
+        if (authSubmitBtn) authSubmitBtn.textContent = 'Войти';
+        
+        if (resetDataBtn) resetDataBtn.onclick = resetAllData;
+        
+        if (authSubmitBtn) {
             authSubmitBtn.onclick = () => {
-                const email = document.getElementById('authEmail').value.trim();
-                const password = document.getElementById('authPassword').value;
-                authError.textContent = '';
-                authSuccess.textContent = '';
+                const email = authEmail.value.trim();
+                const password = authPassword.value;
+                if (authError) authError.textContent = '';
+                if (authSuccess) authSuccess.textContent = '';
                 
                 if (!email || !password) {
-                    authError.textContent = 'Заполните все поля';
+                    if (authError) authError.textContent = 'Заполните все поля';
                     return;
                 }
                 
-                if (isLogin) {
-                    const result = login(email, password);
-                    if (result.success) {
-                        currentUser = result.user;
-                        localStorage.setItem('dashboard_current_user', JSON.stringify({ email: currentUser.email }));
-                        document.getElementById('mainApp').style.display = 'block';
-                        document.getElementById('authContainer').style.display = 'none';
-                        document.getElementById('userInfo').innerHTML = `👤 ${currentUser.fio} ${currentUser.isAdmin ? '(Админ)' : ''}`;
-                        if (currentUser.isAdmin) document.getElementById('adminBtn').style.display = 'block';
-                        initApp();
-                    } else {
-                        authError.textContent = result.error;
-                    }
+                if (!usersLoaded || authUsers.length === 0) {
+                    if (authError) authError.textContent = 'База пользователей не загружена. Проверьте файл;
+                    return;
+                }
+                
+                const result = login(email, password);
+                if (result.success) {
+                    currentUser = result.user;
+                    // Сохраняем ТОЛЬКО email и имя, НЕ пароль!
+                    localStorage.setItem('dashboard_current_user', JSON.stringify({ 
+                        email: currentUser.email, 
+                        fio: currentUser.fio,
+                        isAdmin: currentUser.isAdmin 
+                    }));
+                    document.getElementById('mainApp').style.display = 'block';
+                    document.getElementById('authContainer').style.display = 'none';
+                    document.getElementById('userInfo').innerHTML = `👤 ${currentUser.fio}`;
+                    initApp(); // Ваша функция дашборда
                 } else {
-                    const fio = document.getElementById('authFio').value.trim();
-                    if (!fio) { authError.textContent = 'Введите ФИО'; return; }
-                    if (password.length < 6) { authError.textContent = 'Пароль должен быть не менее 6 символов'; return; }
-                    const result = register(fio, email, password);
-                    if (result.success) {
-                        authSuccess.textContent = 'Регистрация успешна! Теперь войдите.';
-                        authToggle.click();
-                        document.getElementById('authEmail').value = '';
-                        document.getElementById('authPassword').value = '';
-                        document.getElementById('authFio').value = '';
-                    } else {
-                        authError.textContent = result.error;
-                    }
+                    if (authError) authError.textContent = result.error;
                 }
             };
         }
+    }
         
         // ========== ОСНОВНОЙ ДАШБОРД ========== 
         let originalData = [], currentData = [];
@@ -1943,11 +1991,12 @@ setTimeout(() => {
     body.classList.add('dark');
 }
         
-        document.getElementById('adminBtn')?.addEventListener('click', showAdminPanel);
-        document.getElementById('closeAdminBtn')?.addEventListener('click', () => document.getElementById('adminPanel').classList.remove('active'));
-        document.getElementById('logoutBtn')?.addEventListener('click', logout);
-        
-        initAuth();
-    </script>
+        // ========== ЗАПУСК ==========
+    document.getElementById('adminBtn')?.addEventListener('click', showAdminPanel);
+    document.getElementById('closeAdminBtn')?.addEventListener('click', () => document.getElementById('adminPanel').classList.remove('active'));
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    
+    initAuth();
+</script>
 </body>
 </html>
