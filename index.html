@@ -1301,6 +1301,7 @@ function calculateFinancials(data, channelKey = null) {
         console.log('Маржинальная прибыль (profit):', profit);
     }
 
+
     
     // Для карточки НДС считаем разницу по ВСЕМ данным
     let totalNdsOutAll = 0, totalNdsInAll = 0;
@@ -1944,16 +1945,23 @@ console.log('Строки с НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ в curr
 const salesData = currentData
     .filter(d => {
         const article = d.статья?.toLowerCase() || '';
-        return article.includes('продажи') && (article.includes('шт') || article.includes('штук') || article === 'Продажи шт.');
+        return (article.includes('продажи') && (article.includes('шт') || article.includes('штук'))) || d.статья === 'Продажи шт.';
     })
     .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
 
 // Также проверяем справочные данные
 const salesDataRef = currentData
-    .filter(d => d.тип === 'Справочная' && (d.статья?.toLowerCase().includes('продажи') || d.подканал?.toLowerCase().includes('продажи')))
+    .filter(d => d.тип === 'Справочная' && 
+        (d.статья?.toLowerCase().includes('продажи') || d.подканал?.toLowerCase().includes('продажи')))
     .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
 
 const totalSalesData = salesData + salesDataRef;
+
+// Добавьте после расчета totalSalesData
+console.log('=== ПРОДАЖИ ОТЛАДКА ===');
+console.log('salesData (из статьи Продажи шт.):', salesData);
+console.log('salesDataRef (из справочных):', salesDataRef);
+console.log('totalSalesData (общее):', totalSalesData);
 // -------------------------------------------------------------------------------------------------------------------
 const costData = currentData
     .filter(d => d.статья === 'Себестоимость сырья')
@@ -2059,7 +2067,7 @@ const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
                     totalRevenue: f.totalRevenue, totalNDS: f.totalNDS, netRevenue: f.netRevenue,
                     totalExpenses: f.totalExpenses, profit: f.profit, profitability: f.profitability,
                     totalProfit: f.profit,
-                    salesData: salesData, avgCheck: avgCheck, costData: costData, avgCost: avgCost,
+                    salesData: totalSalesData, avgCheck: avgCheck, costData: costData, avgCost: avgCost,
                     efficiency: efficiency, expensesTrend: expensesTrend,
                     expenseChannels: expenseChannelsList, revenueChannels: revenueChannelsList
                 };
@@ -2469,7 +2477,7 @@ if (toggleEfficiencyBtn && efficiencyContainer) {
                     animateNumber(document.getElementById('mainNetRevenueValue'), oldData.netRevenue, f.netRevenue, 600),
                     animateNumber(document.getElementById('mainProfitValue'), oldData.profit, f.profit, 600),
                     animateNumber(document.getElementById('mainEfficiencyValue'), oldData.efficiency, f.profit / (f.totalExpenses || 1), 600, false, false),
-                    animateNumber(document.getElementById('mainSalesValue'), oldData.salesData, salesData, 600),
+                    animateNumber(document.getElementById('mainSalesValue'), oldData.salesData, totalSalesData, 600),
                     animateNumber(document.getElementById('mainAvgCheckValue'), oldData.avgCheck, avgCheck, 600),
                     animateNumber(document.getElementById('mainCostValue'), oldData.costData, costData, 600),
                     animateNumber(document.getElementById('mainAvgCostValue'), oldData.avgCost, avgCost, 600),
