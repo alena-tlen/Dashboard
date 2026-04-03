@@ -1250,6 +1250,35 @@ console.log('Строки с НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ:', proc
     return { totalRevenue, netRevenue, totalNDS, totalExpenses, profit, profitability };
 }
 
+// Добавьте функцию для расчёта чистой выручки по каналам
+
+function calculateNetRevenueByChannel(data) {
+    const netRevenueByChannel = {};
+    const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
+    
+    allChannels.forEach(channel => {
+        // Доходы по каналу
+        const revenue = data
+            .filter(d => d.канал === channel && d.тип === 'Доход')
+            .reduce((sum, d) => sum + d.сумма, 0);
+        
+        // НДС исходящий по каналу
+        const ndsOut = data
+            .filter(d => d.канал === channel && d.статья === 'НДС Исх')
+            .reduce((sum, d) => sum + d.сумма, 0);
+        
+        const netRevenue = revenue - ndsOut;
+        if (netRevenue !== 0) {
+            netRevenueByChannel[channel] = netRevenue;
+        }
+    });
+    
+    return Object.entries(netRevenueByChannel)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, value]) => ({ name, value }));
+}
+
+
         function generateProfitByChannels(f, revenueChannels, expenseChannels) {
     const channelsProfit = [];
     const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
@@ -1551,6 +1580,10 @@ function generateNDSBreakdown(data) {
                 
                 const f = calculateFinancials(currentData);
                 const fPrev = prevData.length > 0 ? calculateFinancials(prevData) : null;
+
+                console.log('=== ОТЛАДКА НДС ===');
+console.log('totalNDS:', f.totalNDS);
+console.log('Строки с НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ в currentData:', currentData.filter(row => row.статья === 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ'));
                 
                 function getChangePercent(current, previous) {
                     if (!previous || previous === 0) return null;
@@ -1847,7 +1880,7 @@ const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
     <div class="mini-chart" id="miniNetRevenueChart"></div>
     <div class="netrevenue-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
         <div style="padding-top: 16px;">
-            ${generateChannelBreakdown('ВЫРУЧКА ЧИСТАЯ ПО КАНАЛАМ', 'total', revenueChannelsList, true, '')}
+            ${generateChannelBreakdown('ВЫРУЧКА ЧИСТАЯ ПО КАНАЛАМ', 'value', calculateNetRevenueByChannel(currentData), true, '')}
         </div>
     </div>
 </div>
