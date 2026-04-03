@@ -1123,36 +1123,40 @@ body.dark .metric-change {
                         // ========== ПРЕОБРАЗОВАНИЕ НДС ==========
 const ndsPairs = new Map();
 
-// Собираем пары НДС Исх / НДС Вх
+// Собираем пары НДС по подканалу (НДС исходящий / НДС входящий)
 for (const row of processed) {
-    if (row.статья === 'НДС Исх' || row.статья === 'НДС Вх') {
+    if (row.статья === 'НДС' && (row.подканал === 'НДС исходящий' || row.подканал === 'НДС входящий')) {
         const key = `${row.компания}|${row.год}|${row.месяц}|${row.канал}`;
         if (!ndsPairs.has(key)) {
-            ndsPairs.set(key, { исходящий: 0, входящий: 0, row: row });
+            ndsPairs.set(key, { исходящий: 0, входящий: 0 });
         }
         const data = ndsPairs.get(key);
-        if (row.статья === 'НДС Исх') data.исходящий += row.сумма;
-        if (row.статья === 'НДС Вх') data.входящий += row.сумма;
+        if (row.подканал === 'НДС исходящий') {
+            data.исходящий += row.сумма;
+        }
+        if (row.подканал === 'НДС входящий') {
+            data.входящий += row.сумма;
+        }
     }
 }
 
-// Добавляем рассчитанные НДС к уплате/возмещению (НЕ удаляя исходные)
+// Добавляем рассчитанные НДС к уплате/возмещению
 for (const [key, data] of ndsPairs.entries()) {
     const calculatedNds = data.исходящий - data.входящий;
     if (calculatedNds !== 0) {
+        const [company, year, month, channel] = key.split('|');
         processed.push({
-            компания: data.row.компания,
-            год: data.row.год,
-            месяц: data.row.месяц,
+            компания: company,
+            год: year,
+            месяц: month,
             статья: 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ',
-            канал: data.row.канал,
+            канал: channel,
             подканал: 'НДС',
             тип: 'НДС',
             сумма: calculatedNds
         });
     }
 }
-
 console.log('Обработано строк:', processed.length);
 console.log('Строки с НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ:', processed.filter(p => p.статья === 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ').length);
                 
@@ -1223,7 +1227,7 @@ console.log('Строки с НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ:', proc
     }
     
     // Собираем доходы, расходы и НДС исходящий
-    filtered.forEach(row => {
+   filtered.forEach(row => {
     if (row.тип === 'Доход') {
         totalRevenue += row.сумма;
     }
