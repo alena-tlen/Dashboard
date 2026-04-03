@@ -2163,7 +2163,7 @@ const prevNetRevenue = fPrev ? fPrev.netRevenue : 0;
 const prevAvgCheck = prevSalesData > 0 ? prevNetRevenue / prevSalesData : 0;
 const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
                 
-                const salesChange = fPrev ? getChangePercent(salesData, prevSalesData) : null;
+                const salesChange = fPrev ? getChangePercent(totalSalesQuantity, prevSalesData) : null;
                 const avgCheckChange = fPrev ? getChangePercent(avgCheck, prevAvgCheck) : null;
                 const costChange = fPrev ? getChangePercent(costData, prevCostData) : null;
                 const avgCostChange = fPrev ? getChangePercent(avgCost, prevAvgCost) : null;
@@ -2828,7 +2828,7 @@ if (toggleEfficiencyBtn && efficiencyContainer) {
                         return `• ${channel.name}: ${formatCurrency(channel.total)} (${percent.toFixed(1)}%)`;
                     }).join('\n');
                     aiInsightsDiv.innerHTML = `<div class="ai-header"><div class="ai-icon" style="background: #48bb78;">🤖</div><div><div class="ai-title">AI Аналитика</div><div class="ai-subtitle">Автоматический анализ ваших данных</div></div></div>
-                    <div class="ai-message assistant">📊 **Общий анализ:**\nВыручка: ${formatCurrency(f.totalRevenue)}\nПрибыль: ${formatCurrency(f.profit)}\nРентабельность: ${f.profitability.toFixed(1)}%\nПродажи: ${new Intl.NumberFormat('ru-RU').format(salesData)} шт\nСредний чек: ${formatCurrency(avgCheck)}\nСебестоимость 1 шт: ${formatCurrency(avgCost)}\n\n💰 **Структура доходов по каналам:**\n${revenueChannelsList.map(ch => `• ${ch.name}: ${formatCurrency(ch.total)} (${(ch.total/f.totalRevenue*100).toFixed(1)}%)`).join('\n')}\n\n📉 **Структура расходов по каналам:**\n${expensesText}</div>
+                    <div class="ai-message assistant">📊 **Общий анализ:**\nВыручка: ${formatCurrency(f.totalRevenue)}\nПрибыль: ${formatCurrency(f.profit)}\nРентабельность: ${f.profitability.toFixed(1)}%\nПродажи: ${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)} шт\nСредний чек: ${formatCurrency(avgCheck)}\nСебестоимость 1 шт: ${formatCurrency(avgCost)}\n\n💰 **Структура доходов по каналам:**\n${revenueChannelsList.map(ch => `• ${ch.name}: ${formatCurrency(ch.total)} (${(ch.total/f.totalRevenue*100).toFixed(1)}%)`).join('\n')}\n\n📉 **Структура расходов по каналам:**\n${expensesText}</div>
                     <div style="margin-top: 12px;"><button id="askAIBtn" class="btn btn-info">💬 Задать вопрос AI</button></div>`;
                     document.getElementById('askAIBtn')?.addEventListener('click', () => { 
                         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -2853,8 +2853,8 @@ if (toggleEfficiencyBtn && efficiencyContainer) {
     const costData = currentData
         .filter(d => d.канал === channel.displayName && d.статья === 'Себестоимость сырья')
         .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
-    const avgCheck = salesData > 0 ? f.netRevenue / salesData : 0;
-    const avgCost = salesData > 0 ? costData / salesData : 0;
+    const avgCheck = totalSalesQuantity > 0 ? f.netRevenue / totalSalesQuantity : 0;
+const avgCost = totalSalesQuantity > 0 ? costData / totalSalesQuantity : 0;
     
     const content = `
         <div class="metrics-grid">
