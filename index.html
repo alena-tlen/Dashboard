@@ -2147,8 +2147,8 @@ const costData = currentData
     .filter(d => d.статья === 'Себестоимость сырья')
     .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
 
-const avgCheck = salesData > 0 ? f.netRevenue / salesData : 0;
-const avgCost = salesData > 0 ? costData / salesData : 0;
+const avgCheck = totalSalesQuantity > 0 ? f.netRevenue / totalSalesQuantity : 0;
+const avgCost = totalSalesQuantity > 0 ? costData / totalSalesQuantity : 0;
 
 // Данные за предыдущий период для продаж и себестоимости
 const prevSalesData = prevData.length > 0 
@@ -2853,8 +2853,9 @@ if (toggleEfficiencyBtn && efficiencyContainer) {
     const costData = currentData
         .filter(d => d.канал === channel.displayName && d.статья === 'Себестоимость сырья')
         .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
-    const avgCheck = totalSalesQuantity > 0 ? f.netRevenue / totalSalesQuantity : 0;
-const avgCost = totalSalesQuantity > 0 ? costData / totalSalesQuantity : 0;
+// Стало (ПРАВИЛЬНО):
+const avgCheck = salesData > 0 ? f.netRevenue / salesData : 0;
+const avgCost = salesData > 0 ? costData / salesData : 0;
     
     const content = `
         <div class="metrics-grid">
