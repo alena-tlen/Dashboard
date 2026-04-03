@@ -1215,6 +1215,18 @@ function calculateFinancials(data, channelKey = null) {
     }
     
     let totalRevenue = 0, totalNdsOut = 0, totalExpenses = 0;
+
+
+    // ========== ОТЛАДКА: Выводим все строки расходов для Wildberries ==========
+    if (channelKey === 'wildberries') {
+        console.log('=== ОТЛАДКА ДЛЯ WILDBERRIES ===');
+        console.log('Все строки с типом "Расход":');
+        filtered.forEach(row => {
+            if (row.тип === 'Расход') {
+                console.log(`  Статья: ${row.статья}, Подканал: ${row.подканал}, Сумма: ${row.сумма}`);
+            }
+        });
+    }
     
     filtered.forEach(row => {
         if (row.тип === 'Доход') {
@@ -1232,6 +1244,17 @@ function calculateFinancials(data, channelKey = null) {
     // МАРЖИНАЛЬНАЯ ПРИБЫЛЬ = Чистая выручка - ВСЕ расходы
     const profit = netRevenue - totalExpenses;
     const profitability = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
+
+// ========== ОТЛАДКА: Выводим промежуточные итоги ==========
+    if (channelKey === 'wildberries') {
+        console.log('=== ИТОГИ ДЛЯ WILDBERRIES ===');
+        console.log('Доходы (totalRevenue):', totalRevenue);
+        console.log('НДС исходящий (totalNdsOut):', totalNdsOut);
+        console.log('Чистая выручка (netRevenue):', netRevenue);
+        console.log('Все расходы (totalExpenses):', totalExpenses);
+        console.log('Маржинальная прибыль (profit):', profit);
+    }
+
     
     // Для карточки НДС считаем разницу по ВСЕМ данным
     let totalNdsOutAll = 0, totalNdsInAll = 0;
