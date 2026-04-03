@@ -686,6 +686,35 @@ body.dark .metric-change {
     overflow-y: visible !important;
 }
 
+/* ========== ПРОДАЖИ ПО КАНАЛАМ ========== */
+.sales-channels-container {
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sales-channel-item {
+    transition: all 0.3s ease;
+}
+
+.sales-channel-item:hover {
+    background: rgba(102,126,234,0.05);
+    border-radius: 8px;
+    padding: 4px;
+    margin: -4px;
+}
+
+.toggle-sales-breakdown-btn {
+    transition: all 0.2s;
+}
+
+.toggle-sales-breakdown-btn:hover {
+    background: rgba(102,126,234,0.1);
+    transform: translateY(-1px);
+}
+
+.sales-progress-bar {
+    transition: width 0.5s ease-out;
+}
+
     </style>
 </head>
 <body>
@@ -1640,7 +1669,7 @@ function generateNDSBreakdown(data) {
     `;
 }
 
-//
+//---------------------------------------------------------------------------------------------------------
 
 function generateEfficiencyBreakdown(data) {
     const efficiencyByChannel = [];
@@ -1750,7 +1779,89 @@ function generateEfficiencyBreakdown(data) {
     `;
 }
 
+//-------------------------------------------------------------------------------------------------------
 
+function generateSalesBreakdown(data) {
+    const salesByChannel = [];
+    const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
+    
+    allChannels.forEach(channel => {
+        // Продажи по каналу из статьи "Продажи шт."
+        let sales = data
+            .filter(d => {
+                const article = d.статья?.toLowerCase() || '';
+                return d.канал === channel && (article.includes('продажи') && (article.includes('шт') || article.includes('штук')));
+            })
+            .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
+        
+        // Также проверяем справочные данные
+        const salesRef = data
+            .filter(d => d.канал === channel && d.тип === 'Справочная' && 
+                (d.статья?.toLowerCase().includes('продажи') || d.подканал?.toLowerCase().includes('продажи')))
+            .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
+        
+        const totalSales = sales + salesRef;
+        
+        if (totalSales > 0) {
+            salesByChannel.push({
+                name: channel,
+                sales: totalSales
+            });
+        }
+    });
+    
+    salesByChannel.sort((a, b) => b.sales - a.sales);
+    const totalSales = salesByChannel.reduce((sum, ch) => sum + ch.sales, 0);
+    
+    if (salesByChannel.length === 0) {
+        return '<div style="text-align: center; padding: 16px; color: var(--text-secondary);">Нет данных по продажам</div>';
+    }
+    
+    const channelsHtml = salesByChannel.map((channel, idx) => {
+        const percent = totalSales > 0 ? (channel.sales / totalSales) * 100 : 0;
+        
+        return `
+            <div class="sales-channel-item" style="margin-bottom: 16px; opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; transition-delay: ${idx * 0.05}s;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 2;">
+                        <span style="font-weight: 600; font-size: 14px;">${channel.name}</span>
+                        <span style="font-weight: 700; font-size: 13px;">${new Intl.NumberFormat('ru-RU').format(channel.sales)} шт</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end;">
+                        <span style="font-size: 11px; color: var(--text-secondary); background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">
+                            ${percent.toFixed(1)}%
+                        </span>
+                    </div>
+                </div>
+                <div style="background: rgba(102,126,234,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div class="sales-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4299e1, #667eea); border-radius: 4px; transition: width 0.5s ease-out;"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    setTimeout(() => {
+        document.querySelectorAll('.sales-progress-bar').forEach((bar, i) => {
+            const targetWidth = salesByChannel[i] ? (salesByChannel[i].sales / totalSales) * 100 : 0;
+            setTimeout(() => { bar.style.width = targetWidth + '%'; }, 100);
+        });
+        document.querySelectorAll('.sales-channel-item').forEach((item, i) => {
+            setTimeout(() => {
+                item.style.opacity = '1';
+                item.style.transform = 'translateX(0)';
+            }, i * 50);
+        });
+    }, 200);
+    
+    return `
+        <div class="sales-channels-list">
+            <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(102,126,234,0.2);">
+                <span style="font-size: 12px; font-weight: 600; color: #667eea;">ПРОДАЖИ ПО КАНАЛАМ (ШТ)</span>
+            </div>
+            ${channelsHtml}
+        </div>
+    `;
+}
 
 // -------------------------------------------------------------------------------------------------------
         function renderDashboard() {
@@ -1827,12 +1938,23 @@ console.log('Строки с НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ в curr
                 const expensesChange = fPrev ? getChangePercent(f.totalExpenses, fPrev.totalExpenses) : null;
                 const profitChange = fPrev ? getChangePercent(f.profit, fPrev.profit) : null;
                 const profitabilityChange = fPrev ? getChangePercent(f.profitability, fPrev.profitability) : null;
-                
+//----------------------------------------------------------------------------------------------------------------                
                 // Собираем данные для метрик продаж и себестоимости
+// Продажи в штуках - ищем по разным возможным названиям статьи
 const salesData = currentData
-    .filter(d => d.статья === 'Продажи шт.')
-    .reduce((sum, d) => sum + (d.сумма || 0), 0);
+    .filter(d => {
+        const article = d.статья?.toLowerCase() || '';
+        return article.includes('продажи') && (article.includes('шт') || article.includes('штук') || article === 'Продажи шт.');
+    })
+    .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
 
+// Также проверяем справочные данные
+const salesDataRef = currentData
+    .filter(d => d.тип === 'Справочная' && (d.статья?.toLowerCase().includes('продажи') || d.подканал?.toLowerCase().includes('продажи')))
+    .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
+
+const totalSalesData = salesData + salesDataRef;
+// -------------------------------------------------------------------------------------------------------------------
 const costData = currentData
     .filter(d => d.статья === 'Себестоимость сырья')
     .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
@@ -2166,16 +2288,33 @@ const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
 </div>
 </div>
     <div class="metrics-grid" style="margin-top: 24px;">
-    <div class="metric-card">
-        <div class="metric-title">📦 Продажи (шт)</div>
-        <div>
-            <div class="metric-value" id="mainSalesValue">${new Intl.NumberFormat('ru-RU').format(salesData)}</div>
-            ${salesChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(salesChange)}</span>` : ''}
+ //---------------------------------------------------------------------------------------------------------   
+
+<div class="metric-card">
+    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📦</span>
+            <span>Продажи (шт)</span>
         </div>
-        <div class="mini-chart" id="dashboardSalesChart"></div>
-        <div class="metric-sub">всего за период</div>
+        <button class="toggle-sales-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; transition: all 0.2s;">
+            <span>▶</span> Показать по каналам
+        </button>
     </div>
+    <div>
+        <div class="metric-value" id="mainSalesValue">${new Intl.NumberFormat('ru-RU').format(totalSalesData)}</div>
+        ${salesChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(salesChange)}</span>` : ''}
+    </div>
+    <div class="mini-chart" id="dashboardSalesChart"></div>
+    <div class="metric-sub">всего за период</div>
     
+    <div class="sales-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+        <div style="padding-top: 16px;">
+            ${generateSalesBreakdown(currentData)}
+        </div>
+    </div>
+</div>
+
+//------------------------------------------------------------------------------------------------------------    
     <div class="metric-card">
         <div class="metric-title">💰 Средний чек</div>
         <div>
@@ -2184,7 +2323,7 @@ const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
         </div>
         <div class="metric-sub">на 1 продажу</div>
     </div>
-    
+//-------------------------------------------------------------------------------------------------------------------    
     <div class="metric-card">
         <div class="metric-title">🏭 Себестоимость сырья</div>
         <div>
@@ -2248,6 +2387,29 @@ if (toggleNdsBtn && ndsContainer) {
         }
     };
 }
+
+// Обработчик для продаж по каналам
+const toggleSalesBtn = document.querySelector('.toggle-sales-breakdown-btn');
+const salesContainer = document.querySelector('.sales-channels-container');
+if (toggleSalesBtn && salesContainer) {
+    toggleSalesBtn.onclick = () => {
+        if (salesContainer.style.maxHeight && salesContainer.style.maxHeight !== '0px') {
+            salesContainer.style.maxHeight = '0';
+            toggleSalesBtn.innerHTML = '<span>▶</span> Показать по каналам';
+        } else {
+            salesContainer.style.maxHeight = salesContainer.scrollHeight + 'px';
+            toggleSalesBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
+            const items = salesContainer.querySelectorAll('.sales-channel-item');
+            items.forEach((item, idx) => {
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateX(0)';
+                }, idx * 50);
+            });
+        }
+    };
+}
+
 
 // Обработчик для эффективности
 const toggleEfficiencyBtn = document.querySelector('.toggle-efficiency-breakdown-btn');
@@ -2707,7 +2869,20 @@ function showAdminPanel() {
         alert('Доступ запрещен. Только для администратора.\n\nУправление пользователями - через файл users.xlsx');
     }
 }
-        
+  
+// 1. Вспомогательные функции (formatCurrency, applyFilters, и т.д.)
+// 2. Функции для работы с данными (readExcelFile, calculateFinancials)
+// 3. Функции для генерации разбивок:
+//    - generateProfitByChannels
+//    - generateChannelBreakdown  
+//    - generateNDSBreakdown
+//    - generateEfficiencyBreakdown
+//    - generateSalesBreakdown  ← СЮДА
+// 4. Основная функция renderDashboard
+// 5. Функции рендера страниц (renderChannelPage)
+// 6. Функция initApp
+
+      
         // ========== ЗАПУСК ==========
     document.getElementById('adminBtn')?.addEventListener('click', showAdminPanel);
     document.getElementById('closeAdminBtn')?.addEventListener('click', () => document.getElementById('adminPanel').classList.remove('active'));
