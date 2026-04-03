@@ -1154,6 +1154,7 @@ for (const [key, data] of ndsPairs.entries()) {
 }
 
 console.log('Обработано строк:', processed.length);
+console.log('Строки с НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ:', processed.filter(p => p.статья === 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ').length);
                 
                 
                 if (processed.length === 0) {
@@ -1221,6 +1222,7 @@ console.log('Обработано строк:', processed.length);
         filtered = data.filter(row => row.канал === targetChannel);
     }
     
+    // Собираем доходы, расходы и НДС исходящий
     filtered.forEach(row => {
         if (row.тип === 'Доход') {
             totalRevenue += row.сумма;
@@ -1237,9 +1239,9 @@ console.log('Обработано строк:', processed.length);
     const profit = netRevenue - totalExpenses;
     const profitability = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
     
-    // Для карточки НДС используем рассчитанную статью "НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ"
+    // Для карточки НДС используем ВСЕ данные (не отфильтрованные по каналу!)
     let totalNDS = 0;
-    filtered.forEach(row => {
+    data.forEach(row => {
         if (row.статья === 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ') {
             totalNDS += row.сумма;
         }
@@ -1406,7 +1408,14 @@ function generateNDSBreakdown(data) {
     data.forEach(d => {
         if (d.статья === 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ' && d.канал) {
             let channel = d.канал;
-            // ... нормализация канала
+            // Нормализация названий каналов
+            if (channel === 'Wildberries') channel = 'Wildberries';
+            else if (channel === 'Ozon' || channel === 'OZON') channel = 'Ozon';
+            else if (channel === 'Детский мир') channel = 'Детский мир';
+            else if (channel === 'Lamoda') channel = 'Lamoda';
+            else if (channel === 'Оптовики') channel = 'Оптовики';
+            else if (channel === 'Фулфилмент') channel = 'Фулфилмент';
+            
             if (!ndsByChannel[channel]) {
                 ndsByChannel[channel] = { total: 0, items: {} };
             }
