@@ -1081,6 +1081,18 @@ function applyFilters(data, filters = null) {
     });
 }
 
+// ========== ФУНКЦИЯ РЕНДЕРА МИНИ-ГРАФИКОВ ==========
+function renderMiniChart(elementId, data, color) {
+    if (!data || data.length === 0) return;
+    if (typeof Plotly === 'undefined') {
+        console.warn('Plotly не загружен, пропускаем рендер графика');
+        return;
+    }
+    const trace = { y: data, type: 'scatter', mode: 'lines+markers', line: { color, width: 2 }, fill: 'tozeroy', fillcolor: color + '20' };
+    const layout = { margin: { t: 5, l: 5, r: 5, b: 5 }, height: 40, xaxis: { showticklabels: false, showgrid: false }, yaxis: { showticklabels: false, showgrid: false }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' };
+    Plotly.newPlot(elementId, [trace], layout, { displayModeBar: false });
+}
+
         // СВЕРХУ ГЛОБАЛ//
          // ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ readExcelFile ==========
 function readExcelFile(file) {
@@ -2290,7 +2302,7 @@ setTimeout(() => {
         companyFilter.value = ''; 
         yearFilter.value = ''; 
         Array.from(monthFilter.options).forEach(o => o.selected = false);
-        applyFilters(); 
+        debouncedApply(); 
     };
     
     function updateFilters() {
