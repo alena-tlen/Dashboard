@@ -1118,66 +1118,43 @@ body.dark .metric-change {
                                 сумма: amount 
                             });
                         }
-                        
-                        // ========== ПРЕОБРАЗОВАНИЕ НДС (ПОСЛЕ основного цикла!) ==========
-
-// 🔥 НОВОЕ: сохраняем исходные НДС исходящий для расчёта чистой выручки
-//window._originalNdsOut = new Map(); // ключ: компания|год|месяц|канал
-
-//const ndsPairs = new Map();
-
-// Собираем пары НДС исходящий/входящий
-//for (const row of processed) {
-   // if (row.статья === 'НДС исходящий' || row.статья === 'НДС входящий') {
-     //   const key = `${row.компания}|${row.год}|${row.месяц}|${row.канал}`;
-     //   if (!ndsPairs.has(key)) {
-      //      ndsPairs.set(key, { исходящий: 0, входящий: 0, row: row });
-      //  }
-      //  const data = ndsPairs.get(key);
-      //  if (row.статья === 'НДС исходящий') {
-       //     data.исходящий += row.сумма;
-            // 🔥 СОХРАНЯЕМ исходный НДС исходящий
-       //     window._originalNdsOut.set(key, row.сумма);
-       //   if (row.статья === 'НДС исходящий') {
-   // data.исходящий += row.сумма;
-   // window._originalNdsOut.set(key, row.сумма);
- //   console.log(`Сохранён НДС исх: ${key} = ${row.сумма}`);
-//}
-  //      }
-   //     if (row.статья === 'НДС входящий') data.входящий += row.сумма;
- //   }
-//}
-
-// Создаём новый массив без старых НДС строк
-//const newProcessed = [];
-//for (const row of processed) {
-   // if (row.статья !== 'НДС исходящий' && row.статья !== 'НДС входящий') {
-    //    newProcessed.push(row);
-  //  }
-//}
-
-// Добавляем рассчитанные НДС к уплате/возмещению
-//for (const [key, data] of ndsPairs.entries()) {
-  //  const calculatedNds = data.исходящий - data.входящий;
-  //  if (calculatedNds !== 0) {
-   //     newProcessed.push({
-    //        компания: data.row.компания,
-     //       год: data.row.год,
-     //       месяц: data.row.месяц,
-     //       статья: 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ',
-     //       канал: data.row.канал,
-     //       подканал: 'НДС',
-     //       тип: 'НДС',
-     //       сумма: calculatedNds
-     //   });
- //   }
-//}
-
-// Заменяем processed на newProcessed
-//processed.length = 0;
-//processed.push(...newProcessed);
                 
-                console.log('Обработано строк:', processed.length);
+                        
+                        // ========== ПРЕОБРАЗОВАНИЕ НДС ==========
+const ndsPairs = new Map();
+
+// Собираем пары НДС Исх / НДС Вх
+for (const row of processed) {
+    if (row.статья === 'НДС Исх' || row.статья === 'НДС Вх') {
+        const key = `${row.компания}|${row.год}|${row.месяц}|${row.канал}`;
+        if (!ndsPairs.has(key)) {
+            ndsPairs.set(key, { исходящий: 0, входящий: 0, row: row });
+        }
+        const data = ndsPairs.get(key);
+        if (row.статья === 'НДС Исх') data.исходящий += row.сумма;
+        if (row.статья === 'НДС Вх') data.входящий += row.сумма;
+    }
+}
+
+// Добавляем рассчитанные НДС к уплате/возмещению (НЕ удаляя исходные)
+for (const [key, data] of ndsPairs.entries()) {
+    const calculatedNds = data.исходящий - data.входящий;
+    if (calculatedNds !== 0) {
+        processed.push({
+            компания: data.row.компания,
+            год: data.row.год,
+            месяц: data.row.месяц,
+            статья: 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ',
+            канал: data.row.канал,
+            подканал: 'НДС',
+            тип: 'НДС',
+            сумма: calculatedNds
+        });
+    }
+}
+
+console.log('Обработано строк:', processed.length);
+                
                 
                 if (processed.length === 0) {
                     reject(new Error('Не найдено данных для анализа. Проверьте структуру файла.'));
@@ -1260,9 +1237,10 @@ body.dark .metric-change {
     const profit = netRevenue - totalExpenses;
     const profitability = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
     
+    // Для карточки НДС используем рассчитанную статью "НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ"
     let totalNDS = 0;
     filtered.forEach(row => {
-        if (row.статья === 'НДС Исх' || row.статья === 'НДС Вх') {
+        if (row.статья === 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ') {
             totalNDS += row.сумма;
         }
     });
@@ -1421,22 +1399,14 @@ function getChannelIcon(channelName) {
     return icons[channelName] || '📁';
 }
         
-
 function generateNDSBreakdown(data) {
     const ndsByChannel = {};
     const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
     
-    // Собираем НДС по каналам
     data.forEach(d => {
-        if (d.тип === 'НДС' && d.канал) {
+        if (d.статья === 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ' && d.канал) {
             let channel = d.канал;
-            if (channel === 'Wildberries') channel = 'Wildberries';
-            else if (channel === 'Ozon') channel = 'Ozon';
-            else if (channel === 'Детский мир') channel = 'Детский мир';
-            else if (channel === 'Lamoda') channel = 'Lamoda';
-            else if (channel === 'Оптовики') channel = 'Оптовики';
-            else if (channel === 'Фулфилмент') channel = 'Фулфилмент';
-            
+            // ... нормализация канала
             if (!ndsByChannel[channel]) {
                 ndsByChannel[channel] = { total: 0, items: {} };
             }
@@ -2039,38 +2009,6 @@ if (toggleNdsBtn && ndsContainer) {
                 
                 Promise.all(animations).then(() => {
     console.log('Анимации завершены');
-    // Анимация прогресс-баров временно отключена для проверки
-    // setTimeout(() => {
-    //     revenueChannelsList.forEach((channel, idx) => {
-    //         const oldChannel = oldData.revenueChannels.find(c => c.name === channel.name);
-    //         const oldPercent = oldChannel ? (oldChannel.total / oldData.totalRevenue) * 100 : 0;
-    //         const newPercent = (channel.total / f.totalRevenue) * 100;
-    //         const channelDiv = document.querySelector(`#dashboardMetrics .channel-item[data-channel-name="${channel.name}"]`);
-    //         if (channelDiv) {
-    //             const progressBar = channelDiv.querySelector('.channel-progress-bar');
-    //             const totalSpan = channelDiv.querySelector('.channel-total');
-    //             const percentSpan = channelDiv.querySelector('.channel-percent');
-    //             if (totalSpan) animateNumber(totalSpan, oldChannel?.total || 0, channel.total, 400);
-    //             if (percentSpan) animateNumber(percentSpan, oldPercent, newPercent, 400, false, true);
-    //             if (progressBar) animateProgressBar(progressBar, oldPercent, newPercent, 400);
-    //         }
-    //     });
-    //     expenseChannelsList.forEach((channel, idx) => {
-    //         const oldChannel = oldData.expenseChannels.find(c => c.name === channel.name);
-    //         const oldPercent = oldChannel ? (oldChannel.total / oldData.totalExpenses) * 100 : 0;
-    //         const newPercent = (channel.total / f.totalExpenses) * 100;
-    //         const channelDiv = document.querySelector(`#dashboardMetrics .channel-item[data-channel-name="${channel.name}"]`);
-    //         if (channelDiv) {
-    //             const progressBar = channelDiv.querySelector('.channel-progress-bar');
-    //             const totalSpan = channelDiv.querySelector('.channel-total');
-    //             const percentSpan = channelDiv.querySelector('.channel-percent');
-    //             if (totalSpan) animateNumber(totalSpan, oldChannel?.total || 0, channel.total, 400);
-    //             if (percentSpan) animateNumber(percentSpan, oldPercent, newPercent, 400, false, true);
-    //             if (progressBar) animateProgressBar(progressBar, oldPercent, newPercent, 400);
-    //         }
-    //     });
-    // }, 50);
-});
                 
                 setTimeout(() => {
                     const channelHeaders = document.querySelectorAll('.channel-header');
