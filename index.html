@@ -669,6 +669,23 @@ body.dark .metric-change {
     transition: width 0.5s ease-out;
 }
 
+/* ========== АВТОРАСШИРЕНИЕ КОНТЕЙНЕРА НДС ========== */
+.nds-channels-container {
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto !important;
+    max-height: none !important;
+}
+
+.nds-channels-container[style*="max-height: 0"] {
+    max-height: 0 !important;
+    overflow: hidden !important;
+}
+
+.nds-channels-container[style*="max-height:"]:not([style*="max-height: 0"]) {
+    max-height: none !important;
+    overflow-y: visible !important;
+}
+
     </style>
 </head>
 <body>
@@ -1532,7 +1549,6 @@ function generateNDSBreakdown(data) {
         const formattedIn = formatCurrency(channel.ndsIn);
         const formattedTotal = formatCurrency(channel.total);
         const totalClass = channel.total >= 0 ? 'negative' : 'positive';
-        const totalText = channel.total >= 0 ? '↗ НДС к уплате' : '↙ НДС к возмещению';
         
         return `
             <div class="nds-channel-item" data-channel="${channel.name}" style="margin-bottom: 16px; border-bottom: 1px solid rgba(102,126,234,0.2); padding-bottom: 12px;">
@@ -1540,24 +1556,23 @@ function generateNDSBreakdown(data) {
                 <div class="nds-channel-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 8px 0; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(102,126,234,0.05)'" onmouseout="this.style.background='transparent'">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span class="nds-expand-icon" style="font-size: 12px; transition: transform 0.3s; display: inline-block;">▶</span>
-                        <span class="channel-icon" style="font-size: 20px;">${getChannelIcon(channel.name)}</span>
                         <span style="font-weight: 600; font-size: 15px;">${channel.name}</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span class="${totalClass}" style="font-weight: 700; font-size: 14px;">${formattedTotal}</span>
-                        <span style="font-size: 12px; color: var(--text-secondary); background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">
+                        <span style="font-size: 11px; color: var(--text-secondary); background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">
                             ${totalPercent.toFixed(1)}%
                         </span>
                     </div>
                 </div>
                 
                 <!-- Детали канала (схлопнуты по умолчанию) -->
-                <div class="nds-channel-details" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; padding-left: 30px;">
+                <div class="nds-channel-details" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; padding-left: 20px;">
                     <div style="padding-top: 8px; padding-bottom: 8px;">
                         <!-- НДС исходящий -->
                         <div style="margin-bottom: 8px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <span style="font-size: 12px; color: var(--text-secondary);">НДС исходящий</span>
+                                <span style="font-size: 12px; color: var(--text-secondary);">Исходящий</span>
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <span style="font-size: 13px; font-weight: 600; color: #f56565;">${formattedOut}</span>
                                     <span style="font-size: 11px; color: var(--text-secondary); background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">
@@ -1573,7 +1588,7 @@ function generateNDSBreakdown(data) {
                         <!-- НДС входящий -->
                         <div>
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <span style="font-size: 12px; color: var(--text-secondary);">НДС входящий</span>
+                                <span style="font-size: 12px; color: var(--text-secondary);">Входящий</span>
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <span style="font-size: 13px; font-weight: 600; color: #48bb78;">${formattedIn}</span>
                                     <span style="font-size: 11px; color: var(--text-secondary); background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">
@@ -1584,10 +1599,6 @@ function generateNDSBreakdown(data) {
                             <div style="background: rgba(72,187,120,0.2); height: 4px; border-radius: 2px; overflow: hidden;">
                                 <div style="width: ${inPercent}%; height: 100%; background: #48bb78; border-radius: 2px;"></div>
                             </div>
-                        </div>
-                        
-                        <div style="margin-top: 8px; font-size: 11px; color: var(--text-secondary);">
-                            ${totalText}
                         </div>
                     </div>
                 </div>
