@@ -1510,11 +1510,13 @@ function generateNDSBreakdown(data) {
         const totalText = channel.total >= 0 ? '↗ НДС к уплате' : '↙ НДС к возмещению';
         
         return `
-            <div class="nds-channel-item" style="margin-bottom: 20px; border-bottom: 1px solid rgba(102,126,234,0.2); padding-bottom: 16px; opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; transition-delay: ${idx * 0.05}s;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div class="nds-channel-item" data-channel="${channel.name}" style="margin-bottom: 16px; border-bottom: 1px solid rgba(102,126,234,0.2); padding-bottom: 12px;">
+                <!-- Заголовок канала (кликабельный) -->
+                <div class="nds-channel-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 8px 0; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(102,126,234,0.05)'" onmouseout="this.style.background='transparent'">
                     <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="nds-expand-icon" style="font-size: 12px; transition: transform 0.3s; display: inline-block;">▶</span>
                         <span class="channel-icon" style="font-size: 20px;">${getChannelIcon(channel.name)}</span>
-                        <span style="font-weight: 700; font-size: 15px;">${channel.name}</span>
+                        <span style="font-weight: 600; font-size: 15px;">${channel.name}</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span class="${totalClass}" style="font-weight: 700; font-size: 14px;">${formattedTotal}</span>
@@ -1524,58 +1526,78 @@ function generateNDSBreakdown(data) {
                     </div>
                 </div>
                 
-                <!-- НДС исходящий -->
-                <div style="margin-bottom: 8px; padding-left: 30px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span style="font-size: 12px; color: var(--text-secondary);">НДС исходящий</span>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <span style="font-size: 13px; font-weight: 600; color: #f56565;">${formattedOut}</span>
-                            <span style="font-size: 11px; color: var(--text-secondary); background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">
-                                ${outPercent.toFixed(1)}%
-                            </span>
+                <!-- Детали канала (схлопнуты по умолчанию) -->
+                <div class="nds-channel-details" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; padding-left: 30px;">
+                    <div style="padding-top: 8px; padding-bottom: 8px;">
+                        <!-- НДС исходящий -->
+                        <div style="margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-size: 12px; color: var(--text-secondary);">НДС исходящий</span>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 13px; font-weight: 600; color: #f56565;">${formattedOut}</span>
+                                    <span style="font-size: 11px; color: var(--text-secondary); background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">
+                                        ${outPercent.toFixed(1)}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="background: rgba(245,101,101,0.2); height: 4px; border-radius: 2px; overflow: hidden;">
+                                <div style="width: ${outPercent}%; height: 100%; background: #f56565; border-radius: 2px;"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- НДС входящий -->
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-size: 12px; color: var(--text-secondary);">НДС входящий</span>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 13px; font-weight: 600; color: #48bb78;">${formattedIn}</span>
+                                    <span style="font-size: 11px; color: var(--text-secondary); background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">
+                                        ${inPercent.toFixed(1)}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="background: rgba(72,187,120,0.2); height: 4px; border-radius: 2px; overflow: hidden;">
+                                <div style="width: ${inPercent}%; height: 100%; background: #48bb78; border-radius: 2px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 8px; font-size: 11px; color: var(--text-secondary);">
+                            ${totalText}
                         </div>
                     </div>
-                    <div style="background: rgba(245,101,101,0.2); height: 4px; border-radius: 2px; overflow: hidden;">
-                        <div style="width: ${outPercent}%; height: 100%; background: #f56565; border-radius: 2px;"></div>
-                    </div>
-                </div>
-                
-                <!-- НДС входящий -->
-                <div style="padding-left: 30px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span style="font-size: 12px; color: var(--text-secondary);">НДС входящий</span>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <span style="font-size: 13px; font-weight: 600; color: #48bb78;">${formattedIn}</span>
-                            <span style="font-size: 11px; color: var(--text-secondary); background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">
-                                ${inPercent.toFixed(1)}%
-                            </span>
-                        </div>
-                    </div>
-                    <div style="background: rgba(72,187,120,0.2); height: 4px; border-radius: 2px; overflow: hidden;">
-                        <div style="width: ${inPercent}%; height: 100%; background: #48bb78; border-radius: 2px;"></div>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 10px; padding-left: 30px; font-size: 11px; color: var(--text-secondary);">
-                    ${totalText}
                 </div>
             </div>
         `;
     }).join('');
     
+    // Добавляем скрипт для обработки кликов по заголовкам каналов
     setTimeout(() => {
-        document.querySelectorAll('.nds-channel-item').forEach((item, idx) => {
-            setTimeout(() => {
-                item.style.opacity = '1';
-                item.style.transform = 'translateX(0)';
-            }, idx * 50);
+        document.querySelectorAll('.nds-channel-header').forEach(header => {
+            header.removeEventListener('click', header._toggleHandler);
+            const handler = (e) => {
+                e.stopPropagation();
+                const channelItem = header.closest('.nds-channel-item');
+                const details = channelItem.querySelector('.nds-channel-details');
+                const expandIcon = header.querySelector('.nds-expand-icon');
+                
+                if (details.style.maxHeight && details.style.maxHeight !== '0px') {
+                    details.style.maxHeight = '0';
+                    if (expandIcon) expandIcon.style.transform = 'rotate(0deg)';
+                } else {
+                    details.style.maxHeight = details.scrollHeight + 'px';
+                    if (expandIcon) expandIcon.style.transform = 'rotate(90deg)';
+                }
+            };
+            header._toggleHandler = handler;
+            header.addEventListener('click', handler);
         });
-    }, 200);
+    }, 100);
     
     return `
         <div class="nds-channels-list">
             <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(102,126,234,0.2);">
                 <span style="font-size: 12px; font-weight: 600; color: #667eea;">РАЗБИВКА НДС ПО КАНАЛАМ</span>
+                <span style="font-size: 11px; color: var(--text-secondary); margin-left: 8px;">(нажмите на канал для деталей)</span>
             </div>
             ${channelsHtml}
         </div>
