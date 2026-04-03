@@ -1065,59 +1065,80 @@ body.dark .metric-change {
 };
         
         function readExcelFile(file) {
-            return new Promise((resolve, reject) => {
-                if (typeof XLSX === 'undefined') {
-                    reject(new Error('XLSX библиотека не загружена. Проверьте интернет-соединение.'));
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array', cellFormula: false, cellText: false });
-                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "", raw: true, blankrows: false });
-                        console.log('Найдено строк в Excel:', jsonData.length);
-                        const processed = [];
-                        
-                        for (const row of jsonData) {
-                            let company = row['компания'] || row['Компания'] || '';
-                            let year = row['год'] || row['Год'] || '';
-                            let month = row['месяц'] || row['Месяц'] || '';
-                            let type = row['Статья'] || row['статья'] || '';
-                            let channel = row['канал'] || row['Канал'] || '';
-                            let subCategory = row['подканал'] || row['Подканал'] || '';
-                            let amount = parseFloat(row['сумма'] || row['Сумма'] || 0);
-                            
-                            company = String(company).trim(); 
-                            year = String(year).trim(); 
-                            month = String(month).trim();
-                            type = String(type).trim();
-                            channel = String(channel).trim();
-                            subCategory = String(subCategory).trim();
-                            
-                            if (!type || !year || !month) continue;
-                            if (isNaN(amount) || amount === 0) continue;
-                            
-                            let mappedType = '';
-                            if (type === 'Доход') mappedType = 'Доход';
-                            else if (type === 'Расход') mappedType = 'Расход';
-                            else if (type === 'НДС Исх' || type === 'НДС Вх') mappedType = 'НДС';
-                            else if (type === 'Справочно') mappedType = 'Справочная';
-                            else continue;
-                            
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "", raw: true });
 
-                            processed.push({ 
-                                компания: company || 'A', 
-                                год: year, 
-                                месяц: month, 
-                                статья: type,
-                                канал: channel,
-                                подканал: subCategory,
-                                тип: mappedType,
-                                сумма: amount 
-                            });
-                        }
+                const processed = [];
+                const errors = [];
+
+                for (const row of jsonData) {
+                    let company = row['компания'] || row['Компания'] || '';
+            let year = row['год'] || row['Год'] || '';
+            let month = row['месяц'] || row['Месяц'] || '';
+            let type = row['Статья'] || row['статья'] || '';
+            let channel = row['канал'] || row['Канал'] || '';
+            let subCategory = row['подканал'] || row['Подканал'] || '';
+            let amount = parseFloat(row['сумма'] || row['Сумма'] || 0);
+
+            company = String(company).trim();
+            year = String(year).trim();
+            month = String(month).trim();
+            type = String(type).trim();
+            channel = String(channel).trim();
+            subCategory = String(subCategory).trim();
+
+            // Валидация данных
+            if (!type || !year || !month) {
+                errors.push(`Пропущены обязательные поля в строке: ${JSON.stringify(row)}`);
+                continue;
+            }
+            if (isNaN(amount) || amount === 0) {
+                errors.push(`Некорректная сумма в строке: ${JSON.stringify(row)}`);
+                continue;
+            }
+
+            let mappedType = '';
+            if (type === 'Доход') mappedType = 'Доход';
+            else if (type === 'Расход') mappedType = 'Расход';
+            else if (type === 'НДС Исх' || type === 'НДС Вх') mappedType = 'НДС';
+            else if (type === 'Справочно') mappedType = 'Справочная';
+            else continue;
+
+            processed.push({
+                компания: company || 'A',
+                год: year,
+                месяц: month,
+                статья: type,
+                канал: channel,
+                подканал: subCategory,
+                тип: mappedType,
+                сумма: amount
+            });
+        }
+
+        if (errors.length > 0) {
+            console.warn('Ошибки валидации:', errors);
+        }
+        if (processed.length === 0) {
+            reject(new Error('Не найдено данных для анализа. Проверьте структуру файла.'));
+        } else {
+            resolve(processed);
+        }
+    } catch (error) {
+        reject(error);
+    }
+};
+reader.onerror = (error) => { reject(error); };
+reader.readAsArrayBuffer(file);
+});
+}
+
                 
                         
                         // ========== ПРЕОБРАЗОВАНИЕ НДС ==========
@@ -1218,74 +1239,80 @@ console.log('Строки с НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ:', proc
 }
         
         function calculateFinancials(data, channelKey = null) {
-    let totalRevenue = 0, totalNdsOut = 0, totalExpenses = 0;
     let filtered = data;
-    
+
     if (channelKey && channelMapping[channelKey]) {
         const targetChannel = channelMapping[channelKey].displayName;
         filtered = data.filter(row => row.канал === targetChannel);
     }
-    
-    // Собираем доходы, расходы и НДС исходящий
-   filtered.forEach(row => {
-    if (row.тип === 'Доход') {
-        totalRevenue += row.сумма;
-    }
-    else if (row.тип === 'Расход') {
-        totalExpenses += Math.abs(row.сумма);
-    }
-    else if (row.статья === 'НДС' && row.подканал === 'НДС исходящий') {
-        totalNdsOut += row.сумма;
-    }
-});
-    
-    const netRevenue = totalRevenue - totalNdsOut;
+
+    // Применяем текущие фильтры
+    filtered = applyFilters(filtered, currentFilters);
+
+    let totalRevenue = 0, totalNdsOut = 0, totalExpenses = 0;
+
+    filtered.forEach(row => {
+        if (row.тип === 'Доход') {
+            totalRevenue += row.сумма;
+        } else if (row.тип === 'Расход') {
+            totalExpenses += Math.abs(row.сумма);
+        }
+    });
+
+    // Собираем НДС по всем каналам (для общей метрики)
+    const ndsData = data.filter(row => row.статья === 'НДС');
+    let totalNDS = 0;
+    let totalNdsIn = 0;
+
+    ndsData.forEach(row => {
+        if (row.подканал === 'НДС исходящий') {
+            totalNdsOut += row.сумма;
+            totalNDS += row.сумма;
+        } else if (row.подканал === 'НДС входящий') {
+            totalNdsIn += row.сумма;
+        }
+    });
+
+    totalNDS = totalNDS - totalNdsIn; // НДС к уплате/возмещению
+    const netRevenue = totalRevenue - totalNDS; // Чистая выручка с учётом НДС к уплате
     const profit = netRevenue - totalExpenses;
     const profitability = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
-    
-    // Для карточки НДС используем ВСЕ данные (не отфильтрованные по каналу!)
-    let totalNDS = 0;
-let totalNdsIn = 0;
-data.forEach(row => {
-    if (row.статья === 'НДС' && row.подканал === 'НДС исходящий') {
-        totalNDS += row.сумма;
-    }
-    if (row.статья === 'НДС' && row.подканал === 'НДС входящий') {
-        totalNdsIn += row.сумма;
-    }
-});
-totalNDS = totalNDS - totalNdsIn;  // НДС к уплате/возмещению
-    
+
     return { totalRevenue, netRevenue, totalNDS, totalExpenses, profit, profitability };
 }
+
 
 // Добавьте функцию для расчёта чистой выручки по каналам
 
 function calculateNetRevenueByChannel(data) {
     const netRevenueByChannel = {};
     const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
-    
+
     allChannels.forEach(channel => {
         // Доходы по каналу
         const revenue = data
             .filter(d => d.канал === channel && d.тип === 'Доход')
             .reduce((sum, d) => sum + d.сумма, 0);
-        
-        // НДС исходящий по каналу
+
+        // НДС к уплате по каналу (исходящий − входящий)
         const ndsOut = data
-    .filter(d => d.канал === channel && d.статья === 'НДС' && d.подканал === 'НДС исходящий')
-    .reduce((sum, d) => sum + d.сумма, 0);
-        
-        const netRevenue = revenue - ndsOut;
+            .filter(d => d.канал === channel && d.статья === 'НДС' && d.подканал === 'НДС исходящий')
+            .reduce((sum, d) => sum + d.сумма, 0);
+        const ndsIn = data
+            .filter(d => d.канал === channel && d.статья === 'НДС' && d.подканал === 'НДС входящий')
+            .reduce((sum, d) => sum + d.сумма, 0);
+
+        const netRevenue = revenue - (ndsOut - ndsIn); // Учитываем НДС к уплате
         if (netRevenue !== 0) {
             netRevenueByChannel[channel] = netRevenue;
         }
     });
-    
+
     return Object.entries(netRevenueByChannel)
         .sort((a, b) => b[1] - a[1])
         .map(([name, value]) => ({ name, value }));
 }
+
 
 
         function generateProfitByChannels(f, revenueChannels, expenseChannels) {
@@ -2302,22 +2329,15 @@ setTimeout(() => {
         monthFilter.size = 4;
     }
     
-    function applyFilters() {
-        currentFilters.company = companyFilter.value;
-        currentFilters.year = yearFilter.value;
-        const selectedMonths = Array.from(monthFilter.selectedOptions).map(o => o.value);
-        currentFilters.month = selectedMonths;
-        
-        currentData = originalData.filter(row => {
-            if (companyFilter.value && row.компания !== companyFilter.value) return false;
-            if (yearFilter.value && row.год != yearFilter.value) return false;
-            const selectedMonths = Array.from(monthFilter.selectedOptions).map(o => o.value);
-            if (selectedMonths.length > 0 && !selectedMonths.includes(row.месяц)) return false;
-            return true;
-        });
-        renderDashboard();
-        if (currentChannel) renderChannelPage(currentChannel);
-    }
+    function applyFilters(data, filters) {
+    return data.filter(row => {
+        if (filters.company && row.компания !== filters.company) return false;
+        if (filters.year && row.год !== filters.year) return false;
+        if (filters.month.length > 0 && !filters.month.includes(row.месяц)) return false;
+        return true;
+    });
+}
+
     
     const debouncedApply = () => setTimeout(applyFilters, 300);
     companyFilter.onchange = debouncedApply;
