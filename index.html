@@ -1174,7 +1174,8 @@ function readExcelFile(file) {
 
 // ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ calculateFinancials ==========
 function calculateFinancials(data, channelKey = null) {
-    let filtered = applyFilters(data, currentFilters);
+    // Применяем фильтры
+    let filtered = applyFilters(data);
     
     if (channelKey && channelMapping[channelKey]) {
         const targetChannel = channelMapping[channelKey].displayName;
@@ -2285,27 +2286,38 @@ setTimeout(() => {
         monthFilter.size = 4;
     }
     
-    function applyFilters() {
-        currentFilters.company = companyFilter.value;
-        currentFilters.year = yearFilter.value;
-        const selectedMonths = Array.from(monthFilter.selectedOptions).map(o => o.value);
-        currentFilters.month = selectedMonths;
-        
-        currentData = originalData.filter(row => {
-            if (companyFilter.value && row.компания !== companyFilter.value) return false;
-            if (yearFilter.value && row.год != yearFilter.value) return false;
-            const selectedMonths = Array.from(monthFilter.selectedOptions).map(o => o.value);
-            if (selectedMonths.length > 0 && !selectedMonths.includes(row.месяц)) return false;
-            return true;
-        });
-        renderDashboard();
-        if (currentChannel) renderChannelPage(currentChannel);
-    }
+    function applyFilters(data, filters = null) {
+    // Если filters не передан, используем глобальные currentFilters
+    const f = filters || currentFilters;
     
-    const debouncedApply = () => setTimeout(applyFilters, 300);
-    companyFilter.onchange = debouncedApply;
-    yearFilter.onchange = debouncedApply;
-    monthFilter.onchange = debouncedApply;
+    return data.filter(row => {
+        if (f.company && row.компания !== f.company) return false;
+        if (f.year && row.год !== f.year) return false;
+        if (f.month && f.month.length > 0 && !f.month.includes(row.месяц)) return false;
+        return true;
+    });
+}
+
+//
+    
+    const debouncedApply = () => {
+    currentFilters.company = companyFilter.value;
+    currentFilters.year = yearFilter.value;
+    currentFilters.month = Array.from(monthFilter.selectedOptions).map(o => o.value);
+    
+    currentData = originalData.filter(row => {
+        if (currentFilters.company && row.компания !== currentFilters.company) return false;
+        if (currentFilters.year && row.год != currentFilters.year) return false;
+        if (currentFilters.month.length > 0 && !currentFilters.month.includes(row.месяц)) return false;
+        return true;
+    });
+    renderDashboard();
+    if (currentChannel) renderChannelPage(currentChannel);
+};
+
+companyFilter.onchange = debouncedApply;
+yearFilter.onchange = debouncedApply;
+monthFilter.onchange = debouncedApply;
     
     const dashboardMenu = document.getElementById('dashboardMenu');
     const channelsSubmenu = document.getElementById('channelsSubmenu');
