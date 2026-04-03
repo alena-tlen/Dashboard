@@ -1064,13 +1064,15 @@ body.dark .metric-change {
     'lamoda': { displayName: 'Lamoda' }
 };
 
+// ========== ФУНКЦИЯ ФОРМАТИРОВАНИЯ ВАЛЮТЫ ==========
+function formatCurrency(value) { 
+    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(Math.abs(value)); 
+}
+
 // ========== ГЛОБАЛЬНАЯ ФУНКЦИЯ ФИЛЬТРАЦИИ ==========
 function applyFilters(data, filters = null) {
-    // Если filters не передан, используем глобальные currentFilters
     const f = filters || currentFilters;
-    
     if (!f) return data;
-    
     return data.filter(row => {
         if (f.company && row.компания !== f.company) return false;
         if (f.year && row.год !== f.year) return false;
