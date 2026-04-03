@@ -1048,7 +1048,23 @@ body.dark .metric-change {
             };
         }
     }
-        
+      
+
+// ========== ОСНОВНЫЕ ПЕРЕМЕННЫЕ ДАШБОРДА ==========
+    let originalData = [], currentData = [];
+    let currentChannel = null;
+    let currentFilters = { company: '', year: '', month: [] };
+    let isRendering = false;
+    
+    const monthsOrder = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+    
+    const channelMapping = {
+        'wildberries': { displayName: 'Wildberries' },
+        'ozon': { displayName: 'Ozon' },
+        'detsky-mir': { displayName: 'Детский мир' },
+        'lamoda': { displayName: 'Lamoda' }
+    };
+  
 
 // ========== ФУНКЦИЯ ФОРМАТИРОВАНИЯ ВАЛЮТЫ ==========
 function formatCurrency(value) { 
