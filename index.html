@@ -1219,15 +1219,17 @@ function calculateFinancials(data, channelKey = null) {
     filtered.forEach(row => {
         if (row.тип === 'Доход') {
             totalRevenue += row.сумма;
-        } else if (row.тип === 'Расход') {
-            totalExpenses += Math.abs(row.сумма);
         } else if (row.статья === 'НДС' && row.подканал === 'НДС исходящий') {
             totalNdsOut += row.сумма;
+        } else if (row.тип === 'Расход') {
+            totalExpenses += Math.abs(row.сумма);  // Включаем ВСЕ расходы, включая себестоимость
         }
     });
     
     // Чистая выручка = Доходы - НДС исходящий
     const netRevenue = totalRevenue - totalNdsOut;
+    
+    // МАРЖИНАЛЬНАЯ ПРИБЫЛЬ = Чистая выручка - ВСЕ расходы
     const profit = netRevenue - totalExpenses;
     const profitability = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
     
