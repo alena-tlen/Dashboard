@@ -1304,23 +1304,24 @@ function calculateNetRevenueByChannel(data) {
       
 
 //
-        function generateProfitByChannels(f, revenueChannels, expenseChannels) {
+        function generateProfitByChannels(f, revenueChannels, expenseChannels, netRevenueByChannel) {
     const channelsProfit = [];
     const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
     
     allChannels.forEach(channel => {
-        const revenueData = revenueChannels.find(r => r.name === channel);
+        // Используем чистую выручку по каналу (доход - НДС исходящий)
+        const netRevenueData = netRevenueByChannel.find(r => r.name === channel);
         const expenseData = expenseChannels.find(e => e.name === channel);
         
-        const revenue = revenueData ? revenueData.total : 0;
+        const netRevenue = netRevenueData ? netRevenueData.value : 0;
         const expense = expenseData ? expenseData.total : 0;
-        const profit = revenue - expense;
-        const profitability = revenue > 0 ? (profit / revenue) * 100 : 0;
+        const profit = netRevenue - expense;
+        const profitability = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
         
-        if (profit !== 0 && revenue > 0) {
+        if (profit !== 0 && netRevenue > 0) {
             channelsProfit.push({
                 name: channel,
-                revenue: revenue,
+                netRevenue: netRevenue,
                 expense: expense,
                 profit: profit,
                 profitability: profitability
@@ -1338,7 +1339,6 @@ function calculateNetRevenueByChannel(data) {
     const channelsHtml = channelsProfit.map((channel, idx) => {
         const profitClass = channel.profit >= 0 ? 'positive' : 'negative';
         const profitPercent = totalProfit > 0 ? (channel.profit / totalProfit) * 100 : 0;
-        const barWidth = Math.min(Math.abs(profitPercent), 100);
         
         return `
             <div class="profit-channel-item" style="margin-bottom: 16px; opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; transition-delay: ${idx * 0.05}s;">
@@ -1350,7 +1350,7 @@ function calculateNetRevenueByChannel(data) {
                     <div style="display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end;">
                         <span style="font-size: 12px; font-weight: 600;">Рентабельность: ${channel.profitability.toFixed(1)}%</span>
                         <span style="font-size: 11px; color: var(--text-secondary); background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">
-                            ${profitPercent.toFixed(1)}% от общей
+                            ${profitPercent.toFixed(1)}%
                         </span>
                     </div>
                 </div>
@@ -1989,7 +1989,7 @@ const prevAvgCost = prevSalesData > 0 ? prevCostData / prevSalesData : 0;
         
         <div class="profit-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
             <div style="padding-top: 16px;">
-                ${generateProfitByChannels(f, revenueChannelsList, expenseChannelsList)}
+                ${generateProfitByChannels(f, revenueChannelsList, expenseChannelsList, calculateNetRevenueByChannel(currentData))}
             </div>
         </div>
     </div>
