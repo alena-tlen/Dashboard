@@ -1069,75 +1069,77 @@ body.dark .metric-change {
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "", raw: true });
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "", raw: true });
 
-                const processed = [];
-                const errors = [];
+    const processed = [];
+    const errors = [];
 
-                for (const row of jsonData) {
-                    let company = row['компания'] || row['Компания'] || '';
-            let year = row['год'] || row['Год'] || '';
-            let month = row['месяц'] || row['Месяц'] || '';
-            let type = row['Статья'] || row['статья'] || '';
-            let channel = row['канал'] || row['Канал'] || '';
-            let subCategory = row['подканал'] || row['Подканал'] || '';
-            let amount = parseFloat(row['сумма'] || row['Сумма'] || 0);
+    for (const row of jsonData) {
+        // Извлекаем и нормализуем данные
+        let company = (row['компания'] || row['Компания'] || '').trim();
+        let year = (row['год'] || row['Год'] || '').trim();
+        let month = (row['месяц'] || row['Месяц'] || '').trim();
+        let type = (row['Статья'] || row['статья'] || '').trim();
+        let channel = (row['канал'] || row['Канал'] || '').trim();
+        let subCategory = (row['подканал'] || row['Подканал'] || '').trim();
 
-            company = String(company).trim();
-            year = String(year).trim();
-            month = String(month).trim();
-            type = String(type).trim();
-            channel = String(channel).trim();
-            subCategory = String(subCategory).trim();
+        // Обрабатываем сумму
+        let amountStr = row['сумма'] || row['Сумма'] || '0';
+        let amount = parseFloat(amountStr);
 
-            // Валидация данных
-            if (!type || !year || !month) {
-                errors.push(`Пропущены обязательные поля в строке: ${JSON.stringify(row)}`);
-                continue;
-            }
-            if (isNaN(amount) || amount === 0) {
-                errors.push(`Некорректная сумма в строке: ${JSON.stringify(row)}`);
-                continue;
-            }
+        // Валидация данных
+        const rowErrors = [];
 
-            let mappedType = '';
-            if (type === 'Доход') mappedType = 'Доход';
-            else if (type === 'Расход') mappedType = 'Расход';
-            else if (type === 'НДС Исх' || type === 'НДС Вх') mappedType = 'НДС';
-            else if (type === 'Справочно') mappedType = 'Справочная';
-            else continue;
+        if (!type) rowErrors.push('Отсутствует поле "Статья"');
+        if (!year) rowErrors.push('Отсутствует поле "Год"');
+        if (!month) rowErrors.push('Отсутствует поле "Месяц"');
+        if (isNaN(amount) || amount === 0) rowErrors.push(`Некорректная сумма: "${amountStr}"`);
 
-            processed.push({
-                компания: company || 'A',
-                год: year,
-                месяц: month,
-                статья: type,
-                канал: channel,
-                подканал: subCategory,
-                тип: mappedType,
-                сумма: amount
-            });
+        if (rowErrors.length > 0) {
+            errors.push(`Строка с данными ${JSON.stringify(row, null, 2)} содержит ошибки: ${rowErrors.join(', ')}`);
+            continue;
         }
 
-        if (errors.length > 0) {
-            console.warn('Ошибки валидации:', errors);
+        // Маппинг типов
+        let mappedType = '';
+        if (type === 'Доход') mappedType = 'Доход';
+        else if (type === 'Расход') mappedType = 'Расход';
+        else if (type === 'НДС Исх' || type === 'НДС Вх') mappedType = 'НДС';
+        else if (type === 'Справочно') mappedType = 'Справочная';
+        else {
+            errors.push(`Неизвестный тип статьи: "${type}" в строке ${JSON.stringify(row)}`);
+            continue;
         }
-        if (processed.length === 0) {
-            reject(new Error('Не найдено данных для анализа. Проверьте структуру файла.'));
-        } else {
-            resolve(processed);
-        }
-    } catch (error) {
-        reject(error);
+
+        processed.push({
+            компания: company || 'A',
+            год: year,
+            месяц: month,
+            статья: type,
+            канал: channel,
+            подканал: subCategory,
+            тип: mappedType,
+            сумма: amount
+        });
     }
-};
-reader.onerror = (error) => { reject(error); };
-reader.readAsArrayBuffer(file);
-});
+
+    // Формируем итоговую ошибку, если есть проблемы
+    if (processed.length === 0) {
+        const errorMessage = errors.length > 0
+            ? `Не найдено валидных данных для анализа. Ошибки валидации:\n${errors.join('\n')}`
+            : 'Не найдено данных для анализа. Проверьте структуру файла и наличие обязательных колонок.';
+        reject(new Error(errorMessage));
+    } else {
+        console.log(`Успешно обработано ${processed.length} строк данных, пропущено ${errors.length} строк с ошибками`);
+        resolve(processed);
+    }
+} catch (error) {
+    reject(new Error(`Ошибка обработки файла: ${error.message}. Убедитесь, что файл имеет формат Excel (.xlsx/.xls) и не повреждён.`));
 }
+
 
                 
                         
