@@ -556,6 +556,24 @@
     transform: translateY(-2px);
 }
 
+/* ========== АНАЛИЗ ТРЕНДОВ ========== */
+.trends-container {
+    transition: all 0.3s ease;
+}
+
+.trends-container > div {
+    transition: transform 0.2s ease;
+}
+
+.trends-container > div:hover {
+    transform: translateY(-2px);
+}
+
+.trends-container .seasonality-bar {
+    transition: height 0.3s ease;
+}
+
+
 </style>
 </head>
 <body>
@@ -1903,6 +1921,312 @@ function generateBreakEvenAnalysis(data, f, totalSalesQuantity) {
 }
 
 
+function generateTrendsAnalysis(data, f, totalSalesQuantity) {
+    // Собираем данные по месяцам
+    const monthlyData = {};
+    const monthsOrder = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+    
+    // Собираем данные по месяцам для разных метрик
+    data.forEach(row => {
+        if (!row.месяц || !row.год) return;
+        const monthIndex = monthsOrder.indexOf(row.месяц);
+        if (monthIndex === -1) return;
+        const key = `${row.год}-${monthIndex}`;
+        
+        if (!monthlyData[key]) {
+            monthlyData[key] = {
+                year: row.год,
+                month: row.месяц,
+                monthIndex: monthIndex,
+                revenue: 0,
+                profit: 0,
+                sales: 0,
+                expenses: 0
+            };
+        }
+        
+        if (row.тип === 'Доход') {
+            monthlyData[key].revenue += row.сумма;
+        } else if (row.тип === 'Расход') {
+            monthlyData[key].expenses += Math.abs(row.сумма);
+        }
+        
+        // Продажи в штуках
+        const article = row.статья?.toLowerCase() || '';
+        if (article.includes('продажи') && (article.includes('шт') || article.includes('штук'))) {
+            monthlyData[key].sales += Math.abs(row.сумма || 0);
+        }
+    });
+    
+    // Рассчитываем прибыль по месяцам
+    Object.keys(monthlyData).forEach(key => {
+        const revenue = monthlyData[key].revenue;
+        const ndsOut = data.filter(d => {
+            const dKey = `${d.год}-${monthsOrder.indexOf(d.месяц)}`;
+            return dKey === key && d.статья === 'НДС' && d.подканал === 'НДС исходящий';
+        }).reduce((sum, d) => sum + d.сумма, 0);
+        const netRevenue = revenue - ndsOut;
+        monthlyData[key].profit = netRevenue - monthlyData[key].expenses;
+        monthlyData[key].netRevenue = netRevenue;
+    });
+    
+    // Сортируем по дате
+    const sortedMonths = Object.keys(monthlyData).sort();
+    const profits = sortedMonths.map(key => monthlyData[key].profit);
+    const revenues = sortedMonths.map(key => monthlyData[key].netRevenue);
+    const sales = sortedMonths.map(key => monthlyData[key].sales);
+    
+    // 1. Скользящая средняя за 3 и 6 месяцев
+    const movingAverage3 = [];
+    const movingAverage6 = [];
+    
+    for (let i = 0; i < profits.length; i++) {
+        if (i >= 2) {
+            const avg3 = profits.slice(i-2, i+1).reduce((a, b) => a + b, 0) / 3;
+            movingAverage3.push(avg3);
+        } else {
+            movingAverage3.push(null);
+        }
+        
+        if (i >= 5) {
+            const avg6 = profits.slice(i-5, i+1).reduce((a, b) => a + b, 0) / 6;
+            movingAverage6.push(avg6);
+        } else {
+            movingAverage6.push(null);
+        }
+    }
+    
+    const lastMovingAverage3 = movingAverage3.filter(v => v !== null).pop() || 0;
+    const lastMovingAverage6 = movingAverage6.filter(v => v !== null).pop() || 0;
+    const trend3to6 = lastMovingAverage3 > lastMovingAverage6 ? 'positive' : 'negative';
+    const trend3to6Text = lastMovingAverage3 > lastMovingAverage6 ? '↑ растущий' : '↓ падающий';
+    
+    // 2. Темп роста (месяц к месяцу)
+    const growthRates = [];
+    for (let i = 1; i < profits.length; i++) {
+        if (profits[i-1] !== 0) {
+            const revenueGrowth = ((revenues[i] - revenues[i-1]) / revenues[i-1]) * 100;
+            const profitGrowth = ((profits[i] - profits[i-1]) / profits[i-1]) * 100;
+            const salesGrowth = sales[i-1] !== 0 ? ((sales[i] - sales[i-1]) / sales[i-1]) * 100 : 0;
+            growthRates.push({
+                month: sortedMonths[i],
+                revenueGrowth: revenueGrowth,
+                profitGrowth: profitGrowth,
+                salesGrowth: salesGrowth
+            });
+        }
+    }
+    
+    const lastGrowth = growthRates.length > 0 ? growthRates[growthRates.length - 1] : null;
+    const avgRevenueGrowth = growthRates.length > 0 ? growthRates.reduce((sum, g) => sum + g.revenueGrowth, 0) / growthRates.length : 0;
+    const avgProfitGrowth = growthRates.length > 0 ? growthRates.reduce((sum, g) => sum + g.profitGrowth, 0) / growthRates.length : 0;
+    
+    // 3. Сезонность продаж
+    const seasonalityByMonth = {};
+    monthsOrder.forEach(month => {
+        seasonalityByMonth[month] = { sales: 0, count: 0 };
+    });
+    
+    Object.values(monthlyData).forEach(data => {
+        if (data.sales > 0) {
+            seasonalityByMonth[data.month].sales += data.sales;
+            seasonalityByMonth[data.month].count++;
+        }
+    });
+    
+    const avgMonthlySales = Object.values(seasonalityByMonth).reduce((sum, m) => sum + (m.sales / (m.count || 1)), 0) / 12;
+    const seasonalityCoeff = {};
+    monthsOrder.forEach(month => {
+        const avg = seasonalityByMonth[month].sales / (seasonalityByMonth[month].count || 1);
+        seasonalityCoeff[month] = avgMonthlySales > 0 ? (avg / avgMonthlySales) : 1;
+    });
+    
+    const highSeasonMonths = monthsOrder.filter(m => seasonalityCoeff[m] > 1.2);
+    const lowSeasonMonths = monthsOrder.filter(m => seasonalityCoeff[m] < 0.8);
+    
+    // 4. Прогноз на следующий месяц (линейная регрессия)
+    function linearRegression(x, y) {
+        const n = x.length;
+        const sumX = x.reduce((a, b) => a + b, 0);
+        const sumY = y.reduce((a, b) => a + b, 0);
+        const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+        const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+        
+        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+        
+        return { slope, intercept };
+    }
+    
+    let forecastProfit = null;
+    let forecastRevenue = null;
+    let forecastSales = null;
+    let forecastConfidence = null;
+    
+    if (profits.length >= 3) {
+        const x = Array.from({ length: profits.length }, (_, i) => i + 1);
+        const profitReg = linearRegression(x, profits);
+        const revenueReg = linearRegression(x, revenues);
+        const salesReg = linearRegression(x, sales);
+        
+        const nextX = profits.length + 1;
+        forecastProfit = profitReg.slope * nextX + profitReg.intercept;
+        forecastRevenue = revenueReg.slope * nextX + revenueReg.intercept;
+        forecastSales = salesReg.slope * nextX + salesReg.intercept;
+        
+        // Расчет уверенности прогноза (R-squared)
+        const meanProfit = profits.reduce((a, b) => a + b, 0) / profits.length;
+        const totalSS = profits.reduce((sum, y) => sum + Math.pow(y - meanProfit, 2), 0);
+        const residualSS = profits.reduce((sum, y, i) => sum + Math.pow(y - (profitReg.slope * (i+1) + profitReg.intercept), 2), 0);
+        const rSquared = 1 - (residualSS / totalSS);
+        forecastConfidence = rSquared * 100;
+    }
+    
+    // Дополнительные метрики
+    const bestMonth = sortedMonths.reduce((best, key) => {
+        return monthlyData[key].profit > (monthlyData[best]?.profit || -Infinity) ? key : best;
+    }, sortedMonths[0]);
+    const worstMonth = sortedMonths.reduce((worst, key) => {
+        return monthlyData[key].profit < (monthlyData[worst]?.profit || Infinity) ? key : worst;
+    }, sortedMonths[0]);
+    
+    const totalProfitGrowth = profits.length >= 2 ? ((profits[profits.length-1] - profits[0]) / profits[0]) * 100 : 0;
+    
+    return `
+        <div class="trends-container">
+            <!-- Ряд 1: Скользящие средние -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                <div style="background: rgba(102,126,234,0.1); border-radius: 12px; padding: 16px;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">📈 Скользящая средняя (3 мес)</div>
+                    <div style="font-size: 24px; font-weight: 700;">${formatCurrency(lastMovingAverage3)}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">тренд ${trend3to6Text}</div>
+                </div>
+                <div style="background: rgba(102,126,234,0.1); border-radius: 12px; padding: 16px;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">📊 Скользящая средняя (6 мес)</div>
+                    <div style="font-size: 24px; font-weight: 700;">${formatCurrency(lastMovingAverage6)}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">сглаживает колебания</div>
+                </div>
+                <div style="background: rgba(102,126,234,0.1); border-radius: 12px; padding: 16px;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">📉 Общий рост прибыли</div>
+                    <div style="font-size: 24px; font-weight: 700; ${totalProfitGrowth >= 0 ? 'color: #48bb78;' : 'color: #f56565;'}">${totalProfitGrowth >= 0 ? '+' : ''}${totalProfitGrowth.toFixed(1)}%</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">с начала периода</div>
+                </div>
+                <div style="background: rgba(102,126,234,0.1); border-radius: 12px; padding: 16px;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">🏆 Лучший месяц</div>
+                    <div style="font-size: 16px; font-weight: 700;">${monthlyData[bestMonth]?.month} ${monthlyData[bestMonth]?.year}</div>
+                    <div style="font-size: 11px; color: #48bb78;">прибыль ${formatCurrency(monthlyData[bestMonth]?.profit || 0)}</div>
+                </div>
+            </div>
+            
+            <!-- Ряд 2: Темп роста -->
+            <div style="margin-bottom: 20px; padding: 16px; background: rgba(102,126,234,0.05); border-radius: 12px;">
+                <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">📊 Темп роста (месяц к месяцу)</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Выручка</div>
+                        <div style="font-size: 18px; font-weight: 700; ${lastGrowth?.revenueGrowth >= 0 ? 'color: #48bb78;' : 'color: #f56565;'}">
+                            ${lastGrowth ? (lastGrowth.revenueGrowth >= 0 ? '+' : '') + lastGrowth.revenueGrowth.toFixed(1) + '%' : 'Нет данных'}
+                        </div>
+                        <div style="font-size: 10px;">средний: ${avgRevenueGrowth.toFixed(1)}%</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Прибыль</div>
+                        <div style="font-size: 18px; font-weight: 700; ${lastGrowth?.profitGrowth >= 0 ? 'color: #48bb78;' : 'color: #f56565;'}">
+                            ${lastGrowth ? (lastGrowth.profitGrowth >= 0 ? '+' : '') + lastGrowth.profitGrowth.toFixed(1) + '%' : 'Нет данных'}
+                        </div>
+                        <div style="font-size: 10px;">средний: ${avgProfitGrowth.toFixed(1)}%</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Продажи (шт)</div>
+                        <div style="font-size: 18px; font-weight: 700; ${lastGrowth?.salesGrowth >= 0 ? 'color: #48bb78;' : 'color: #f56565;'}">
+                            ${lastGrowth ? (lastGrowth.salesGrowth >= 0 ? '+' : '') + lastGrowth.salesGrowth.toFixed(1) + '%' : 'Нет данных'}
+                        </div>
+                        <div style="font-size: 10px;">динамика объема</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ряд 3: Сезонность -->
+            <div style="margin-bottom: 20px; padding: 16px; background: rgba(102,126,234,0.05); border-radius: 12px;">
+                <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">📅 Сезонность продаж</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                    ${monthsOrder.map(month => {
+                        const coeff = seasonalityCoeff[month];
+                        const height = Math.min(Math.max(coeff * 30, 20), 60);
+                        const color = coeff > 1.1 ? '#48bb78' : coeff < 0.9 ? '#f56565' : '#667eea';
+                        return `
+                            <div style="text-align: center; flex: 1; min-width: 50px;">
+                                <div style="font-size: 10px; margin-bottom: 4px;">${month.slice(0, 3)}</div>
+                                <div style="height: ${height}px; background: ${color}; border-radius: 4px; width: 100%;"></div>
+                                <div style="font-size: 10px; margin-top: 4px;">${coeff.toFixed(1)}x</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; flex-wrap: wrap; gap: 8px;">
+                    <span>🟢 Высокий сезон: ${highSeasonMonths.length > 0 ? highSeasonMonths.join(', ') : 'нет'}</span>
+                    <span>🔴 Низкий сезон: ${lowSeasonMonths.length > 0 ? lowSeasonMonths.join(', ') : 'нет'}</span>
+                </div>
+            </div>
+            
+            <!-- Ряд 4: Прогноз -->
+            <div style="margin-bottom: 20px; padding: 16px; background: rgba(102,126,234,0.1); border-radius: 12px;">
+                <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">🔮 Прогноз на следующий месяц</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Прогнозируемая прибыль</div>
+                        <div style="font-size: 20px; font-weight: 700; ${forecastProfit >= 0 ? 'color: #48bb78;' : 'color: #f56565;'}">
+                            ${forecastProfit !== null ? formatCurrency(forecastProfit) : 'Недостаточно данных'}
+                        </div>
+                        <div style="font-size: 10px;">относительно текущей: ${forecastProfit !== null && f.profit !== 0 ? ((forecastProfit - f.profit) / f.profit * 100).toFixed(1) : '?'}%</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Прогнозируемая выручка</div>
+                        <div style="font-size: 20px; font-weight: 700;">${forecastRevenue !== null ? formatCurrency(forecastRevenue) : 'Недостаточно данных'}</div>
+                        <div style="font-size: 10px;">чистая, без НДС</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Прогнозируемые продажи</div>
+                        <div style="font-size: 20px; font-weight: 700;">${forecastSales !== null ? new Intl.NumberFormat('ru-RU').format(Math.round(forecastSales)) + ' шт' : 'Недостаточно данных'}</div>
+                        <div style="font-size: 10px;">объем в штуках</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Точность прогноза</div>
+                        <div style="font-size: 20px; font-weight: 700;">${forecastConfidence !== null ? forecastConfidence.toFixed(0) + '%' : '?'}</div>
+                        <div style="font-size: 10px;">${forecastConfidence !== null ? (forecastConfidence > 70 ? 'высокая достоверность' : forecastConfidence > 50 ? 'средняя достоверность' : 'низкая достоверность') : ''}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ряд 5: Дополнительные метрики -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div style="padding: 12px; background: rgba(72,187,120,0.1); border-radius: 12px;">
+                    <div style="font-size: 11px; color: #48bb78;">📈 Рекомендации</div>
+                    <div style="font-size: 12px; margin-top: 8px;">
+                        ${avgProfitGrowth > 10 ? '🚀 Отличный рост! Увеличивайте маркетинговый бюджет.' : 
+                          avgProfitGrowth > 0 ? '📊 Стабильный рост. Работайте над увеличением среднего чека.' :
+                          '⚠️ Прибыль снижается. Анализируйте причины и оптимизируйте расходы.'}
+                        ${highSeasonMonths.length > 0 ? `\n🎯 Готовьтесь к высокому сезону (${highSeasonMonths[0]}).` : ''}
+                        ${forecastProfit !== null && forecastProfit > f.profit ? '\n📈 Прогноз положительный. Увеличивайте запасы.' : forecastProfit !== null && forecastProfit < f.profit ? '\n📉 Прогноз отрицательный. Будьте готовы к снижению.' : ''}
+                    </div>
+                </div>
+                <div style="padding: 12px; background: rgba(102,126,234,0.1); border-radius: 12px;">
+                    <div style="font-size: 11px;">📌 Ключевые выводы</div>
+                    <div style="font-size: 11px; margin-top: 8px; line-height: 1.4;">
+                        • ${totalProfitGrowth >= 0 ? 'Прибыль растет' : 'Прибыль снижается'} (${totalProfitGrowth >= 0 ? '+' : ''}${totalProfitGrowth.toFixed(1)}% за период)<br>
+                        • Средний рост выручки: ${avgRevenueGrowth.toFixed(1)}% в месяц<br>
+                        • ${highSeasonMonths.length > 0 ? `Пик продаж ожидается в ${highSeasonMonths[0]}` : 'Ярко выраженной сезонности нет'}<br>
+                        • ${forecastProfit !== null ? (forecastProfit > 0 ? 'Ожидается прибыль' : 'Ожидается убыток') : 'Недостаточно данных для прогноза'}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+
+
+
 
     function renderDashboard() {
         if (isRendering) {
@@ -2319,7 +2643,6 @@ console.log('costData:', costData);
                     </div>
                 </div>
 
-// После блока "Себестоимость 1 шт" добавьте:
 <div class="metrics-grid" style="margin-top: 24px;">
     <div class="metric-card" style="grid-column: span 4;">
         <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
@@ -2330,6 +2653,19 @@ console.log('costData:', costData);
             <span style="font-size: 12px; color: var(--text-secondary);">анализ постоянных и переменных затрат</span>
         </div>
         ${generateBreakEvenAnalysis(currentData, f, totalSalesQuantity)}
+    </div>
+</div>
+
+<div class="metrics-grid" style="margin-top: 24px;">
+    <div class="metric-card" style="grid-column: span 4;">
+        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">📈</span>
+                <span>Анализ трендов</span>
+            </div>
+            <span style="font-size: 12px; color: var(--text-secondary);">динамика, сезонность, прогноз</span>
+        </div>
+        ${generateTrendsAnalysis(currentData, f, totalSalesQuantity)}
     </div>
 </div>
 
