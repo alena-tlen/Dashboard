@@ -1534,6 +1534,14 @@ function generateCostBreakdown(data) {
     allChannels.forEach(channel => {
         // Себестоимость по каналу - ищем по разным возможным названиям
         let cost = 0;
+
+        // Себестоимость по каналу - ищем по подканалу
+const cost = data
+    .filter(d => d.канал === channel && d.тип === 'Расход' && 
+        (d.подканал?.toLowerCase().includes('себест') || 
+         d.подканал?.toLowerCase().includes('закуп') ||
+         d.статья?.toLowerCase().includes('себест')))
+    .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
         
         // Ищем в статье "Себестоимость сырья"
         cost += data
@@ -2439,7 +2447,14 @@ if (toggleCostBtn && costContainer) {
         if (!channel) return;
         const f = calculateFinancials(currentData, channelKey);
         const salesData = currentData.filter(d => d.канал === channel.displayName && d.статья === 'Продажи шт.').reduce((sum, d) => sum + (d.сумма || 0), 0);
-        const costData = currentData.filter(d => d.канал === channel.displayName && d.статья === 'Себестоимость сырья').reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
+        // Себестоимость - ищем по подканалу
+const costData = currentData
+    .filter(d => {
+        const subCat = d.подканал?.toLowerCase() || '';
+        const article = d.статья?.toLowerCase() || '';
+        return (d.тип === 'Расход' && (subCat.includes('себест') || subCat.includes('закуп') || article.includes('себест')));
+    })
+    .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
         const avgCheck = salesData > 0 ? f.netRevenue / salesData : 0;
         const avgCost = salesData > 0 ? costData / salesData : 0;
         
