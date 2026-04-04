@@ -1480,7 +1480,7 @@ function calculateNetRevenueByChannel(data) {
 }
 
 function generateChannelBreakdown(title, dataKey, channels, formatAsCurrency = true, suffix = '') {
-    const channelsData = [];
+    let channelsData = [];
     const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
     
     allChannels.forEach(channel => {
