@@ -1406,7 +1406,7 @@ function calculateNetRevenueByChannel(data) {
 
 //
         function generateProfitByChannels(f, revenueChannels, expenseChannels, netRevenueByChannel) {
-    const channelsProfit = [];
+    let channelsProfit = [];
     const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
     
     allChannels.forEach(channel => {
@@ -1702,7 +1702,7 @@ function generateNDSBreakdown(data) {
        // ---------------------------------------------------------------------------------------------------------
 
 function generateEfficiencyBreakdown(data) {
-    const efficiencyByChannel = [];
+    let efficiencyByChannel = [];
     const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
     
     allChannels.forEach(channel => {
@@ -1896,7 +1896,7 @@ function generateSalesBreakdown(data) {
 // --------------------------------------------------------------------------------------------------------
 
 function generateAverageCheckBreakdown(data) {
-    const avgCheckByChannel = [];
+    let avgCheckByChannel = [];
     const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
     
     // Общие данные для сравнения
