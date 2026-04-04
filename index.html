@@ -542,6 +542,20 @@
 .cost-progress-bar {
     transition: width 0.5s ease-out;
 }
+
+/* ========== ТОЧКА БЕЗУБЫТОЧНОСТИ ========== */
+.break-even-container {
+    transition: all 0.3s ease;
+}
+
+.break-even-container > div {
+    transition: transform 0.2s ease;
+}
+
+.break-even-container > div:hover {
+    transform: translateY(-2px);
+}
+
 </style>
 </head>
 <body>
@@ -1699,6 +1713,196 @@ function generateCostBreakdown(data) {
     `;
 }
 
+function generateBreakEvenAnalysis(data, f, totalSalesQuantity) {
+    // Анализ расходов по каналам для расчета постоянных и переменных затрат
+    const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
+    
+    // Собираем все расходы по каналам
+    let totalFixedCosts = 0;
+    let totalVariableCosts = 0;
+    let totalRevenue = 0;
+    let totalSales = 0;
+    
+    // Постоянные расходы (логистика, маркетинг, аренда, ФОТ и т.д.)
+    const fixedCostCategories = ['Логистика', 'Маркетинг', 'Аренда', 'ФОТ', 'Зарплата', 'Аутсорсинг', 'Услуги банка', 'Комиссии'];
+    // Переменные расходы (себестоимость, закупка товаров)
+    const variableCostCategories = ['Себестоимость сырья', 'Себестоимость товаров', 'Закупка товаров', 'Себестоимость'];
+    
+    // Считаем общие показатели
+    allChannels.forEach(channel => {
+        // Доходы по каналу
+        const revenue = data
+            .filter(d => d.канал === channel && d.тип === 'Доход')
+            .reduce((sum, d) => sum + d.сумма, 0);
+        
+        // НДС исходящий
+        const ndsOut = data
+            .filter(d => d.канал === channel && d.статья === 'НДС' && d.подканал === 'НДС исходящий')
+            .reduce((sum, d) => sum + d.сумма, 0);
+        
+        const netRevenue = revenue - ndsOut;
+        totalRevenue += netRevenue;
+        
+        // Продажи в штуках
+        let sales = data
+            .filter(d => {
+                const article = d.статья?.toLowerCase() || '';
+                return d.канал === channel && (article.includes('продажи') && (article.includes('шт') || article.includes('штук')));
+            })
+            .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
+        
+        const salesRef = data
+            .filter(d => d.канал === channel && d.тип === 'Справочная' && 
+                (d.статья?.toLowerCase().includes('продажи') || d.подканал?.toLowerCase().includes('продажи')))
+            .reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
+        
+        totalSales += sales + salesRef;
+        
+        // Расходы по каналам
+        const allExpenses = data.filter(d => d.канал === channel && d.тип === 'Расход');
+        
+        allExpenses.forEach(expense => {
+            const amount = Math.abs(expense.сумма);
+            const subCat = expense.подканал || '';
+            const article = expense.статья || '';
+            
+            // Определяем тип расхода
+            let isFixed = false;
+            let isVariable = false;
+            
+            for (const cat of fixedCostCategories) {
+                if (subCat.includes(cat) || article.includes(cat)) {
+                    isFixed = true;
+                    break;
+                }
+            }
+            
+            for (const cat of variableCostCategories) {
+                if (subCat.includes(cat) || article.includes(cat)) {
+                    isVariable = true;
+                    break;
+                }
+            }
+            
+            // Если не определился, считаем переменным (себестоимость)
+            if (!isFixed && !isVariable) {
+                if (subCat.includes('себест') || article.includes('себест')) {
+                    isVariable = true;
+                } else {
+                    isFixed = true; // остальные расходы считаем постоянными
+                }
+            }
+            
+            if (isFixed) totalFixedCosts += amount;
+            if (isVariable) totalVariableCosts += amount;
+        });
+    });
+    
+    // Расчет точки безубыточности
+    const avgPrice = totalSales > 0 ? totalRevenue / totalSales : 0;
+    const avgVariableCostPerUnit = totalSales > 0 ? totalVariableCosts / totalSales : 0;
+    const contributionMarginPerUnit = avgPrice - avgVariableCostPerUnit;
+    const contributionMarginRatio = avgPrice > 0 ? (contributionMarginPerUnit / avgPrice) * 100 : 0;
+    
+    const breakEvenUnits = contributionMarginPerUnit > 0 ? Math.ceil(totalFixedCosts / contributionMarginPerUnit) : 0;
+    const breakEvenRevenue = breakEvenUnits * avgPrice;
+    
+    // Запас финансовой прочности
+    const safetyMargin = totalRevenue > 0 ? ((totalRevenue - breakEvenRevenue) / totalRevenue) * 100 : 0;
+    const safetyMarginAbsolute = totalRevenue - breakEvenRevenue;
+    
+    // Текущая прибыль
+    const currentProfit = f.profit;
+    
+    // Прогноз: сколько нужно продать для целевой прибыли
+    const targetProfit = currentProfit * 1.2; // +20% к текущей прибыли
+    const targetUnits = contributionMarginPerUnit > 0 ? Math.ceil((totalFixedCosts + targetProfit) / contributionMarginPerUnit) : 0;
+    const targetRevenue = targetUnits * avgPrice;
+    
+    // Операционный рычаг
+    const operatingLeverage = currentProfit !== 0 ? (totalRevenue - totalVariableCosts) / currentProfit : 0;
+    
+    return `
+        <div class="break-even-container">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                <div style="background: rgba(102,126,234,0.1); border-radius: 12px; padding: 16px; text-align: center;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">📊 Точка безубыточности (шт)</div>
+                    <div style="font-size: 28px; font-weight: 700;">${new Intl.NumberFormat('ru-RU').format(breakEvenUnits)}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">минимальный объем продаж</div>
+                </div>
+                <div style="background: rgba(102,126,234,0.1); border-radius: 12px; padding: 16px; text-align: center;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">💰 Точка безубыточности (₽)</div>
+                    <div style="font-size: 28px; font-weight: 700;">${formatCurrency(breakEvenRevenue)}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">минимальная выручка</div>
+                </div>
+                <div style="background: rgba(102,126,234,0.1); border-radius: 12px; padding: 16px; text-align: center;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">🛡️ Запас финансовой прочности</div>
+                    <div style="font-size: 28px; font-weight: 700; ${safetyMargin >= 30 ? 'color: #48bb78;' : safetyMargin >= 10 ? 'color: #f59e0b;' : 'color: #f56565;'}">${safetyMargin.toFixed(1)}%</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">${safetyMarginAbsolute > 0 ? formatCurrency(safetyMarginAbsolute) : '0 ₽'} выше точки</div>
+                </div>
+                <div style="background: rgba(102,126,234,0.1); border-radius: 12px; padding: 16px; text-align: center;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">⚡ Операционный рычаг</div>
+                    <div style="font-size: 28px; font-weight: 700;">${operatingLeverage.toFixed(2)}x</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">прирост прибыли на 1% роста продаж</div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px; padding: 16px; background: rgba(102,126,234,0.05); border-radius: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <span style="font-size: 13px; font-weight: 600;">📈 Маржинальный доход на единицу</span>
+                        <div style="font-size: 20px; font-weight: 700; color: #48bb78;">${formatCurrency(contributionMarginPerUnit)}</div>
+                        <div style="font-size: 11px;">(средняя цена ${formatCurrency(avgPrice)} - переменные затраты ${formatCurrency(avgVariableCostPerUnit)})</div>
+                    </div>
+                    <div>
+                        <span style="font-size: 13px; font-weight: 600;">📊 Коэффициент маржинального дохода</span>
+                        <div style="font-size: 20px; font-weight: 700; color: #667eea;">${contributionMarginRatio.toFixed(1)}%</div>
+                        <div style="font-size: 11px;">доля в выручке</div>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(102,126,234,0.1); height: 8px; border-radius: 4px; margin: 12px 0; overflow: hidden;">
+                    <div style="width: ${Math.min((totalRevenue - breakEvenRevenue) / totalRevenue * 100, 100)}%; height: 100%; background: linear-gradient(90deg, #48bb78, #667eea); border-radius: 4px;"></div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                    <span>🔴 Постоянные затраты: ${formatCurrency(totalFixedCosts)}</span>
+                    <span>🟢 Переменные затраты: ${formatCurrency(totalVariableCosts)}</span>
+                    <span>💰 Текущая выручка: ${formatCurrency(totalRevenue)}</span>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div style="padding: 12px; background: rgba(72,187,120,0.1); border-radius: 12px;">
+                    <div style="font-size: 12px; color: #48bb78; margin-bottom: 8px;">🎯 Прогноз для целевой прибыли (+20%)</div>
+                    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <div style="font-size: 11px;">Целевая прибыль</div>
+                            <div style="font-size: 16px; font-weight: 600;">${formatCurrency(targetProfit)}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px;">Необходимо продать</div>
+                            <div style="font-size: 16px; font-weight: 600;">${new Intl.NumberFormat('ru-RU').format(targetUnits)} шт</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px;">Необходимая выручка</div>
+                            <div style="font-size: 16px; font-weight: 600;">${formatCurrency(targetRevenue)}</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="padding: 12px; background: rgba(245,101,101,0.1); border-radius: 12px;">
+                    <div style="font-size: 12px; color: #f56565; margin-bottom: 8px;">⚠️ Риски и рекомендации</div>
+                    <div style="font-size: 11px; line-height: 1.4;">
+                        ${safetyMargin < 10 ? '🔴 Критический запас прочности! Срочно требуются меры.' : safetyMargin < 30 ? '🟡 Запас прочности ниже нормы. Рекомендуется оптимизация.' : '🟢 Хороший запас прочности.'}
+                        ${contributionMarginPerUnit < 0 ? '❌ Отрицательный маржинальный доход! Себестоимость выше цены.' : '✅ Маржинальный доход положительный.'}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+
 
     function renderDashboard() {
         if (isRendering) {
@@ -2114,6 +2318,21 @@ console.log('costData:', costData);
                         <div class="metric-sub">на единицу товара</div>
                     </div>
                 </div>
+
+// После блока "Себестоимость 1 шт" добавьте:
+<div class="metrics-grid" style="margin-top: 24px;">
+    <div class="metric-card" style="grid-column: span 4;">
+        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">⚖️</span>
+                <span>Точка безубыточности</span>
+            </div>
+            <span style="font-size: 12px; color: var(--text-secondary);">анализ постоянных и переменных затрат</span>
+        </div>
+        ${generateBreakEvenAnalysis(currentData, f, totalSalesQuantity)}
+    </div>
+</div>
+
             `;
             
             // Обработчики кнопок
