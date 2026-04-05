@@ -3162,6 +3162,39 @@ if (toggleCostBtn && costContainer) {
                     document.getElementById('page-ai').classList.add('active');
                 });
             }
+
+            // ===== НОВЫЙ БЛОК: Водопадная диаграмма + Тепловая карта =====
+            const waterfallChart = generateWaterfallChart(f);
+            const heatmapChart = renderHeatmap(currentData);
+            
+            let waterfallContainer = document.getElementById('waterfallChartContainer');
+            let heatmapContainer = document.getElementById('heatmapContainer');
+            
+            if (!waterfallContainer && document.getElementById('dashboardMetrics')) {
+                const newSection = document.createElement('div');
+                newSection.id = 'newChartsSection';
+                newSection.className = 'metrics-grid';
+                newSection.style.marginTop = '24px';
+                newSection.innerHTML = `
+                    <div class="metric-card" style="grid-column: span 2; padding: 20px;">
+                        <div id="waterfallChartContainer" style="height: 420px;"></div>
+                    </div>
+                    <div class="metric-card" style="grid-column: span 2; padding: 20px;">
+                        <div id="heatmapContainer" style="height: 420px;"></div>
+                    </div>
+                `;
+                document.getElementById('dashboardMetrics').appendChild(newSection);
+                waterfallContainer = document.getElementById('waterfallChartContainer');
+                heatmapContainer = document.getElementById('heatmapContainer');
+            }
+            
+            if (waterfallContainer && typeof Plotly !== 'undefined' && waterfallChart && waterfallChart.trace) {
+                Plotly.newPlot(waterfallContainer, [waterfallChart.trace], waterfallChart.layout, { responsive: true, displayModeBar: false });
+            }
+            
+            if (heatmapContainer && typeof Plotly !== 'undefined' && heatmapChart && heatmapChart.trace) {
+                Plotly.newPlot(heatmapContainer, [heatmapChart.trace], heatmapChart.layout, { responsive: true, displayModeBar: false });
+            }
         } finally {
             isRendering = false;
         }
