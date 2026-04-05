@@ -1085,36 +1085,31 @@
 // ========== НОВЫЕ ФУНКЦИИ ДЛЯ ВАРИАНТА Б ==========
 
 // 1. Водопадная диаграмма (от выручки к чистой прибыли)
-function generateWaterfallChart(data, f) {
+function generateWaterfallChart(f) {
     // Собираем данные для водопада
     const steps = [];
     const stepNames = [];
-    const stepColors = [];
     
     // Старт: Выручка (с НДС)
     let currentValue = f.totalRevenue;
     steps.push(currentValue);
     stepNames.push('Выручка (с НДС)');
-    stepColors.push('#4299e1');
     
     // НДС (уменьшает)
     const ndsValue = -Math.abs(f.totalNDS);
     currentValue += ndsValue;
     steps.push(currentValue);
     stepNames.push('НДС');
-    stepColors.push('#ed8936');
     
     // Расходы (уменьшают)
     const expensesValue = -Math.abs(f.totalExpenses);
     currentValue += expensesValue;
     steps.push(currentValue);
     stepNames.push('Расходы');
-    stepColors.push('#f56565');
     
     // Финальный результат: Чистая прибыль
     steps.push(currentValue);
     stepNames.push('Чистая прибыль');
-    stepColors.push(f.profit >= 0 ? '#48bb78' : '#f56565');
     
     // Рассчитываем дельты для водопада
     const deltas = [];
@@ -1132,8 +1127,8 @@ function generateWaterfallChart(data, f) {
         textposition: 'outside',
         text: steps.map(v => formatCurrency(v)),
         connector: { line: { color: 'rgb(63, 63, 63)', width: 2 } },
-        increasing: { marker: { color: '#f56565' } },  // уменьшение - красный
-        decreasing: { marker: { color: '#48bb78' } },  // увеличение - зеленый
+        increasing: { marker: { color: '#f56565' } },
+        decreasing: { marker: { color: '#48bb78' } },
         totals: { marker: { color: '#4299e1' } }
     };
     
@@ -1155,18 +1150,7 @@ function generateWaterfallChart(data, f) {
         xaxis: {
             tickangle: -15,
             gridcolor: 'rgba(102,126,234,0.1)'
-        },
-        annotations: [
-            {
-                x: stepNames.length - 1,
-                y: steps[steps.length - 1],
-                xanchor: 'left',
-                yanchor: 'bottom',
-                text: `💰 ${formatCurrency(f.profit)}`,
-                showarrow: false,
-                font: { size: 12, color: f.profit >= 0 ? '#48bb78' : '#f56565', weight: 'bold' }
-            }
-        ]
+        }
     };
     
     return { trace, layout };
@@ -3181,50 +3165,6 @@ if (toggleCostBtn && costContainer) {
         } finally {
             isRendering = false;
         }
-
-
-
-// ========== ВСТАВЬТЕ ЭТОТ КОД В ФУНКЦИЮ renderDashboard() ==========
-// В конец функции renderDashboard(), перед закрывающей скобкой, добавьте:
-
-// ===== НОВЫЙ БЛОК: Водопадная диаграмма + Тепловая карта =====
-const waterfallData = generateWaterfallChart(currentData, f);
-const heatmapData = renderHeatmap(currentData);
-
-// Создаем контейнеры для новых графиков (если их еще нет)
-let waterfallContainer = document.getElementById('waterfallChartContainer');
-let heatmapContainer = document.getElementById('heatmapContainer');
-
-if (!waterfallContainer) {
-    // Добавляем новые блоки в конец dashboardMetrics
-    const dashboardMetrics = document.getElementById('dashboardMetrics');
-    if (dashboardMetrics) {
-        const newSection = document.createElement('div');
-        newSection.id = 'newChartsSection';
-        newSection.className = 'metrics-grid';
-        newSection.style.marginTop = '24px';
-        newSection.innerHTML = `
-            <div class="metric-card" style="grid-column: span 2; padding: 20px;">
-                <div id="waterfallChartContainer" style="height: 420px;"></div>
-            </div>
-            <div class="metric-card" style="grid-column: span 2; padding: 20px;">
-                <div id="heatmapContainer" style="height: 420px;"></div>
-            </div>
-        `;
-        dashboardMetrics.appendChild(newSection);
-        waterfallContainer = document.getElementById('waterfallChartContainer');
-        heatmapContainer = document.getElementById('heatmapContainer');
-    }
-}
-
-// Отрисовываем графики
-if (waterfallContainer && typeof Plotly !== 'undefined') {
-    Plotly.newPlot(waterfallContainer, [waterfallData.trace], waterfallData.layout, { responsive: true, displayModeBar: false });
-}
-
-if (heatmapContainer && typeof Plotly !== 'undefined' && heatmapData.trace) {
-    Plotly.newPlot(heatmapContainer, [heatmapData.trace], heatmapData.layout, { responsive: true, displayModeBar: false });
-}
 
     }
     
