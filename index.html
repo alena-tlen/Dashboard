@@ -3745,9 +3745,14 @@ console.log('costData:', costData);
     
     return `
         <div class="metric-card" style="overflow: hidden; padding: 20px; height: 100%; display: flex; flex-direction: column;">
-            <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                <span style="font-size: 20px;">${icon}</span>
-                <span style="font-size: 16px; font-weight: 700;">${title}</span>
+            <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">${icon}</span>
+                    <span style="font-size: 16px; font-weight: 700;">${title}</span>
+                </div>
+                <button class="toggle-channels-list-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
+                    <span class="toggle-channels-icon">▶</span> Показать по каналам
+                </button>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(102,126,234,0.2);">
                 <div>
@@ -3760,13 +3765,12 @@ console.log('costData:', costData);
                 <div class="main-channels-list" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
                     ${channelItemsHtml}
                 </div>
-                <button class="toggle-channels-list-btn" style="margin-top: 8px; background: none; border: none; color: #667eea; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center;">
-                    <span class="toggle-channels-icon">▶</span> Показать список каналов
-                </button>
+                <div class="expand-all-wrapper" style="display: none; margin-top: 8px;">
+                    <button class="toggle-all-channels-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center;">
+                        <span>▶</span> Развернуть все подканалы
+                    </button>
+                </div>
             </div>
-            <button class="toggle-all-channels-btn" style="margin-top: 16px; background: none; border: none; color: #667eea; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center;">
-                <span>▶</span> Развернуть все подканалы
-            </button>
         </div>
     `;
 }
@@ -3985,18 +3989,55 @@ console.log('costData:', costData);
                 // Обработчик для кнопки "Показать/скрыть список каналов"
 const toggleChannelsListBtn = document.querySelector('.toggle-channels-list-btn');
 const mainChannelsList = document.querySelector('.main-channels-list');
+const expandAllWrapper = document.querySelector('.expand-all-wrapper');
+
 if (toggleChannelsListBtn && mainChannelsList) {
     toggleChannelsListBtn.onclick = () => {
         if (mainChannelsList.style.maxHeight && mainChannelsList.style.maxHeight !== '0px') {
             mainChannelsList.style.maxHeight = '0';
-            toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▶</span> Показать список каналов';
+            toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▶</span> Показать по каналам';
+            if (expandAllWrapper) expandAllWrapper.style.display = 'none';
         } else {
             mainChannelsList.style.maxHeight = mainChannelsList.scrollHeight + 'px';
-            toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▼</span> Скрыть список каналов';
+            toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▼</span> Скрыть по каналам';
+            if (expandAllWrapper) expandAllWrapper.style.display = 'block';
             // Анимация появления элементов
             const items = mainChannelsList.querySelectorAll('.channel-item');
             items.forEach((item, idx) => {
                 setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+            });
+        }
+    };
+}
+
+// Обработчик для кнопки "Развернуть все подканалы"
+const toggleAllChannelsBtn = document.querySelector('.toggle-all-channels-btn');
+if (toggleAllChannelsBtn) {
+    toggleAllChannelsBtn.onclick = (e) => {
+        e.stopPropagation();
+        const container = toggleAllChannelsBtn.closest('.metric-card').querySelector('.channels-container');
+        const allDetailsDivs = container.querySelectorAll('.channel-details');
+        const allExpandIcons = container.querySelectorAll('.expand-icon');
+        
+        // Проверяем, открыты ли все
+        const allOpen = Array.from(allDetailsDivs).every(details => details.style.maxHeight && details.style.maxHeight !== '0px');
+        
+        if (allOpen) {
+            // Закрываем все
+            allDetailsDivs.forEach(details => details.style.maxHeight = '0');
+            allExpandIcons.forEach(icon => icon.style.transform = 'rotate(0deg)');
+            toggleAllChannelsBtn.innerHTML = '<span>▶</span> Развернуть все подканалы';
+        } else {
+            // Открываем все
+            allDetailsDivs.forEach(details => { details.style.maxHeight = details.scrollHeight + 'px'; });
+            allExpandIcons.forEach(icon => icon.style.transform = 'rotate(90deg)');
+            toggleAllChannelsBtn.innerHTML = '<span>▼</span> Скрыть все подканалы';
+            // Анимация подэлементов
+            allDetailsDivs.forEach((details, idx) => {
+                const items = details.querySelectorAll('.sub-item');
+                items.forEach((item, itemIdx) => {
+                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50 + itemIdx * 30);
+                });
             });
         }
     };
