@@ -131,7 +131,16 @@
     .btn-danger { background: #f56565; color: white; }
     .btn-info { background: #4299e1; color: white; }
     .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px; }
-    .metric-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s; }
+    .metric-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+    height: auto !important;  /* Добавить эту строку */
+    min-height: 200px;        /* Добавить эту строку */
+    overflow: visible !important; /* Добавить эту строку */
+}
     body.dark .metric-card { background: #1a1a2a; border: 1px solid #2d2d3a; }
     .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     .metric-title { font-size: 13px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -712,6 +721,11 @@ body.dark .notifications-panel { background: #1a1a2a; border: 1px solid #2d2d3a;
 .toggle-channels-list-btn:hover {
     background: rgba(102,126,234,0.1);
     transform: translateY(-1px);
+}
+
+.channels-container {
+    overflow-y: visible !important;
+    max-height: none !important;
 }
 
 </style>
@@ -3761,7 +3775,7 @@ console.log('costData:', costData);
                 </div>
                 <div class="metric-sub">общая сумма</div>
             </div>
-            <div class="channels-container" style="flex: 1; overflow-y: visible; padding-right: 5px;">
+            <div class="channels-container" style="overflow-y: visible; padding-right: 5px;">
                 <div class="main-channels-list" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
                     ${channelItemsHtml}
                 </div>
