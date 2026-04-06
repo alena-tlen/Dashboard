@@ -4010,12 +4010,16 @@ if (toggleChannelsListBtn && mainChannelsList) {
     };
 }
 
-// Обработчик для кнопки "Развернуть все подканалы"
-const toggleAllChannelsBtn = document.querySelector('.toggle-all-channels-btn');
-if (toggleAllChannelsBtn) {
-    toggleAllChannelsBtn.onclick = (e) => {
+// ===== ИСПРАВЛЕННЫЙ ОБРАБОТЧИК ДЛЯ КНОПКИ "РАЗВЕРНУТЬ ВСЕ ПОДКАНАЛЫ" =====
+    // Используем делегирование событий, так как кнопка может создаваться позже
+    document.body.addEventListener('click', function(e) {
+        const btn = e.target.closest('.toggle-all-channels-btn');
+        if (!btn) return;
+        
         e.stopPropagation();
-        const container = toggleAllChannelsBtn.closest('.metric-card').querySelector('.channels-container');
+        const container = btn.closest('.metric-card').querySelector('.channels-container');
+        if (!container) return;
+        
         const allDetailsDivs = container.querySelectorAll('.channel-details');
         const allExpandIcons = container.querySelectorAll('.expand-icon');
         
@@ -4026,22 +4030,26 @@ if (toggleAllChannelsBtn) {
             // Закрываем все
             allDetailsDivs.forEach(details => details.style.maxHeight = '0');
             allExpandIcons.forEach(icon => icon.style.transform = 'rotate(0deg)');
-            toggleAllChannelsBtn.innerHTML = '<span>▶</span> Развернуть все подканалы';
+            btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
         } else {
             // Открываем все
-            allDetailsDivs.forEach(details => { details.style.maxHeight = details.scrollHeight + 'px'; });
+            allDetailsDivs.forEach(details => { 
+                details.style.maxHeight = details.scrollHeight + 'px'; 
+            });
             allExpandIcons.forEach(icon => icon.style.transform = 'rotate(90deg)');
-            toggleAllChannelsBtn.innerHTML = '<span>▼</span> Скрыть все подканалы';
+            btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
             // Анимация подэлементов
             allDetailsDivs.forEach((details, idx) => {
                 const items = details.querySelectorAll('.sub-item');
                 items.forEach((item, itemIdx) => {
-                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50 + itemIdx * 30);
+                    setTimeout(() => { 
+                        item.style.opacity = '1'; 
+                        item.style.transform = 'translateX(0)'; 
+                    }, idx * 50 + itemIdx * 30);
                 });
             });
         }
-    };
-}
+    });
 
 
                 const toggleNdsBtn = document.querySelector('.toggle-nds-breakdown-btn');
