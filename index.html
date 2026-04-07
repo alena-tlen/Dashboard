@@ -3980,6 +3980,18 @@ console.log('costData:', costData);
 
             `;
             
+// ЗАКРЫВАЕТСЯ innerHTML, и ПОСЛЕ ЭТОГО вставляете код:
+
+// Автоматическое расширение карточек при раскрытии подканалов
+setTimeout(() => {
+    const allMetricCards = document.querySelectorAll('.metric-card');
+    allMetricCards.forEach(card => {
+        if (card) {
+            card.style.height = 'auto';
+            card.style.minHeight = card.scrollHeight + 'px';
+        }
+    });
+}, 100);
             // Обработчики кнопок
             setTimeout(() => {
                 const toggleProfitBtn = document.querySelector('.toggle-channels-profit-btn');
