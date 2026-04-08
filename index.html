@@ -743,6 +743,28 @@ body.dark .notifications-panel { background: #1a1a2a; border: 1px solid #2d2d3a;
     transition: height 0.2s ease;
 }
 
+/* Обеспечиваем правильное расширение карточек */
+.metric-card {
+    overflow: visible !important;
+    transition: height 0.2s ease;
+}
+
+.metric-card.expanded {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+}
+
+.channels-container,
+.main-channels-list,
+.channel-details {
+    overflow: visible !important;
+}
+
+.channel-details[style*="max-height:"] {
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 </style>
 </head>
 <body>
@@ -3551,6 +3573,34 @@ function forceUpdateCardHeight(card) {
     }
 }
 
+// Функция для принудительного обновления высоты карточки после раскрытия контента
+function forceCardUpdate(card) {
+    if (!card) return;
+    
+    // Сбрасываем все ограничения
+    card.style.height = 'auto';
+    card.style.minHeight = 'auto';
+    card.style.overflow = 'visible';
+    
+    // Обновляем все внутренние контейнеры
+    const containers = card.querySelectorAll('.channels-container, .main-channels-list, .channel-details');
+    containers.forEach(container => {
+        if (container.style.maxHeight && container.style.maxHeight !== '0px') {
+            container.style.maxHeight = container.scrollHeight + 'px';
+        }
+        container.style.overflow = 'visible';
+    });
+    
+    // Принудительный пересчет
+    card.offsetHeight;
+    
+    // Еще один проход через микро-задержку
+    setTimeout(() => {
+        card.style.height = 'auto';
+        card.offsetHeight;
+    }, 50);
+}
+
     function renderDashboard() {
         if (isRendering) {
             console.log('Рендер уже выполняется, пропускаем');
@@ -4074,7 +4124,7 @@ setTimeout(() => {
         };
     }
 
-    // Обработчик для кнопки "Развернуть все подканалы" (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+    // Обработчик для кнопки "Развернуть все подканалы" - ИСПРАВЛЕННАЯ ВЕРСИЯ
 document.body.addEventListener('click', function(e) {
     const btn = e.target.closest('.toggle-all-channels-btn');
     if (!btn) return;
@@ -4093,7 +4143,7 @@ document.body.addEventListener('click', function(e) {
     );
     
     if (allOpen) {
-        // Если все открыты - закрываем все
+        // Закрываем все подканалы
         allDetailsDivs.forEach(details => {
             details.style.maxHeight = '0';
         });
@@ -4102,7 +4152,7 @@ document.body.addEventListener('click', function(e) {
         });
         btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
     } else {
-        // Если есть закрытые - открываем все
+        // Открываем все подканалы
         allDetailsDivs.forEach(details => { 
             details.style.maxHeight = details.scrollHeight + 'px'; 
         });
@@ -4123,32 +4173,37 @@ document.body.addEventListener('click', function(e) {
         });
     }
     
-    // Принудительное обновление высоты карточки
+    // ==== КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: принудительное обновление высоты карточки ====
     if (card) {
-        // Сбрасываем высоту
+        // Сбрасываем ограничения высоты
         card.style.height = 'auto';
         card.style.minHeight = 'auto';
+        card.style.overflow = 'visible';
         
-        // Обновляем контейнер каналов
+        // Расширяем контейнер каналов
         const channelsContainer = card.querySelector('.channels-container');
         if (channelsContainer) {
-            channelsContainer.style.overflowY = 'visible';
+            channelsContainer.style.overflow = 'visible';
             channelsContainer.style.maxHeight = 'none';
         }
         
-        // Обновляем основной список каналов, если он раскрыт
+        // ОБЯЗАТЕЛЬНО: обновляем высоту основного списка каналов
         const mainList = card.querySelector('.main-channels-list');
         if (mainList && mainList.style.maxHeight !== '0px') {
-            mainList.style.maxHeight = mainList.scrollHeight + 'px';
+            // Небольшая задержка, чтобы DOM успел обновиться
+            setTimeout(() => {
+                mainList.style.maxHeight = mainList.scrollHeight + 'px';
+                // Еще раз принудительно обновляем карточку
+                card.style.height = 'auto';
+                // Принудительный пересчет
+                card.offsetHeight;
+            }, 10);
         }
         
-        // Принудительный пересчет через requestAnimationFrame
+        // Финальное обновление через requestAnimationFrame
         requestAnimationFrame(() => {
             card.style.height = 'auto';
-            // Небольшая задержка для завершения анимации
-            setTimeout(() => {
-                card.style.height = 'auto';
-            }, 50);
+            card.offsetHeight; // принудительный reflow
         });
     }
 });
