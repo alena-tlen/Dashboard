@@ -708,10 +708,15 @@ body.dark .notifications-panel { background: #1a1a2a; border: 1px solid #2d2d3a;
 
 /* Для плавного появления каналов */
 .main-channels-list {
+    overflow: visible !important;
     transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+.main-channels-list[style*="max-height: none"] {
+    max-height: none !important;
+}
+
 .channel-item {
-    transition: all 0.3s ease;
+    overflow: visible !important;
 }
 .toggle-channels-list-btn {
     transition: all 0.2s;
@@ -738,14 +743,6 @@ body.dark .notifications-panel { background: #1a1a2a; border: 1px solid #2d2d3a;
 
 .channel-details[style*="max-height:"] {
     transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Принудительное отображение каналов */
-.main-channels-list {
-    overflow: visible !important;
-}
-.channel-details {
-    overflow: visible !important;
 }
 
 </style>
@@ -4079,22 +4076,33 @@ setTimeout(() => {
         };
     }
     
-// Обработчик для кнопки "Показать/скрыть список каналов" (ДОБАВИТЬ ЭТОТ БЛОК)
+// Обработчик для кнопки "Показать/скрыть список каналов"
 const toggleChannelsListBtn = document.querySelector('.toggle-channels-list-btn');
 const mainChannelsList = document.querySelector('.main-channels-list');
 const expandAllWrapper = document.querySelector('.expand-all-wrapper');
 
 if (toggleChannelsListBtn && mainChannelsList) {
+    // Удаляем старый обработчик
+    toggleChannelsListBtn.onclick = null;
+    
     toggleChannelsListBtn.onclick = (e) => {
         e.stopPropagation();
         const card = toggleChannelsListBtn.closest('.metric-card');
         
         if (mainChannelsList.style.maxHeight && mainChannelsList.style.maxHeight !== '0px') {
+            // Закрываем
             mainChannelsList.style.maxHeight = '0';
             toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▶</span> Показать по каналам';
             if (expandAllWrapper) expandAllWrapper.style.display = 'none';
         } else {
-            mainChannelsList.style.maxHeight = mainChannelsList.scrollHeight + 'px';
+            // Открываем - КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: сначала показываем, потом считаем высоту
+            mainChannelsList.style.display = 'block';
+            mainChannelsList.style.maxHeight = 'none';
+            
+            // Получаем реальную высоту
+            const height = mainChannelsList.scrollHeight;
+            mainChannelsList.style.maxHeight = height + 'px';
+            
             toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▼</span> Скрыть по каналам';
             if (expandAllWrapper) expandAllWrapper.style.display = 'block';
             
@@ -4112,11 +4120,13 @@ if (toggleChannelsListBtn && mainChannelsList) {
             if (card) {
                 card.style.height = 'auto';
                 card.style.minHeight = 'auto';
+                card.style.overflow = 'visible';
+                // Принудительный пересчет
+                card.offsetHeight;
             }
-        }, 20);
+        }, 50);
     };
 }
-
     // Обработчик для кнопки "Развернуть все подканалы" - ИСПРАВЛЕННАЯ ВЕРСИЯ
 document.body.addEventListener('click', function(e) {
     const btn = e.target.closest('.toggle-all-channels-btn');
