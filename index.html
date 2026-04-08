@@ -136,7 +136,7 @@
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    transition: transform 0.2s;
+    transition: height 0.2s ease, min-height 0.2s ease;
     overflow: hidden;
 }
     body.dark .metric-card { background: #1a1a2a; border: 1px solid #2d2d3a; }
@@ -3528,31 +3528,19 @@ function initNotificationBell() {
         });
     }
 }
-// Функция принудительного обновления высоты карточки
+// Функция принудительного обновления высоты карточки (упрощённая)
 function forceUpdateCardHeight(card) {
     if (!card) return;
-    // Сохраняем overflow
-    const originalOverflow = card.style.overflow;
-    card.style.overflow = 'hidden';
-    // Получаем текущую высоту
-    const currentHeight = card.offsetHeight;
-    // Сбрасываем высоту
+    // Просто сбрасываем высоту на auto
     card.style.height = 'auto';
-    // Получаем новую высоту
-    const newHeight = card.scrollHeight;
-    // Устанавливаем обратно
-    card.style.height = currentHeight + 'px';
-    // Форсируем перерисовку
-    card.offsetHeight;
-    // Анимируем изменение высоты
-    card.style.transition = 'height 0.2s ease';
-    card.style.height = newHeight + 'px';
-    // Через время убираем transition и overflow
+    card.style.minHeight = 'auto';
+    // Небольшая задержка для перерисовки
     setTimeout(() => {
-        card.style.height = 'auto';
-        card.style.transition = '';
-        card.style.overflow = originalOverflow;
-    }, 250);
+        // Убеждаемся, что высота всё ещё auto
+        if (card.style.height !== 'auto') {
+            card.style.height = 'auto';
+        }
+    }, 50);
 }
 
     function renderDashboard() {
@@ -4014,16 +4002,6 @@ console.log('costData:', costData);
             
 // ЗАКРЫВАЕТСЯ innerHTML, и ПОСЛЕ ЭТОГО вставляете код:
 
-// Автоматическое расширение карточек при раскрытии подканалов
-setTimeout(() => {
-    const allMetricCards = document.querySelectorAll('.metric-card');
-    allMetricCards.forEach(card => {
-        if (card) {
-            card.style.height = 'auto';
-            card.style.minHeight = card.scrollHeight + 'px';
-        }
-    });
-}, 100);
             // Обработчики кнопок
             setTimeout(() => {
                 const toggleProfitBtn = document.querySelector('.toggle-channels-profit-btn');
@@ -4056,19 +4034,23 @@ if (toggleChannelsListBtn && mainChannelsList) {
             mainChannelsList.style.maxHeight = '0';
             toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▶</span> Показать по каналам';
             if (expandAllWrapper) expandAllWrapper.style.display = 'none';
-            // Обновляем высоту после сворачивания
-            setTimeout(() => forceUpdateCardHeight(card), 50);
         } else {
             mainChannelsList.style.maxHeight = mainChannelsList.scrollHeight + 'px';
             toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▼</span> Скрыть по каналам';
             if (expandAllWrapper) expandAllWrapper.style.display = 'block';
-            // Обновляем высоту после раскрытия
-            setTimeout(() => forceUpdateCardHeight(card), 50);
+            
             const items = mainChannelsList.querySelectorAll('.channel-item');
             items.forEach((item, idx) => {
                 setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
             });
         }
+        // Обновляем высоту карточки
+        setTimeout(() => {
+            if (card) {
+                card.style.height = 'auto';
+                card.style.minHeight = 'auto';
+            }
+        }, 20);
     };
 }
 
@@ -4088,20 +4070,19 @@ document.body.addEventListener('click', function(e) {
     const allOpen = Array.from(allDetailsDivs).every(details => details.style.maxHeight && details.style.maxHeight !== '0px');
     
     if (allOpen) {
+        // Закрываем все
         allDetailsDivs.forEach(details => details.style.maxHeight = '0');
         allExpandIcons.forEach(icon => icon.style.transform = 'rotate(0deg)');
         btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
-        // Обновляем высоту после сворачивания
-        setTimeout(() => forceUpdateCardHeight(card), 50);
     } else {
+        // Открываем все
         allDetailsDivs.forEach(details => { 
             details.style.maxHeight = details.scrollHeight + 'px'; 
         });
         allExpandIcons.forEach(icon => icon.style.transform = 'rotate(90deg)');
         btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
-        // Обновляем высоту после раскрытия
-        setTimeout(() => forceUpdateCardHeight(card), 50);
         
+        // Анимация подэлементов
         allDetailsDivs.forEach((details, idx) => {
             const items = details.querySelectorAll('.sub-item');
             items.forEach((item, itemIdx) => {
@@ -4112,6 +4093,14 @@ document.body.addEventListener('click', function(e) {
             });
         });
     }
+    
+    // Обновляем высоту карточки (один раз после всех изменений)
+    setTimeout(() => {
+        if (card) {
+            card.style.height = 'auto';
+            card.style.minHeight = 'auto';
+        }
+    }, 20);
 });
 
 // Обработчик для клика по каналу (раскрытие подканалов)
