@@ -774,6 +774,28 @@ body.dark .notifications-panel { background: #1a1a2a; border: 1px solid #2d2d3a;
     margin: -4px;
 }
 
+/* Обеспечиваем правильное расширение карточек */
+.metric-card {
+    overflow: visible !important;
+    height: auto !important;
+    transition: height 0.3s ease;
+}
+
+.main-channels-list {
+    overflow: visible !important;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.channel-details {
+    overflow: visible !important;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.channels-container {
+    overflow: visible !important;
+    max-height: none !important;
+}
+
 </style>
 </head>
 <body>
@@ -4122,63 +4144,93 @@ setTimeout(() => {
         };
     });
     
-    // ===== КНОПКА "РАЗВЕРНУТЬ ВСЕ ПОДКАНАЛЫ" =====
-    document.body.addEventListener('click', function(e) {
-        const btn = e.target.closest('.toggle-all-channels-btn');
-        if (!btn) return;
+    // ===== КНОПКА "РАЗВЕРНУТЬ ВСЕ ПОДКАНАЛЫ" - ИСПРАВЛЕННАЯ ВЕРСИЯ =====
+document.body.addEventListener('click', function(e) {
+    const btn = e.target.closest('.toggle-all-channels-btn');
+    if (!btn) return;
+    
+    e.stopPropagation();
+    const card = btn.closest('.metric-card');
+    const container = card.querySelector('.channels-container');
+    if (!container) return;
+    
+    const allDetailsDivs = container.querySelectorAll('.channel-details');
+    const allExpandIcons = container.querySelectorAll('.expand-icon');
+    
+    // Проверяем, все ли подканалы уже открыты
+    const allOpen = Array.from(allDetailsDivs).every(details => 
+        details.style.maxHeight && details.style.maxHeight !== '0px'
+    );
+    
+    if (allOpen) {
+        // Закрываем все подканалы
+        allDetailsDivs.forEach(details => {
+            details.style.maxHeight = '0';
+        });
+        allExpandIcons.forEach(icon => {
+            icon.style.transform = 'rotate(0deg)';
+        });
+        btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
+    } else {
+        // Открываем все подканалы
+        allDetailsDivs.forEach(details => { 
+            details.style.maxHeight = details.scrollHeight + 'px'; 
+        });
+        allExpandIcons.forEach(icon => {
+            icon.style.transform = 'rotate(90deg)';
+        });
+        btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
         
-        e.stopPropagation();
-        const card = btn.closest('.metric-card');
-        const container = card.querySelector('.channels-container');
-        if (!container) return;
+        // Анимация появления элементов
+        allDetailsDivs.forEach((details, idx) => {
+            const items = details.querySelectorAll('.sub-item');
+            items.forEach((item, itemIdx) => {
+                setTimeout(() => { 
+                    item.style.opacity = '1'; 
+                    item.style.transform = 'translateX(0)'; 
+                }, idx * 50 + itemIdx * 30);
+            });
+        });
+    }
+    
+    // ==== КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: принудительное обновление высоты ВСЕХ элементов ====
+    if (card) {
+        // Сбрасываем все ограничения высоты
+        card.style.height = 'auto';
+        card.style.minHeight = 'auto';
+        card.style.overflow = 'visible';
         
-        const allDetailsDivs = container.querySelectorAll('.channel-details');
-        const allExpandIcons = container.querySelectorAll('.expand-icon');
-        
-        // Проверяем, все ли подканалы уже открыты
-        const allOpen = Array.from(allDetailsDivs).every(details => 
-            details.style.maxHeight && details.style.maxHeight !== '0px'
-        );
-        
-        if (allOpen) {
-            // Закрываем все подканалы
-            allDetailsDivs.forEach(details => {
-                details.style.maxHeight = '0';
-            });
-            allExpandIcons.forEach(icon => {
-                icon.style.transform = 'rotate(0deg)';
-            });
-            btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
-        } else {
-            // Открываем все подканалы
-            allDetailsDivs.forEach(details => { 
-                details.style.maxHeight = details.scrollHeight + 'px'; 
-            });
-            allExpandIcons.forEach(icon => {
-                icon.style.transform = 'rotate(90deg)';
-            });
-            btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
-            
-            // Анимация появления элементов
-            allDetailsDivs.forEach((details, idx) => {
-                const items = details.querySelectorAll('.sub-item');
-                items.forEach((item, itemIdx) => {
-                    setTimeout(() => { 
-                        item.style.opacity = '1'; 
-                        item.style.transform = 'translateX(0)'; 
-                    }, idx * 50 + itemIdx * 30);
-                });
-            });
+        // Обновляем высоту основного списка каналов (если он раскрыт)
+        const mainList = card.querySelector('.main-channels-list');
+        if (mainList && mainList.style.maxHeight !== '0px') {
+            // Временно убираем ограничение, чтобы получить реальную высоту
+            const oldMaxHeight = mainList.style.maxHeight;
+            mainList.style.maxHeight = 'none';
+            const newHeight = mainList.scrollHeight;
+            mainList.style.maxHeight = oldMaxHeight;
+            mainList.style.maxHeight = newHeight + 'px';
         }
         
-        // Обновляем высоту карточки
+        // Обновляем высоту контейнера каналов
+        const channelsContainer = card.querySelector('.channels-container');
+        if (channelsContainer) {
+            channelsContainer.style.maxHeight = 'none';
+            channelsContainer.style.overflow = 'visible';
+        }
+        
+        // Принудительный пересчет через несколько этапов
         setTimeout(() => {
-            if (card) {
+            card.style.height = 'auto';
+            card.offsetHeight; // принудительный reflow
+            
+            // Еще один проход для финальной высоты
+            setTimeout(() => {
                 card.style.height = 'auto';
-                card.style.minHeight = 'auto';
-            }
-        }, 100);
-    });
+                card.offsetHeight;
+            }, 50);
+        }, 10);
+    }
+});
     
     // ===== ОСТАЛЬНЫЕ ОБРАБОТЧИКИ (НДС, средний чек, продажи, эффективность, себестоимость) =====
     // ... остальные обработчики остаются без изменений
