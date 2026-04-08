@@ -136,7 +136,7 @@
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    transition: height 0.2s ease, min-height 0.2s ease;
+    transition: height 0.2s ease;
     overflow: hidden;
 }
     body.dark .metric-card { background: #1a1a2a; border: 1px solid #2d2d3a; }
@@ -3528,20 +3528,7 @@ function initNotificationBell() {
         });
     }
 }
-// Функция принудительного обновления высоты карточки (упрощённая)
-function forceUpdateCardHeight(card) {
-    if (!card) return;
-    // Просто сбрасываем высоту на auto
-    card.style.height = 'auto';
-    card.style.minHeight = 'auto';
-    // Небольшая задержка для перерисовки
-    setTimeout(() => {
-        // Убеждаемся, что высота всё ещё auto
-        if (card.style.height !== 'auto') {
-            card.style.height = 'auto';
-        }
-    }, 50);
-}
+
 
     function renderDashboard() {
         if (isRendering) {
@@ -4070,19 +4057,16 @@ document.body.addEventListener('click', function(e) {
     const allOpen = Array.from(allDetailsDivs).every(details => details.style.maxHeight && details.style.maxHeight !== '0px');
     
     if (allOpen) {
-        // Закрываем все
         allDetailsDivs.forEach(details => details.style.maxHeight = '0');
         allExpandIcons.forEach(icon => icon.style.transform = 'rotate(0deg)');
         btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
     } else {
-        // Открываем все
         allDetailsDivs.forEach(details => { 
             details.style.maxHeight = details.scrollHeight + 'px'; 
         });
         allExpandIcons.forEach(icon => icon.style.transform = 'rotate(90deg)');
         btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
         
-        // Анимация подэлементов
         allDetailsDivs.forEach((details, idx) => {
             const items = details.querySelectorAll('.sub-item');
             items.forEach((item, itemIdx) => {
@@ -4094,13 +4078,16 @@ document.body.addEventListener('click', function(e) {
         });
     }
     
-    // Обновляем высоту карточки (один раз после всех изменений)
+    // Принудительное расширение карточки
+    card.style.height = 'auto';
+    card.style.minHeight = 'auto';
     setTimeout(() => {
-        if (card) {
+        const newHeight = card.scrollHeight;
+        card.style.height = newHeight + 'px';
+        setTimeout(() => {
             card.style.height = 'auto';
-            card.style.minHeight = 'auto';
-        }
-    }, 20);
+        }, 200);
+    }, 10);
 });
 
 // Обработчик для клика по каналу (раскрытие подканалов)
