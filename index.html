@@ -745,6 +745,35 @@ body.dark .notifications-panel { background: #1a1a2a; border: 1px solid #2d2d3a;
     transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Стили для блоков каналов */
+.metric-card {
+    overflow: visible !important;
+    transition: height 0.2s ease;
+}
+
+.main-channels-list {
+    overflow: visible !important;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.channel-details {
+    overflow: visible !important;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-channels-list-btn:hover,
+.toggle-all-channels-btn:hover {
+    background: rgba(102,126,234,0.25) !important;
+    transform: translateY(-1px);
+}
+
+.channel-header {
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 4px;
+    margin: -4px;
+}
+
 </style>
 </head>
 <body>
@@ -3770,7 +3799,7 @@ console.log('costData:', costData);
     const channelItemsHtml = sortedChannels.map((channel, channelIdx) => {
         const channelPercent = (channel.total / total) * 100;
         
-        // Проверяем наличие items (подканалов)
+        // Подканалы
         let itemsHtml = '';
         if (channel.items && channel.items.length > 0) {
             const sortedItems = [...channel.items].sort((a, b) => b.amount - a.amount);
@@ -3823,14 +3852,14 @@ console.log('costData:', costData);
     }).join('');
     
     return `
-        <div class="metric-card">
+        <div class="metric-card" id="card-${title.replace(/\s/g, '')}">
             <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 20px;">${icon}</span>
                     <span style="font-size: 16px; font-weight: 700;">${title}</span>
                 </div>
-                <button class="toggle-channels-list-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-                    <span class="toggle-channels-icon">▶</span> Показать по каналам
+                <button class="toggle-channels-list-btn" data-type="${isExpense ? 'expenses' : 'revenue'}" style="background: rgba(102,126,234,0.15); border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; transition: all 0.2s;">
+                    <span class="toggle-channels-icon" style="font-size: 12px;">▶</span> Показать все каналы
                 </button>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(102,126,234,0.2);">
@@ -3840,13 +3869,13 @@ console.log('costData:', costData);
                 </div>
                 <div class="metric-sub">общая сумма</div>
             </div>
-            <div class="channels-container" style="overflow-y: visible; padding-right: 5px;">
+            <div class="channels-container" style="margin-top: 8px;">
                 <div class="main-channels-list" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
                     ${channelItemsHtml}
                 </div>
-                <div class="expand-all-wrapper" style="display: none; margin-top: 8px;">
-                    <button class="toggle-all-channels-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center;">
-                        <span>▶</span> Развернуть все подканалы
+                <div class="expand-all-wrapper" style="display: none; margin-top: 12px; text-align: center;">
+                    <button class="toggle-all-channels-btn" style="background: rgba(102,126,234,0.1); border: none; color: #667eea; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; transition: all 0.2s;">
+                        <span style="font-size: 12px;">▶</span> Развернуть все подканалы
                     </button>
                 </div>
             </div>
@@ -4049,24 +4078,41 @@ console.log('costData:', costData);
 
             // Обработчики кнопок
 setTimeout(() => {
-    // Обработчик для прибыли по каналам
-    const toggleProfitBtn = document.querySelector('.toggle-channels-profit-btn');
-    const profitChannelsContainer = document.querySelector('.profit-channels-container');
-    if (toggleProfitBtn && profitChannelsContainer) {
-        toggleProfitBtn.onclick = () => {
-            const card = toggleProfitBtn.closest('.metric-card');
-            if (profitChannelsContainer.style.maxHeight && profitChannelsContainer.style.maxHeight !== '0px') {
-                profitChannelsContainer.style.maxHeight = '0';
-                toggleProfitBtn.innerHTML = '<span>▶</span> Показать по каналам';
+    // ===== КНОПКА "ПОКАЗАТЬ ВСЕ КАНАЛЫ" =====
+    const toggleChannelsListBtns = document.querySelectorAll('.toggle-channels-list-btn');
+    
+    toggleChannelsListBtns.forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const card = btn.closest('.metric-card');
+            const mainChannelsList = card.querySelector('.main-channels-list');
+            const expandAllWrapper = card.querySelector('.expand-all-wrapper');
+            const toggleIcon = btn.querySelector('.toggle-channels-icon');
+            
+            if (mainChannelsList.style.maxHeight && mainChannelsList.style.maxHeight !== '0px') {
+                // Закрываем
+                mainChannelsList.style.maxHeight = '0';
+                if (toggleIcon) toggleIcon.innerHTML = '▶';
+                btn.innerHTML = '<span class="toggle-channels-icon" style="font-size: 12px;">▶</span> Показать все каналы';
+                if (expandAllWrapper) expandAllWrapper.style.display = 'none';
             } else {
-                profitChannelsContainer.style.maxHeight = profitChannelsContainer.scrollHeight + 'px';
-                toggleProfitBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                const items = profitChannelsContainer.querySelectorAll('.profit-channel-item');
+                // Открываем
+                mainChannelsList.style.maxHeight = mainChannelsList.scrollHeight + 'px';
+                if (toggleIcon) toggleIcon.innerHTML = '▼';
+                btn.innerHTML = '<span class="toggle-channels-icon" style="font-size: 12px;">▼</span> Скрыть все каналы';
+                if (expandAllWrapper) expandAllWrapper.style.display = 'block';
+                
+                // Анимация появления каналов
+                const items = mainChannelsList.querySelectorAll('.channel-item');
                 items.forEach((item, idx) => {
-                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+                    setTimeout(() => { 
+                        item.style.opacity = '1'; 
+                        item.style.transform = 'translateX(0)'; 
+                    }, idx * 50);
                 });
             }
-            // Принудительное расширение карточки
+            
+            // Обновляем высоту карточки
             setTimeout(() => {
                 if (card) {
                     card.style.height = 'auto';
@@ -4074,41 +4120,54 @@ setTimeout(() => {
                 }
             }, 50);
         };
-    }
+    });
     
-// Обработчик для кнопки "Показать/скрыть список каналов"
-const toggleChannelsListBtn = document.querySelector('.toggle-channels-list-btn');
-const mainChannelsList = document.querySelector('.main-channels-list');
-const expandAllWrapper = document.querySelector('.expand-all-wrapper');
-
-if (toggleChannelsListBtn && mainChannelsList) {
-    toggleChannelsListBtn.onclick = (e) => {
-        e.stopPropagation();
-        const card = toggleChannelsListBtn.closest('.metric-card');
+    // ===== КНОПКА "РАЗВЕРНУТЬ ВСЕ ПОДКАНАЛЫ" =====
+    document.body.addEventListener('click', function(e) {
+        const btn = e.target.closest('.toggle-all-channels-btn');
+        if (!btn) return;
         
-        if (mainChannelsList.style.maxHeight && mainChannelsList.style.maxHeight !== '0px' && mainChannelsList.style.maxHeight !== 'none') {
-            // Закрываем
-            mainChannelsList.style.maxHeight = '0';
-            mainChannelsList.style.overflow = 'hidden';
-            toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▶</span> Показать по каналам';
-            if (expandAllWrapper) expandAllWrapper.style.display = 'none';
+        e.stopPropagation();
+        const card = btn.closest('.metric-card');
+        const container = card.querySelector('.channels-container');
+        if (!container) return;
+        
+        const allDetailsDivs = container.querySelectorAll('.channel-details');
+        const allExpandIcons = container.querySelectorAll('.expand-icon');
+        
+        // Проверяем, все ли подканалы уже открыты
+        const allOpen = Array.from(allDetailsDivs).every(details => 
+            details.style.maxHeight && details.style.maxHeight !== '0px'
+        );
+        
+        if (allOpen) {
+            // Закрываем все подканалы
+            allDetailsDivs.forEach(details => {
+                details.style.maxHeight = '0';
+            });
+            allExpandIcons.forEach(icon => {
+                icon.style.transform = 'rotate(0deg)';
+            });
+            btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
         } else {
-            // Открываем с ограничением высоты
-            mainChannelsList.style.display = 'block';
-            mainChannelsList.style.overflow = 'auto';
-            // Ограничиваем высоту 400px, но не больше содержимого
-            const scrollHeight = mainChannelsList.scrollHeight;
-            mainChannelsList.style.maxHeight = Math.min(scrollHeight, 400) + 'px';
+            // Открываем все подканалы
+            allDetailsDivs.forEach(details => { 
+                details.style.maxHeight = details.scrollHeight + 'px'; 
+            });
+            allExpandIcons.forEach(icon => {
+                icon.style.transform = 'rotate(90deg)';
+            });
+            btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
             
-            toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▼</span> Скрыть по каналам';
-            if (expandAllWrapper) expandAllWrapper.style.display = 'block';
-            
-            const items = mainChannelsList.querySelectorAll('.channel-item');
-            items.forEach((item, idx) => {
-                setTimeout(() => { 
-                    item.style.opacity = '1'; 
-                    item.style.transform = 'translateX(0)'; 
-                }, idx * 50);
+            // Анимация появления элементов
+            allDetailsDivs.forEach((details, idx) => {
+                const items = details.querySelectorAll('.sub-item');
+                items.forEach((item, itemIdx) => {
+                    setTimeout(() => { 
+                        item.style.opacity = '1'; 
+                        item.style.transform = 'translateX(0)'; 
+                    }, idx * 50 + itemIdx * 30);
+                });
             });
         }
         
@@ -4117,87 +4176,12 @@ if (toggleChannelsListBtn && mainChannelsList) {
             if (card) {
                 card.style.height = 'auto';
                 card.style.minHeight = 'auto';
-                card.offsetHeight;
             }
-        }, 50);
-    };
-}
-    // Обработчик для кнопки "Развернуть все подканалы" - ИСПРАВЛЕННАЯ ВЕРСИЯ
-document.body.addEventListener('click', function(e) {
-    const btn = e.target.closest('.toggle-all-channels-btn');
-    if (!btn) return;
+        }, 100);
+    });
     
-    e.stopPropagation();
-    const card = btn.closest('.metric-card');
-    const container = card.querySelector('.channels-container');
-    if (!container) return;
-    
-    const allDetailsDivs = container.querySelectorAll('.channel-details');
-    const allExpandIcons = container.querySelectorAll('.expand-icon');
-    
-    // Проверяем, все ли подканалы уже открыты
-    const allOpen = Array.from(allDetailsDivs).every(details => 
-        details.style.maxHeight && details.style.maxHeight !== '0px'
-    );
-    
-    if (allOpen) {
-        // Закрываем все подканалы
-        allDetailsDivs.forEach(details => {
-            details.style.maxHeight = '0';
-        });
-        allExpandIcons.forEach(icon => {
-            icon.style.transform = 'rotate(0deg)';
-        });
-        btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
-    } else {
-        // Открываем все подканалы
-        allDetailsDivs.forEach(details => { 
-            details.style.maxHeight = details.scrollHeight + 'px'; 
-        });
-        allExpandIcons.forEach(icon => {
-            icon.style.transform = 'rotate(90deg)';
-        });
-        btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
-        
-        // Анимация появления элементов
-        allDetailsDivs.forEach((details, idx) => {
-            const items = details.querySelectorAll('.sub-item');
-            items.forEach((item, itemIdx) => {
-                setTimeout(() => { 
-                    item.style.opacity = '1'; 
-                    item.style.transform = 'translateX(0)'; 
-                }, idx * 50 + itemIdx * 30);
-            });
-        });
-    }
-    
-    // ==== ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ВЫСОТЫ КАРТОЧКИ ====
-    if (card) {
-        card.style.height = 'auto';
-        card.style.minHeight = 'auto';
-        card.style.overflow = 'visible';
-        
-        const channelsContainer = card.querySelector('.channels-container');
-        if (channelsContainer) {
-            channelsContainer.style.overflow = 'visible';
-            channelsContainer.style.maxHeight = 'none';
-        }
-        
-        const mainList = card.querySelector('.main-channels-list');
-        if (mainList && mainList.style.maxHeight !== '0px') {
-            setTimeout(() => {
-                mainList.style.maxHeight = mainList.scrollHeight + 'px';
-                card.style.height = 'auto';
-                card.offsetHeight;
-            }, 10);
-        }
-        
-        requestAnimationFrame(() => {
-            card.style.height = 'auto';
-            card.offsetHeight;
-        });
-    }
-});
+    // ===== ОСТАЛЬНЫЕ ОБРАБОТЧИКИ (НДС, средний чек, продажи, эффективность, себестоимость) =====
+    // ... остальные обработчики остаются без изменений
 
                 const toggleNdsBtn = document.querySelector('.toggle-nds-breakdown-btn');
                 const ndsContainer = document.querySelector('.nds-channels-container');
