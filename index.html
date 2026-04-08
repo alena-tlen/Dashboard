@@ -606,6 +606,32 @@
     background: rgba(102,126,234,0.05);
 }
 
+/* Принудительное правильное отображение карточек */
+.metric-card {
+    overflow: visible !important;
+    transition: height 0.2s ease;
+    display: block !important;
+}
+
+.main-channels-list {
+    overflow: visible !important;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.channel-details {
+    overflow: visible !important;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Убираем возможные конфликты */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+    align-items: start;
+}
+
 </style>
 </head>
 <body>
@@ -3137,7 +3163,26 @@ function renderAnomaliesBlock(data, f, totalSalesQuantity, avgCheck) {
     `;
 }
 
-
+// Функция для принудительного обновления высоты карточки
+function forceUpdateCardHeight(card) {
+    if (!card) return;
+    
+    // Сбрасываем ограничения высоты
+    card.style.height = 'auto';
+    card.style.minHeight = 'auto';
+    card.style.overflow = 'visible';
+    
+    // Получаем реальную высоту содержимого
+    const height = card.scrollHeight;
+    
+    // Устанавливаем высоту
+    card.style.height = height + 'px';
+    
+    // Через мгновение сбрасываем на auto для плавности
+    setTimeout(() => {
+        card.style.height = 'auto';
+    }, 50);
+}
 
     function renderDashboard() {
         if (isRendering) {
@@ -3628,11 +3673,10 @@ setTimeout(() => {
                 });
             }
             
-            // Обновляем высоту карточки
+            // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ВЫСОТЫ КАРТОЧКИ
             setTimeout(() => {
                 if (card) {
-                    card.style.height = 'auto';
-                    card.style.minHeight = 'auto';
+                    forceUpdateCardHeight(card);
                 }
             }, 50);
         };
@@ -3687,11 +3731,10 @@ setTimeout(() => {
             });
         }
         
-        // Обновляем высоту карточки
+        // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ВЫСОТЫ КАРТОЧКИ
         setTimeout(() => {
             if (card) {
-                card.style.height = 'auto';
-                card.style.minHeight = 'auto';
+                forceUpdateCardHeight(card);
             }
         }, 100);
     });
