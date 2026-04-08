@@ -4089,40 +4089,6 @@ setTimeout(() => {
         };
     }
     
-    // Обработчик для кнопки "Показать/скрыть список каналов" (ОДИН РАЗ!)
-    const toggleChannelsListBtn = document.querySelector('.toggle-channels-list-btn');
-    const mainChannelsList = document.querySelector('.main-channels-list');
-    const expandAllWrapper = document.querySelector('.expand-all-wrapper');
-
-    if (toggleChannelsListBtn && mainChannelsList) {
-        // Удаляем старый обработчик, если есть
-        toggleChannelsListBtn.onclick = null;
-        
-        toggleChannelsListBtn.onclick = () => {
-            const card = toggleChannelsListBtn.closest('.metric-card');
-            if (mainChannelsList.style.maxHeight && mainChannelsList.style.maxHeight !== '0px') {
-                mainChannelsList.style.maxHeight = '0';
-                toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▶</span> Показать по каналам';
-                if (expandAllWrapper) expandAllWrapper.style.display = 'none';
-            } else {
-                mainChannelsList.style.maxHeight = mainChannelsList.scrollHeight + 'px';
-                toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▼</span> Скрыть по каналам';
-                if (expandAllWrapper) expandAllWrapper.style.display = 'block';
-                
-                const items = mainChannelsList.querySelectorAll('.channel-item');
-                items.forEach((item, idx) => {
-                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
-                });
-            }
-            // Обновляем высоту карточки
-            setTimeout(() => {
-                if (card) {
-                    card.style.height = 'auto';
-                    card.style.minHeight = 'auto';
-                }
-            }, 20);
-        };
-    }
 
     // Обработчик для кнопки "Развернуть все подканалы" - ИСПРАВЛЕННАЯ ВЕРСИЯ
 document.body.addEventListener('click', function(e) {
@@ -4173,41 +4139,33 @@ document.body.addEventListener('click', function(e) {
         });
     }
     
-    // ==== КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: принудительное обновление высоты карточки ====
+    // ==== ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ВЫСОТЫ КАРТОЧКИ ====
     if (card) {
-        // Сбрасываем ограничения высоты
         card.style.height = 'auto';
         card.style.minHeight = 'auto';
         card.style.overflow = 'visible';
         
-        // Расширяем контейнер каналов
         const channelsContainer = card.querySelector('.channels-container');
         if (channelsContainer) {
             channelsContainer.style.overflow = 'visible';
             channelsContainer.style.maxHeight = 'none';
         }
         
-        // ОБЯЗАТЕЛЬНО: обновляем высоту основного списка каналов
         const mainList = card.querySelector('.main-channels-list');
         if (mainList && mainList.style.maxHeight !== '0px') {
-            // Небольшая задержка, чтобы DOM успел обновиться
             setTimeout(() => {
                 mainList.style.maxHeight = mainList.scrollHeight + 'px';
-                // Еще раз принудительно обновляем карточку
                 card.style.height = 'auto';
-                // Принудительный пересчет
                 card.offsetHeight;
             }, 10);
         }
         
-        // Финальное обновление через requestAnimationFrame
         requestAnimationFrame(() => {
             card.style.height = 'auto';
-            card.offsetHeight; // принудительный reflow
+            card.offsetHeight;
         });
     }
 });
-    
 
                 const toggleNdsBtn = document.querySelector('.toggle-nds-breakdown-btn');
                 const ndsContainer = document.querySelector('.nds-channels-container');
