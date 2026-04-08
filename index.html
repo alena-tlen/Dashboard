@@ -137,6 +137,7 @@
     padding: 20px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     transition: transform 0.2s;
+    overflow: hidden;
 }
     body.dark .metric-card { background: #1a1a2a; border: 1px solid #2d2d3a; }
     .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -3527,23 +3528,31 @@ function initNotificationBell() {
         });
     }
 }
-
 // Функция принудительного обновления высоты карточки
 function forceUpdateCardHeight(card) {
     if (!card) return;
-    // Сохраняем исходную высоту
-    const originalHeight = card.style.height;
-    // Сбрасываем
+    // Сохраняем overflow
+    const originalOverflow = card.style.overflow;
+    card.style.overflow = 'hidden';
+    // Получаем текущую высоту
+    const currentHeight = card.offsetHeight;
+    // Сбрасываем высоту
     card.style.height = 'auto';
-    card.style.minHeight = 'auto';
     // Получаем новую высоту
     const newHeight = card.scrollHeight;
-    // Устанавливаем
+    // Устанавливаем обратно
+    card.style.height = currentHeight + 'px';
+    // Форсируем перерисовку
+    card.offsetHeight;
+    // Анимируем изменение высоты
+    card.style.transition = 'height 0.2s ease';
     card.style.height = newHeight + 'px';
-    // Через небольшую задержку возвращаем auto (чтобы при сворачивании тоже работало)
+    // Через время убираем transition и overflow
     setTimeout(() => {
         card.style.height = 'auto';
-    }, 200);
+        card.style.transition = '';
+        card.style.overflow = originalOverflow;
+    }, 250);
 }
 
     function renderDashboard() {
@@ -4083,7 +4092,7 @@ document.body.addEventListener('click', function(e) {
         allExpandIcons.forEach(icon => icon.style.transform = 'rotate(0deg)');
         btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
         // Обновляем высоту после сворачивания
-        setTimeout(() => forceUpdateCardHeight(card), 100);
+        setTimeout(() => forceUpdateCardHeight(card), 50);
     } else {
         allDetailsDivs.forEach(details => { 
             details.style.maxHeight = details.scrollHeight + 'px'; 
@@ -4091,7 +4100,7 @@ document.body.addEventListener('click', function(e) {
         allExpandIcons.forEach(icon => icon.style.transform = 'rotate(90deg)');
         btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
         // Обновляем высоту после раскрытия
-        setTimeout(() => forceUpdateCardHeight(card), 100);
+        setTimeout(() => forceUpdateCardHeight(card), 50);
         
         allDetailsDivs.forEach((details, idx) => {
             const items = details.querySelectorAll('.sub-item');
