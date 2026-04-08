@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -573,64 +573,6 @@
     transition: height 0.3s ease;
 }
 
-/* Стили для блоков каналов */
-.metric-card {
-    overflow: visible !important;
-    transition: height 0.2s ease;
-}
-
-.main-channels-list {
-    overflow: visible !important;
-    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.channel-details {
-    overflow: visible !important;
-    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.toggle-channels-list-btn:hover,
-.toggle-all-channels-btn:hover {
-    background: rgba(102,126,234,0.25) !important;
-    transform: translateY(-1px);
-}
-
-.channel-header {
-    cursor: pointer;
-    border-radius: 8px;
-    padding: 4px;
-    margin: -4px;
-}
-
-.channel-header:hover {
-    background: rgba(102,126,234,0.05);
-}
-
-/* Принудительное правильное отображение карточек */
-.metric-card {
-    overflow: visible !important;
-    transition: height 0.2s ease;
-    display: block !important;
-}
-
-.main-channels-list {
-    overflow: visible !important;
-    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.channel-details {
-    overflow: visible !important;
-    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Убираем возможные конфликты */
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    margin-bottom: 24px;
-    align-items: start;
-}
 
 </style>
 </head>
@@ -3163,26 +3105,7 @@ function renderAnomaliesBlock(data, f, totalSalesQuantity, avgCheck) {
     `;
 }
 
-// Функция для принудительного обновления высоты карточки
-function forceUpdateCardHeight(card) {
-    if (!card) return;
-    
-    // Сбрасываем ограничения высоты
-    card.style.height = 'auto';
-    card.style.minHeight = 'auto';
-    card.style.overflow = 'visible';
-    
-    // Получаем реальную высоту содержимого
-    const height = card.scrollHeight;
-    
-    // Устанавливаем высоту
-    card.style.height = height + 'px';
-    
-    // Через мгновение сбрасываем на auto для плавности
-    setTimeout(() => {
-        card.style.height = 'auto';
-    }, 50);
-}
+
 
     function renderDashboard() {
         if (isRendering) {
@@ -3364,90 +3287,77 @@ console.log('costData:', costData);
             }
             
             function createCollapsibleBlock(title, icon, total, totalChange, channels, isExpense = false) {
-    const sortedChannels = [...channels].sort((a, b) => b.total - a.total);
-    
-    const channelItemsHtml = sortedChannels.map((channel, channelIdx) => {
-        const channelPercent = (channel.total / total) * 100;
-        const sortedItems = [...channel.items].sort((a, b) => b.amount - a.amount);
-        const itemsHtml = sortedItems.map((item, itemIdx) => {
-            const itemPercentOfTotal = (item.amount / total) * 100;
-            const itemPercentOfChannel = (item.amount / channel.total) * 100;
-            const gradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
-            return `
-                <div class="sub-item" data-item-name="${item.name}" style="margin-bottom: 12px; transition-delay: ${itemIdx * 0.03}s;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
-                        <span style="font-size: 13px; font-weight: 500;">${item.name}</span>
-                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                            <span style="font-size: 13px; font-weight: 600;">${formatCurrency(item.amount)}</span>
-                            <span style="font-size: 12px; background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">${itemPercentOfTotal.toFixed(1)}% от ${title.toLowerCase()}</span>
+                const channelItemsHtml = channels.map((channel, channelIdx) => {
+                    const channelPercent = (channel.total / total) * 100;
+                    const sortedItems = [...channel.items].sort((a, b) => b.amount - a.amount);
+                    const itemsHtml = sortedItems.map((item, itemIdx) => {
+                        const itemPercentOfTotal = (item.amount / total) * 100;
+                        const itemPercentOfChannel = (item.amount / channel.total) * 100;
+                        const gradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
+                        return `
+                            <div class="sub-item" data-item-name="${item.name}" style="margin-bottom: 12px; opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; transition-delay: ${itemIdx * 0.03}s;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                                    <span style="font-size: 13px; font-weight: 500;">${item.name}</span>
+                                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                        <span style="font-size: 13px; font-weight: 600;">${formatCurrency(item.amount)}</span>
+                                        <span style="font-size: 12px; background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">${itemPercentOfTotal.toFixed(1)}% от дохода</span>
+                                    </div>
+                                </div>
+                                <div style="background: rgba(102,126,234,0.15); height: 6px; border-radius: 3px; overflow: hidden;">
+                                    <div class="sub-progress-bar" style="width: ${itemPercentOfChannel}%; height: 100%; background: ${gradient}; border-radius: 3px;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    const channelGradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
+                    return `
+                        <div class="channel-item" data-channel-name="${channel.name}" style="margin-bottom: 20px; border-bottom: 1px solid rgba(102,126,234,0.2); padding-bottom: 16px;">
+                            <div class="channel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="channel-icon" style="font-size: 20px;">${channel.name === 'Wildberries' ? '🛍️' : channel.name === 'Ozon' ? '📦' : channel.name === 'Детский мир' ? '🧸' : channel.name === 'Lamoda' ? '👗' : channel.name === 'Оптовики' ? '📊' : '📁'}</span>
+                                    <span style="font-weight: 700; font-size: 15px;">${channel.name}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span class="channel-total" style="font-size: 14px; font-weight: 600;">${formatCurrency(channel.total)}</span>
+                                    <span class="channel-percent" style="font-size: 12px; background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">${channelPercent.toFixed(1)}%</span>
+                                    <span class="expand-icon" style="font-size: 14px; transition: transform 0.3s; cursor: pointer;">▶</span>
+                                </div>
+                            </div>
+                            <div style="background: rgba(102,126,234,0.1); height: 8px; border-radius: 4px; margin-bottom: 12px; overflow: hidden;">
+                                <div class="channel-progress-bar" style="width: ${channelPercent}%; height: 100%; background: ${channelGradient}; border-radius: 4px;"></div>
+                            </div>
+                            <div class="channel-details" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
+                                <div style="padding-top: 12px; padding-left: 30px;">${itemsHtml}</div>
+                            </div>
                         </div>
+                    `;
+                }).join('');
+                
+                return `
+                    <div class="metric-card" style="overflow: hidden; padding: 20px; height: 100%; display: flex; flex-direction: column;">
+                        <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                            <span style="font-size: 20px;">${icon}</span>
+                            <span style="font-size: 16px; font-weight: 700;">${title}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(102,126,234,0.2);">
+                            <div>
+                                <div class="metric-value" id="${isExpense ? 'expensesTotal' : 'revenueTotal'}" style="font-size: 28px;">${formatCurrency(total)}</div>
+                                ${getChangeHtml(totalChange, isExpense)}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="mini-chart" id="${isExpense ? 'expensesMiniChart' : 'revenueMiniChart'}" style="width: 100px; height: 40px;"></div>
+                                <div class="metric-sub">общая сумма</div>
+                            </div>
+                        </div>
+                        <div class="channels-container" style="flex: 1; overflow-y: visible; padding-right: 5px;">
+                            ${channelItemsHtml}
+                        </div>
+                        <button class="toggle-all-channels-btn" style="margin-top: 16px; background: none; border: none; color: #667eea; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center;">
+                            <span>▶</span> Показать все подканалы
+                        </button>
                     </div>
-                    <div style="background: rgba(102,126,234,0.15); height: 6px; border-radius: 3px; overflow: hidden;">
-                        <div class="sub-progress-bar" style="width: ${itemPercentOfChannel}%; height: 100%; background: ${gradient}; border-radius: 3px;"></div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        const channelGradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
-        
-        return `
-            <div class="channel-item" data-channel-name="${channel.name}">
-                <div class="channel-header">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span class="channel-icon">${channel.name === 'Wildberries' ? '🛍️' : channel.name === 'Ozon' ? '📦' : channel.name === 'Детский мир' ? '🧸' : channel.name === 'Lamoda' ? '👗' : channel.name === 'Оптовики' ? '📊' : '📁'}</span>
-                        <span style="font-weight: 700; font-size: 15px;">${channel.name}</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span class="channel-total">${formatCurrency(channel.total)}</span>
-                        <span class="channel-percent">${channelPercent.toFixed(1)}%</span>
-                        <span class="expand-icon">▶</span>
-                    </div>
-                </div>
-                <div style="background: rgba(102,126,234,0.1); height: 8px; border-radius: 4px; margin-bottom: 12px; overflow: hidden;">
-                    <div class="channel-progress-bar" style="width: ${channelPercent}%; height: 100%; background: ${channelGradient}; border-radius: 4px;"></div>
-                </div>
-                <div class="channel-details">
-                    <div style="padding-top: 12px;">${itemsHtml}</div>
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    // ГЛАВНОЕ ИЗМЕНЕНИЕ ЗДЕСЬ - КАРТОЧКА СКРЫТА ПО УМОЛЧАНИЮ
-    return `
-        <div class="metric-card">
-            <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 20px;">${icon}</span>
-                    <span style="font-size: 16px; font-weight: 700;">${title}</span>
-                </div>
-                <button class="toggle-channels-list-btn">
-                    <span class="toggle-channels-icon">▶</span> Показать все каналы
-                </button>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(102,126,234,0.2);">
-                <div>
-                    <div class="metric-value" style="font-size: 28px;">${formatCurrency(total)}</div>
-                    ${totalChange ? `<span class="metric-change ${totalChange.isPositive ? 'change-positive' : 'change-negative'}" style="font-size: 11px; padding: 2px 6px; border-radius: 12px; display: inline-block; margin-left: 8px;">${totalChange.formatted}</span>` : ''}
-                </div>
-                <div class="metric-sub">общая сумма</div>
-            </div>
-            <div class="channels-container">
-                <!-- ЭТОТ БЛОК СКРЫТ ПО УМОЛЧАНИЮ (max-height: 0) -->
-                <div class="main-channels-list" style="max-height: 0; overflow: hidden;">
-                    ${channelItemsHtml}
-                </div>
-                <!-- ЭТА КНОПКА СКРЫТА ПО УМОЛЧАНИЮ (display: none) -->
-                <div class="expand-all-wrapper" style="display: none;">
-                    <button class="toggle-all-channels-btn">
-                        <span>▶</span> Развернуть все подканалы
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-}
+                `;
+            }
             
             const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false);
             const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true);
@@ -3641,225 +3551,139 @@ console.log('costData:', costData);
             `;
             
             // Обработчики кнопок
-setTimeout(() => {
-    // ===== КНОПКА "ПОКАЗАТЬ ВСЕ КАНАЛЫ" =====
-    const toggleChannelsListBtns = document.querySelectorAll('.toggle-channels-list-btn');
-    
-    toggleChannelsListBtns.forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const card = btn.closest('.metric-card');
-            const mainChannelsList = card.querySelector('.main-channels-list');
-            const expandAllWrapper = card.querySelector('.expand-all-wrapper');
-            const toggleIcon = btn.querySelector('.toggle-channels-icon');
-            
-            // Проверяем, открыт ли список каналов
-            if (mainChannelsList.style.maxHeight && mainChannelsList.style.maxHeight !== '0px') {
-                // Закрываем каналы
-                mainChannelsList.style.maxHeight = '0';
-                if (toggleIcon) toggleIcon.innerHTML = '▶';
-                btn.innerHTML = '<span class="toggle-channels-icon">▶</span> Показать все каналы';
-                if (expandAllWrapper) expandAllWrapper.style.display = 'none';
-            } else {
-                // Открываем каналы
-                const newHeight = mainChannelsList.scrollHeight;
-                mainChannelsList.style.maxHeight = newHeight + 'px';
-                if (toggleIcon) toggleIcon.innerHTML = '▼';
-                btn.innerHTML = '<span class="toggle-channels-icon">▼</span> Скрыть все каналы';
-                if (expandAllWrapper) expandAllWrapper.style.display = 'block';
+            setTimeout(() => {
+                const toggleProfitBtn = document.querySelector('.toggle-channels-profit-btn');
+                const profitChannelsContainer = document.querySelector('.profit-channels-container');
+                if (toggleProfitBtn && profitChannelsContainer) {
+                    toggleProfitBtn.onclick = () => {
+                        if (profitChannelsContainer.style.maxHeight && profitChannelsContainer.style.maxHeight !== '0px') {
+                            profitChannelsContainer.style.maxHeight = '0';
+                            toggleProfitBtn.innerHTML = '<span>▶</span> Показать по каналам';
+                        } else {
+                            profitChannelsContainer.style.maxHeight = profitChannelsContainer.scrollHeight + 'px';
+                            toggleProfitBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
+                            const items = profitChannelsContainer.querySelectorAll('.profit-channel-item');
+                            items.forEach((item, idx) => {
+                                setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+                            });
+                        }
+                    };
+                }
                 
-                // Анимация появления каналов
-                const items = mainChannelsList.querySelectorAll('.channel-item');
-                items.forEach((item, idx) => {
-                    setTimeout(() => { 
-                        item.style.opacity = '1'; 
-                        item.style.transform = 'translateX(0)'; 
-                    }, idx * 50);
-                });
-            }
-        };
-    });
-    
-    // ===== КНОПКА "РАЗВЕРНУТЬ ВСЕ ПОДКАНАЛЫ" =====
-    document.body.addEventListener('click', function(e) {
-        const btn = e.target.closest('.toggle-all-channels-btn');
-        if (!btn) return;
-        
-        e.stopPropagation();
-        const card = btn.closest('.metric-card');
-        const container = card.querySelector('.channels-container');
-        if (!container) return;
-        
-        const allDetailsDivs = container.querySelectorAll('.channel-details');
-        const allExpandIcons = container.querySelectorAll('.expand-icon');
-        
-        // Проверяем, все ли подканалы уже открыты
-        const allOpen = Array.from(allDetailsDivs).every(details => 
-            details.style.maxHeight && details.style.maxHeight !== '0px'
-        );
-        
-        if (allOpen) {
-            // Закрываем все подканалы
-            allDetailsDivs.forEach(details => {
-                details.style.maxHeight = '0';
-            });
-            allExpandIcons.forEach(icon => {
-                icon.style.transform = 'rotate(0deg)';
-            });
-            btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
+                const toggleNdsBtn = document.querySelector('.toggle-nds-breakdown-btn');
+                const ndsContainer = document.querySelector('.nds-channels-container');
+                if (toggleNdsBtn && ndsContainer) {
+                    toggleNdsBtn.onclick = () => {
+                        if (ndsContainer.style.maxHeight && ndsContainer.style.maxHeight !== '0px') {
+                            ndsContainer.style.maxHeight = '0';
+                            toggleNdsBtn.innerHTML = '<span>▶</span> Показать по каналам';
+                        } else {
+                            ndsContainer.style.maxHeight = ndsContainer.scrollHeight + 'px';
+                            toggleNdsBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
+                            const items = ndsContainer.querySelectorAll('.nds-channel-item');
+                            items.forEach((item, idx) => {
+                                setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+                            });
+                        }
+                    };
+                }
+                
+                const toggleAvgCheckBtn = document.querySelector('.toggle-avgcheck-breakdown-btn');
+                const avgCheckContainer = document.querySelector('.avgcheck-channels-container');
+                if (toggleAvgCheckBtn && avgCheckContainer) {
+                    toggleAvgCheckBtn.onclick = () => {
+                        if (avgCheckContainer.style.maxHeight && avgCheckContainer.style.maxHeight !== '0px') {
+                            avgCheckContainer.style.maxHeight = '0';
+                            toggleAvgCheckBtn.innerHTML = '<span>▶</span> Показать по каналам';
+                        } else {
+                            avgCheckContainer.style.maxHeight = avgCheckContainer.scrollHeight + 'px';
+                            toggleAvgCheckBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
+                            const items = avgCheckContainer.querySelectorAll('.avgcheck-channel-item');
+                            items.forEach((item, idx) => {
+                                setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+                            });
+                        }
+                    };
+                }
+                
+                const toggleSalesBtn = document.querySelector('.toggle-sales-breakdown-btn');
+                const salesContainer = document.querySelector('.sales-channels-container');
+                if (toggleSalesBtn && salesContainer) {
+                    toggleSalesBtn.onclick = () => {
+                        if (salesContainer.style.maxHeight && salesContainer.style.maxHeight !== '0px') {
+                            salesContainer.style.maxHeight = '0';
+                            toggleSalesBtn.innerHTML = '<span>▶</span> Показать по каналам';
+                        } else {
+                            salesContainer.style.maxHeight = salesContainer.scrollHeight + 'px';
+                            toggleSalesBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
+                            const items = salesContainer.querySelectorAll('.sales-channel-item');
+                            items.forEach((item, idx) => {
+                                setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+                            });
+                        }
+                    };
+                }
+                
+                const toggleEfficiencyBtn = document.querySelector('.toggle-efficiency-breakdown-btn');
+                const efficiencyContainer = document.querySelector('.efficiency-channels-container');
+                if (toggleEfficiencyBtn && efficiencyContainer) {
+                    toggleEfficiencyBtn.onclick = () => {
+                        if (efficiencyContainer.style.maxHeight && efficiencyContainer.style.maxHeight !== '0px') {
+                            efficiencyContainer.style.maxHeight = '0';
+                            toggleEfficiencyBtn.innerHTML = '<span>▶</span> Показать по каналам';
+                        } else {
+                            efficiencyContainer.style.maxHeight = efficiencyContainer.scrollHeight + 'px';
+                            toggleEfficiencyBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
+                            const items = efficiencyContainer.querySelectorAll('.efficiency-channel-item');
+                            items.forEach((item, idx) => {
+                                setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+                            });
+                        }
+                    };
+                }
+
+
+                // Обработчик для себестоимости по каналам
+const toggleCostBtn = document.querySelector('.toggle-cost-breakdown-btn');
+const costContainer = document.querySelector('.cost-channels-container');
+if (toggleCostBtn && costContainer) {
+    toggleCostBtn.onclick = () => {
+        if (costContainer.style.maxHeight && costContainer.style.maxHeight !== '0px') {
+            costContainer.style.maxHeight = '0';
+            toggleCostBtn.innerHTML = '<span>▶</span> Показать по каналам';
         } else {
-            // Открываем все подканалы
-            allDetailsDivs.forEach(details => { 
-                details.style.maxHeight = details.scrollHeight + 'px'; 
-            });
-            allExpandIcons.forEach(icon => {
-                icon.style.transform = 'rotate(90deg)';
-            });
-            btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
-            
-            // Анимация появления элементов
-            allDetailsDivs.forEach((details, idx) => {
-                const items = details.querySelectorAll('.sub-item');
-                items.forEach((item, itemIdx) => {
-                    setTimeout(() => { 
-                        item.style.opacity = '1'; 
-                        item.style.transform = 'translateX(0)'; 
-                    }, idx * 50 + itemIdx * 30);
-                });
+            costContainer.style.maxHeight = costContainer.scrollHeight + 'px';
+            toggleCostBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
+            const items = costContainer.querySelectorAll('.cost-channel-item');
+            items.forEach((item, idx) => {
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateX(0)';
+                }, idx * 50);
             });
         }
-    });
-    
-    // ===== ОСТАЛЬНЫЕ ОБРАБОТЧИКИ (НДС, средний чек, продажи, эффективность, себестоимость) =====
-    const toggleProfitBtn = document.querySelector('.toggle-channels-profit-btn');
-    const profitChannelsContainer = document.querySelector('.profit-channels-container');
-    if (toggleProfitBtn && profitChannelsContainer) {
-        toggleProfitBtn.onclick = () => {
-            if (profitChannelsContainer.style.maxHeight && profitChannelsContainer.style.maxHeight !== '0px') {
-                profitChannelsContainer.style.maxHeight = '0';
-                toggleProfitBtn.innerHTML = '<span>▶</span> Показать по каналам';
-            } else {
-                profitChannelsContainer.style.maxHeight = profitChannelsContainer.scrollHeight + 'px';
-                toggleProfitBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                const items = profitChannelsContainer.querySelectorAll('.profit-channel-item');
-                items.forEach((item, idx) => {
-                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
-                });
-            }
-        };
-    }
-    
-    const toggleNdsBtn = document.querySelector('.toggle-nds-breakdown-btn');
-    const ndsContainer = document.querySelector('.nds-channels-container');
-    if (toggleNdsBtn && ndsContainer) {
-        toggleNdsBtn.onclick = () => {
-            if (ndsContainer.style.maxHeight && ndsContainer.style.maxHeight !== '0px') {
-                ndsContainer.style.maxHeight = '0';
-                toggleNdsBtn.innerHTML = '<span>▶</span> Показать по каналам';
-            } else {
-                ndsContainer.style.maxHeight = ndsContainer.scrollHeight + 'px';
-                toggleNdsBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                const items = ndsContainer.querySelectorAll('.nds-channel-item');
-                items.forEach((item, idx) => {
-                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
-                });
-            }
-        };
-    }
-    
-    const toggleAvgCheckBtn = document.querySelector('.toggle-avgcheck-breakdown-btn');
-    const avgCheckContainer = document.querySelector('.avgcheck-channels-container');
-    if (toggleAvgCheckBtn && avgCheckContainer) {
-        toggleAvgCheckBtn.onclick = () => {
-            if (avgCheckContainer.style.maxHeight && avgCheckContainer.style.maxHeight !== '0px') {
-                avgCheckContainer.style.maxHeight = '0';
-                toggleAvgCheckBtn.innerHTML = '<span>▶</span> Показать по каналам';
-            } else {
-                avgCheckContainer.style.maxHeight = avgCheckContainer.scrollHeight + 'px';
-                toggleAvgCheckBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                const items = avgCheckContainer.querySelectorAll('.avgcheck-channel-item');
-                items.forEach((item, idx) => {
-                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
-                });
-            }
-        };
-    }
-    
-    const toggleSalesBtn = document.querySelector('.toggle-sales-breakdown-btn');
-    const salesContainer = document.querySelector('.sales-channels-container');
-    if (toggleSalesBtn && salesContainer) {
-        toggleSalesBtn.onclick = () => {
-            if (salesContainer.style.maxHeight && salesContainer.style.maxHeight !== '0px') {
-                salesContainer.style.maxHeight = '0';
-                toggleSalesBtn.innerHTML = '<span>▶</span> Показать по каналам';
-            } else {
-                salesContainer.style.maxHeight = salesContainer.scrollHeight + 'px';
-                toggleSalesBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                const items = salesContainer.querySelectorAll('.sales-channel-item');
-                items.forEach((item, idx) => {
-                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
-                });
-            }
-        };
-    }
-    
-    const toggleEfficiencyBtn = document.querySelector('.toggle-efficiency-breakdown-btn');
-    const efficiencyContainer = document.querySelector('.efficiency-channels-container');
-    if (toggleEfficiencyBtn && efficiencyContainer) {
-        toggleEfficiencyBtn.onclick = () => {
-            if (efficiencyContainer.style.maxHeight && efficiencyContainer.style.maxHeight !== '0px') {
-                efficiencyContainer.style.maxHeight = '0';
-                toggleEfficiencyBtn.innerHTML = '<span>▶</span> Показать по каналам';
-            } else {
-                efficiencyContainer.style.maxHeight = efficiencyContainer.scrollHeight + 'px';
-                toggleEfficiencyBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                const items = efficiencyContainer.querySelectorAll('.efficiency-channel-item');
-                items.forEach((item, idx) => {
-                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
-                });
-            }
-        };
-    }
-    
-    const toggleCostBtn = document.querySelector('.toggle-cost-breakdown-btn');
-    const costContainer = document.querySelector('.cost-channels-container');
-    if (toggleCostBtn && costContainer) {
-        toggleCostBtn.onclick = () => {
-            if (costContainer.style.maxHeight && costContainer.style.maxHeight !== '0px') {
-                costContainer.style.maxHeight = '0';
-                toggleCostBtn.innerHTML = '<span>▶</span> Показать по каналам';
-            } else {
-                costContainer.style.maxHeight = costContainer.scrollHeight + 'px';
-                toggleCostBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                const items = costContainer.querySelectorAll('.cost-channel-item');
-                items.forEach((item, idx) => {
-                    setTimeout(() => {
-                        item.style.opacity = '1';
-                        item.style.transform = 'translateX(0)';
-                    }, idx * 50);
-                });
-            }
-        };
-    }
-    
-    const toggleBreakdownBtn = document.querySelector('.toggle-breakdown-btn');
-    const netRevenueContainer = document.querySelector('.netrevenue-channels-container');
-    if (toggleBreakdownBtn && netRevenueContainer) {
-        toggleBreakdownBtn.onclick = () => {
-            if (netRevenueContainer.style.maxHeight && netRevenueContainer.style.maxHeight !== '0px') {
-                netRevenueContainer.style.maxHeight = '0';
-                toggleBreakdownBtn.innerHTML = '<span>▶</span> Показать по каналам';
-            } else {
-                netRevenueContainer.style.maxHeight = netRevenueContainer.scrollHeight + 'px';
-                toggleBreakdownBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                const items = netRevenueContainer.querySelectorAll('.breakdown-channel-item');
-                items.forEach((item, idx) => {
-                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
-                });
-            }
-        };
-    }
-}, 200);
+    };
+}
+
+                
+                const toggleBreakdownBtn = document.querySelector('.toggle-breakdown-btn');
+                const netRevenueContainer = document.querySelector('.netrevenue-channels-container');
+                if (toggleBreakdownBtn && netRevenueContainer) {
+                    toggleBreakdownBtn.onclick = () => {
+                        if (netRevenueContainer.style.maxHeight && netRevenueContainer.style.maxHeight !== '0px') {
+                            netRevenueContainer.style.maxHeight = '0';
+                            toggleBreakdownBtn.innerHTML = '<span>▶</span> Показать по каналам';
+                        } else {
+                            netRevenueContainer.style.maxHeight = netRevenueContainer.scrollHeight + 'px';
+                            toggleBreakdownBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
+                            const items = netRevenueContainer.querySelectorAll('.breakdown-channel-item');
+                            items.forEach((item, idx) => {
+                                setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+                            });
+                        }
+                    };
+                }
+            }, 200);
             
             const monthlyRevenue = {};
             currentData.forEach(d => {
