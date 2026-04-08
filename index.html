@@ -4079,15 +4079,10 @@ document.body.addEventListener('click', function(e) {
     }
     
     // Принудительное расширение карточки
-    card.style.height = 'auto';
-    card.style.minHeight = 'auto';
-    setTimeout(() => {
-        const newHeight = card.scrollHeight;
-        card.style.height = newHeight + 'px';
-        setTimeout(() => {
-            card.style.height = 'auto';
-        }, 200);
-    }, 10);
+    if (card) {
+        card.style.height = 'auto';
+        card.style.minHeight = 'auto';
+    }
 });
 
 // Обработчик для клика по каналу (раскрытие подканалов)
