@@ -131,14 +131,15 @@
     .btn-danger { background: #f56565; color: white; }
     .btn-info { background: #4299e1; color: white; }
     .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px; }
-   .metric-card {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    transition: transform 0.2s;
-}
-body.dark .metric-card { background: #1a1a2a; border: 1px solid #2d2d3a; }
+    .metric-card {
+     background: white;
+     border-radius: 12px;
+     padding: 20px;
+     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+     transition: transform 0.2s;
+     overflow: visible !important;
+    }
+    body.dark .metric-card { background: #1a1a2a; border: 1px solid #2d2d3a; }
     .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     .metric-title { font-size: 13px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
     body.light .metric-title { color: #666; }
@@ -3765,7 +3766,7 @@ console.log('costData:', costData);
     }).join('');
     
     return `
-    <div class="metric-card" style="overflow: hidden; padding: 20px; height: auto; min-height: 200px; display: flex; flex-direction: column;">
+    <div class="metric-card" style="overflow: visible !important; padding: 20px; height: auto; min-height: auto; display: block;">
         <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 20px;">${icon}</span>
@@ -4034,6 +4035,18 @@ if (toggleChannelsListBtn && mainChannelsList) {
             mainChannelsList.style.maxHeight = mainChannelsList.scrollHeight + 'px';
             toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▼</span> Скрыть по каналам';
             if (expandAllWrapper) expandAllWrapper.style.display = 'block';
+            // ===== ДОБАВЬТЕ ЭТОТ КОД =====
+            const card = toggleChannelsListBtn.closest('.metric-card');
+            if (card) {
+                card.style.height = 'auto';
+                card.style.minHeight = 'auto';
+                setTimeout(() => {
+                    card.style.height = card.scrollHeight + 'px';
+                    setTimeout(() => {
+                        card.style.height = 'auto';
+                    }, 150);
+                }, 10);
+            }
             // Анимация появления элементов
             const items = mainChannelsList.querySelectorAll('.channel-item');
             items.forEach((item, idx) => {
@@ -4049,19 +4062,24 @@ document.body.addEventListener('click', function(e) {
     if (!btn) return;
     
     e.stopPropagation();
-    const container = btn.closest('.metric-card').querySelector('.channels-container');
+    const card = btn.closest('.metric-card');
+    const container = card.querySelector('.channels-container');
     if (!container) return;
     
     const allDetailsDivs = container.querySelectorAll('.channel-details');
     const allExpandIcons = container.querySelectorAll('.expand-icon');
     
-    // Проверяем, открыты ли все
     const allOpen = Array.from(allDetailsDivs).every(details => details.style.maxHeight && details.style.maxHeight !== '0px');
     
     if (allOpen) {
         allDetailsDivs.forEach(details => details.style.maxHeight = '0');
         allExpandIcons.forEach(icon => icon.style.transform = 'rotate(0deg)');
         btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
+        // Сбрасываем высоту карточки
+        if (card) {
+            card.style.height = 'auto';
+            card.style.minHeight = 'auto';
+        }
     } else {
         allDetailsDivs.forEach(details => { 
             details.style.maxHeight = details.scrollHeight + 'px'; 
@@ -4069,11 +4087,20 @@ document.body.addEventListener('click', function(e) {
         allExpandIcons.forEach(icon => icon.style.transform = 'rotate(90deg)');
         btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
         
-        // ===== ПРИНУДИТЕЛЬНОЕ РАСШИРЕНИЕ КАРТОЧКИ =====
-        const card = btn.closest('.metric-card');
+        // Принудительно обновляем высоту карточки
         if (card) {
+            // Сначала сбрасываем
             card.style.height = 'auto';
-            card.style.minHeight = card.scrollHeight + 'px';
+            card.style.minHeight = 'auto';
+            // Небольшая задержка для пересчёта
+            setTimeout(() => {
+                const newHeight = card.scrollHeight;
+                card.style.height = newHeight + 'px';
+                // Через 100ms снова сбрасываем, чтобы осталось auto
+                setTimeout(() => {
+                    card.style.height = 'auto';
+                }, 150);
+            }, 10);
         }
         
         allDetailsDivs.forEach((details, idx) => {
@@ -4721,4 +4748,3 @@ const costData = currentData
     </script>
 </body>
 </html>
-
