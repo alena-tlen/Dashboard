@@ -735,7 +735,7 @@ body.dark .notifications-panel { background: #1a1a2a; border: 1px solid #2d2d3a;
     overflow-y: visible !important;
     max-height: none !important;
 }
-  
+
 </style>
 </head>
 <body>
@@ -3529,6 +3529,20 @@ function initNotificationBell() {
     }
 }
 
+// Замените существующую функцию на эту:
+function forceUpdateCardHeight(card) {
+    if (card) {
+        card.style.height = 'auto';
+        card.style.minHeight = 'auto';
+        const channelsContainer = card.querySelector('.channels-container');
+        if (channelsContainer) {
+            channelsContainer.style.overflowY = 'visible';
+            channelsContainer.style.maxHeight = 'none';
+        }
+        // Принудительный пересчет - заставляем браузер пересчитать размеры
+        card.offsetHeight;
+    }
+}
 
     function renderDashboard() {
         if (isRendering) {
@@ -3990,129 +4004,137 @@ console.log('costData:', costData);
 // ЗАКРЫВАЕТСЯ innerHTML, и ПОСЛЕ ЭТОГО вставляете код:
 
             // Обработчики кнопок
+setTimeout(() => {
+    // Обработчик для прибыли по каналам
+    const toggleProfitBtn = document.querySelector('.toggle-channels-profit-btn');
+    const profitChannelsContainer = document.querySelector('.profit-channels-container');
+    if (toggleProfitBtn && profitChannelsContainer) {
+        toggleProfitBtn.onclick = () => {
+            const card = toggleProfitBtn.closest('.metric-card');
+            if (profitChannelsContainer.style.maxHeight && profitChannelsContainer.style.maxHeight !== '0px') {
+                profitChannelsContainer.style.maxHeight = '0';
+                toggleProfitBtn.innerHTML = '<span>▶</span> Показать по каналам';
+            } else {
+                profitChannelsContainer.style.maxHeight = profitChannelsContainer.scrollHeight + 'px';
+                toggleProfitBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
+                const items = profitChannelsContainer.querySelectorAll('.profit-channel-item');
+                items.forEach((item, idx) => {
+                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+                });
+            }
+            // Принудительное расширение карточки
             setTimeout(() => {
-                const toggleProfitBtn = document.querySelector('.toggle-channels-profit-btn');
-                const profitChannelsContainer = document.querySelector('.profit-channels-container');
-                if (toggleProfitBtn && profitChannelsContainer) {
-                    toggleProfitBtn.onclick = () => {
-                        if (profitChannelsContainer.style.maxHeight && profitChannelsContainer.style.maxHeight !== '0px') {
-                            profitChannelsContainer.style.maxHeight = '0';
-                            toggleProfitBtn.innerHTML = '<span>▶</span> Показать по каналам';
-                        } else {
-                            profitChannelsContainer.style.maxHeight = profitChannelsContainer.scrollHeight + 'px';
-                            toggleProfitBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                            const items = profitChannelsContainer.querySelectorAll('.profit-channel-item');
-                            items.forEach((item, idx) => {
-                                setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
-                            });
-                        }
-                    };
+                if (card) {
+                    card.style.height = 'auto';
+                    card.style.minHeight = 'auto';
                 }
-                
-                // Обработчик для кнопки "Показать/скрыть список каналов"
-const toggleChannelsListBtn = document.querySelector('.toggle-channels-list-btn');
-const mainChannelsList = document.querySelector('.main-channels-list');
-const expandAllWrapper = document.querySelector('.expand-all-wrapper');
+            }, 50);
+        };
+    }
+    
+    // Обработчик для кнопки "Показать/скрыть список каналов" (ОДИН РАЗ!)
+    const toggleChannelsListBtn = document.querySelector('.toggle-channels-list-btn');
+    const mainChannelsList = document.querySelector('.main-channels-list');
+    const expandAllWrapper = document.querySelector('.expand-all-wrapper');
 
-if (toggleChannelsListBtn && mainChannelsList) {
-    toggleChannelsListBtn.onclick = () => {
-        const card = toggleChannelsListBtn.closest('.metric-card');
-        if (mainChannelsList.style.maxHeight && mainChannelsList.style.maxHeight !== '0px') {
-            mainChannelsList.style.maxHeight = '0';
-            toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▶</span> Показать по каналам';
-            if (expandAllWrapper) expandAllWrapper.style.display = 'none';
+    if (toggleChannelsListBtn && mainChannelsList) {
+        // Удаляем старый обработчик, если есть
+        toggleChannelsListBtn.onclick = null;
+        
+        toggleChannelsListBtn.onclick = () => {
+            const card = toggleChannelsListBtn.closest('.metric-card');
+            if (mainChannelsList.style.maxHeight && mainChannelsList.style.maxHeight !== '0px') {
+                mainChannelsList.style.maxHeight = '0';
+                toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▶</span> Показать по каналам';
+                if (expandAllWrapper) expandAllWrapper.style.display = 'none';
+            } else {
+                mainChannelsList.style.maxHeight = mainChannelsList.scrollHeight + 'px';
+                toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▼</span> Скрыть по каналам';
+                if (expandAllWrapper) expandAllWrapper.style.display = 'block';
+                
+                const items = mainChannelsList.querySelectorAll('.channel-item');
+                items.forEach((item, idx) => {
+                    setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+                });
+            }
+            // Обновляем высоту карточки
+            setTimeout(() => {
+                if (card) {
+                    card.style.height = 'auto';
+                    card.style.minHeight = 'auto';
+                }
+            }, 20);
+        };
+    }
+
+    // Обработчик для кнопки "Развернуть все подканалы" (С ИСПРАВЛЕНИЕМ)
+    document.body.addEventListener('click', function(e) {
+        const btn = e.target.closest('.toggle-all-channels-btn');
+        if (!btn) return;
+        
+        e.stopPropagation();
+        const card = btn.closest('.metric-card');
+        const container = card.querySelector('.channels-container');
+        if (!container) return;
+        
+        const allDetailsDivs = container.querySelectorAll('.channel-details');
+        const allExpandIcons = container.querySelectorAll('.expand-icon');
+        
+        const allOpen = Array.from(allDetailsDivs).every(details => details.style.maxHeight && details.style.maxHeight !== '0px');
+        
+        if (allOpen) {
+            allDetailsDivs.forEach(details => details.style.maxHeight = '0');
+            allExpandIcons.forEach(icon => icon.style.transform = 'rotate(0deg)');
+            btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
         } else {
-            mainChannelsList.style.maxHeight = mainChannelsList.scrollHeight + 'px';
-            toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▼</span> Скрыть по каналам';
-            if (expandAllWrapper) expandAllWrapper.style.display = 'block';
+            allDetailsDivs.forEach(details => { 
+                details.style.maxHeight = details.scrollHeight + 'px'; 
+            });
+            allExpandIcons.forEach(icon => icon.style.transform = 'rotate(90deg)');
+            btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
             
-            const items = mainChannelsList.querySelectorAll('.channel-item');
-            items.forEach((item, idx) => {
-                setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, idx * 50);
+            allDetailsDivs.forEach((details, idx) => {
+                const items = details.querySelectorAll('.sub-item');
+                items.forEach((item, itemIdx) => {
+                    setTimeout(() => { 
+                        item.style.opacity = '1'; 
+                        item.style.transform = 'translateX(0)'; 
+                    }, idx * 50 + itemIdx * 30);
+                });
             });
         }
-        // Обновляем высоту карточки
-        setTimeout(() => {
-            if (card) {
-                card.style.height = 'auto';
-                card.style.minHeight = 'auto';
-            }
-        }, 20);
-    };
-}
-
-// Обработчик для кнопки "Развернуть все подканалы"
-document.body.addEventListener('click', function(e) {
-    const btn = e.target.closest('.toggle-all-channels-btn');
-    if (!btn) return;
-    
-    e.stopPropagation();
-    const card = btn.closest('.metric-card');
-    const container = card.querySelector('.channels-container');
-    if (!container) return;
-    
-    const allDetailsDivs = container.querySelectorAll('.channel-details');
-    const allExpandIcons = container.querySelectorAll('.expand-icon');
-    
-    const allOpen = Array.from(allDetailsDivs).every(details => details.style.maxHeight && details.style.maxHeight !== '0px');
-    
-    if (allOpen) {
-        allDetailsDivs.forEach(details => details.style.maxHeight = '0');
-        allExpandIcons.forEach(icon => icon.style.transform = 'rotate(0deg)');
-        btn.innerHTML = '<span>▶</span> Развернуть все подканалы';
-    } else {
-        allDetailsDivs.forEach(details => { 
-            details.style.maxHeight = details.scrollHeight + 'px'; 
-        });
-        allExpandIcons.forEach(icon => icon.style.transform = 'rotate(90deg)');
-        btn.innerHTML = '<span>▼</span> Скрыть все подканалы';
         
-        allDetailsDivs.forEach((details, idx) => {
-            const items = details.querySelectorAll('.sub-item');
-            items.forEach((item, itemIdx) => {
-                setTimeout(() => { 
-                    item.style.opacity = '1'; 
-                    item.style.transform = 'translateX(0)'; 
-                }, idx * 50 + itemIdx * 30);
+        // ==== ПРИНУДИТЕЛЬНОЕ РАСШИРЕНИЕ КАРТОЧКИ ====
+        if (card) {
+            card.style.height = 'auto';
+            card.style.minHeight = 'auto';
+            card.classList.add('expanded');
+            
+            // Расширяем контейнер каналов
+            const channelsContainer = card.querySelector('.channels-container');
+            if (channelsContainer) {
+                channelsContainer.style.overflowY = 'visible';
+                channelsContainer.style.maxHeight = 'none';
+            }
+            
+            // Также расширяем основной список каналов, если он раскрыт
+            const mainList = card.querySelector('.main-channels-list');
+            if (mainList && mainList.style.maxHeight !== '0px') {
+                mainList.style.maxHeight = mainList.scrollHeight + 'px';
+            }
+            
+            // Принудительный пересчет через requestAnimationFrame
+            requestAnimationFrame(() => {
+                card.style.height = 'auto';
+                const height = card.scrollHeight;
+                card.style.height = height + 'px';
+                setTimeout(() => {
+                    card.style.height = 'auto';
+                }, 200);
             });
-        });
-    }
+        }
+    });
     
-    // Принудительное расширение карточки
-    if (card) {
-        card.style.height = 'auto';
-        card.style.minHeight = 'auto';
-    }
-});
-
-// Обработчик для клика по каналу (раскрытие подканалов)
-document.body.addEventListener('click', function(e) {
-    const header = e.target.closest('.channel-header');
-    if (!header) return;
-    
-    e.stopPropagation();
-    const channelDiv = header.closest('.channel-item');
-    const detailsDiv = channelDiv.querySelector('.channel-details');
-    const expandIcon = header.querySelector('.expand-icon');
-    const card = channelDiv.closest('.metric-card');
-    
-    if (detailsDiv.style.maxHeight && detailsDiv.style.maxHeight !== '0px') {
-        detailsDiv.style.maxHeight = '0';
-        if (expandIcon) expandIcon.style.transform = 'rotate(0deg)';
-    } else {
-        detailsDiv.style.maxHeight = detailsDiv.scrollHeight + 'px';
-        if (expandIcon) expandIcon.style.transform = 'rotate(90deg)';
-        const items = detailsDiv.querySelectorAll('.sub-item');
-        items.forEach((item, idx) => {
-            setTimeout(() => { 
-                item.style.opacity = '1'; 
-                item.style.transform = 'translateX(0)'; 
-            }, idx * 30);
-        });
-    }
-    // Обновляем высоту карточки после раскрытия/закрытия
-    setTimeout(() => forceUpdateCardHeight(card), 50);
-});
 
                 const toggleNdsBtn = document.querySelector('.toggle-nds-breakdown-btn');
                 const ndsContainer = document.querySelector('.nds-channels-container');
