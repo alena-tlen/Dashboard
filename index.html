@@ -3764,26 +3764,33 @@ console.log('costData:', costData);
     
     const channelItemsHtml = sortedChannels.map((channel, channelIdx) => {
         const channelPercent = (channel.total / total) * 100;
-        const sortedItems = [...channel.items].sort((a, b) => b.amount - a.amount);
-        const itemsHtml = sortedItems.map((item, itemIdx) => {
-            const itemPercentOfTotal = (item.amount / total) * 100;
-            const itemPercentOfChannel = (item.amount / channel.total) * 100;
-            const gradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
-            return `
-                <div class="sub-item" data-item-name="${item.name}" style="margin-bottom: 12px; opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; transition-delay: ${itemIdx * 0.03}s;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
-                        <span style="font-size: 13px; font-weight: 500;">${item.name}</span>
-                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                            <span style="font-size: 13px; font-weight: 600;">${formatCurrency(item.amount)}</span>
-                            <span style="font-size: 12px; background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">${itemPercentOfTotal.toFixed(1)}% от ${title.toLowerCase()}</span>
+        
+        // Проверяем наличие items (подканалов)
+        let itemsHtml = '';
+        if (channel.items && channel.items.length > 0) {
+            const sortedItems = [...channel.items].sort((a, b) => b.amount - a.amount);
+            itemsHtml = sortedItems.map((item, itemIdx) => {
+                const itemPercentOfTotal = (item.amount / total) * 100;
+                const itemPercentOfChannel = (item.amount / channel.total) * 100;
+                const gradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
+                return `
+                    <div class="sub-item" data-item-name="${item.name}" style="margin-bottom: 12px; opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; transition-delay: ${itemIdx * 0.03}s;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                            <span style="font-size: 13px; font-weight: 500;">${item.name || 'Без названия'}</span>
+                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                <span style="font-size: 13px; font-weight: 600;">${formatCurrency(item.amount)}</span>
+                                <span style="font-size: 12px; background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">${itemPercentOfTotal.toFixed(1)}% от ${title.toLowerCase()}</span>
+                            </div>
+                        </div>
+                        <div style="background: rgba(102,126,234,0.15); height: 6px; border-radius: 3px; overflow: hidden;">
+                            <div class="sub-progress-bar" style="width: ${itemPercentOfChannel}%; height: 100%; background: ${gradient}; border-radius: 3px;"></div>
                         </div>
                     </div>
-                    <div style="background: rgba(102,126,234,0.15); height: 6px; border-radius: 3px; overflow: hidden;">
-                        <div class="sub-progress-bar" style="width: ${itemPercentOfChannel}%; height: 100%; background: ${gradient}; border-radius: 3px;"></div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+                `;
+            }).join('');
+        } else {
+            itemsHtml = '<div style="padding: 8px 0; color: #888; font-size: 12px;">Нет данных по подканалам</div>';
+        }
         
         const channelGradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
         
