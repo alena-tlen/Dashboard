@@ -4082,26 +4082,23 @@ const mainChannelsList = document.querySelector('.main-channels-list');
 const expandAllWrapper = document.querySelector('.expand-all-wrapper');
 
 if (toggleChannelsListBtn && mainChannelsList) {
-    // Удаляем старый обработчик
-    toggleChannelsListBtn.onclick = null;
-    
     toggleChannelsListBtn.onclick = (e) => {
         e.stopPropagation();
         const card = toggleChannelsListBtn.closest('.metric-card');
         
-        if (mainChannelsList.style.maxHeight && mainChannelsList.style.maxHeight !== '0px') {
+        if (mainChannelsList.style.maxHeight && mainChannelsList.style.maxHeight !== '0px' && mainChannelsList.style.maxHeight !== 'none') {
             // Закрываем
             mainChannelsList.style.maxHeight = '0';
+            mainChannelsList.style.overflow = 'hidden';
             toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▶</span> Показать по каналам';
             if (expandAllWrapper) expandAllWrapper.style.display = 'none';
         } else {
-            // Открываем - КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: сначала показываем, потом считаем высоту
+            // Открываем с ограничением высоты
             mainChannelsList.style.display = 'block';
-            mainChannelsList.style.maxHeight = 'none';
-            
-            // Получаем реальную высоту
-            const height = mainChannelsList.scrollHeight;
-            mainChannelsList.style.maxHeight = height + 'px';
+            mainChannelsList.style.overflow = 'auto';
+            // Ограничиваем высоту 400px, но не больше содержимого
+            const scrollHeight = mainChannelsList.scrollHeight;
+            mainChannelsList.style.maxHeight = Math.min(scrollHeight, 400) + 'px';
             
             toggleChannelsListBtn.innerHTML = '<span class="toggle-channels-icon">▼</span> Скрыть по каналам';
             if (expandAllWrapper) expandAllWrapper.style.display = 'block';
@@ -4120,8 +4117,6 @@ if (toggleChannelsListBtn && mainChannelsList) {
             if (card) {
                 card.style.height = 'auto';
                 card.style.minHeight = 'auto';
-                card.style.overflow = 'visible';
-                // Принудительный пересчет
                 card.offsetHeight;
             }
         }, 50);
