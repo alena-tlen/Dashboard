@@ -2426,6 +2426,174 @@ function generateTrendsAnalysis(data, f, totalSalesQuantity) {
     `;
 }
 
+// Добавьте этот код перед блоком "ИСПРАВЛЕННЫЙ БЛОК: КАРУСЕЛЬ СТАТЕЙ И ВЕРХНЯЯ ПАНЕЛЬ"
+const articlesList = [
+    {
+        title: "Вы управляете ассортиментом или складом случайностей? Глубокая товарная и ценовая аналитика на маркетплейсах",
+        description: "Вы знаете, какой товар приносит 80% вашей прибыли? А какой просто занимает место, имитируя продажи?",
+        link: "https://dzen.ru/a/aUqz1yENXTiPF2Dt",
+        imageUrl: "https://avatars.dzeninfra.ru/get-zen_doc/271828/pub_6948cf24c058d37e481f1a68_695d80dca5ebb71be8c38b22/scale_1200",
+        source: "Дзен"
+    },
+    {
+        title: "Оптимизация расходов на маркетплейсах",
+        description: "Советы по снижению затрат и повышению эффективности",
+        link: "https://dzen.ru/a/aUjPJMBY035IHxpo",
+        icon: "💰",
+        source: "Дзен"
+    }
+    // Добавьте остальные статьи по необходимости
+];
+
+// ========== ИСПРАВЛЕННЫЙ БЛОК: КАРУСЕЛЬ СТАТЕЙ И ВЕРХНЯЯ ПАНЕЛЬ ==========
+let articleCarouselIndex = 0;
+let articleCarouselInterval = null;
+
+function updateArticleCarousel() {
+    const article = articlesList[articleCarouselIndex];
+    const carouselContent = document.getElementById('articleCarouselContent');
+    if (!carouselContent) return;
+    
+    carouselContent.style.opacity = '0';
+    setTimeout(() => {
+        carouselContent.innerHTML = `
+            <a href="${article.link}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="width: 60px; height: 60px; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        ${article.imageUrl ? 
+                            `<img src="${article.imageUrl}" style="width: 100%; height: 100%; object-fit: cover;">` : 
+                            `<span style="font-size: 28px;">📄</span>`
+                        }
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
+                            <span style="font-size: 11px; background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">${article.source}</span>
+                        </div>
+                        <div style="font-size: 15px; font-weight: 600; margin-bottom: 6px; line-height: 1.3;">${article.title}</div>
+                        <div style="font-size: 12px; opacity: 0.7;">${article.description}</div>
+                    </div>
+                    <div style="font-size: 14px; color: #667eea;">→</div>
+                </div>
+            </a>
+        `;
+        carouselContent.style.opacity = '1';
+    }, 200);
+    
+    articleCarouselIndex = (articleCarouselIndex + 1) % articlesList.length;
+}
+
+function startArticleCarousel() {
+    if (articleCarouselInterval) clearInterval(articleCarouselInterval);
+    articleCarouselInterval = setInterval(updateArticleCarousel, 5000);
+}
+
+// Функция для линейного графика (должна быть определена до использования)
+function renderMonthlyLineChart() {
+    const container = document.getElementById('monthlyRevenueChart');
+    if (!container || monthlyLabels.length === 0) {
+        if (container) container.innerHTML = '<div style="text-align: center; padding: 80px; color: #a0aec0;">📊 Недостаточно данных для графика</div>';
+        return;
+    }
+    
+    const isDarkMode = document.body.classList.contains('dark');
+    const plotBgColor = isDarkMode ? '#1a1a2a' : 'white';
+    const textColor = isDarkMode ? '#e2e8f0' : '#4a5568';
+    const gridColor = isDarkMode ? '#2d3748' : '#e2e8f0';
+    
+    const traceRevenue = {
+        x: monthlyLabels,
+        y: monthlyRevenues,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Выручка (тыс. ₽)',
+        line: { color: '#4299e1', width: 3 },
+        marker: { color: '#4299e1', size: 8 },
+        hovertemplate: '<b>%{x}</b><br>Выручка: %{y:.0f} тыс. ₽<extra></extra>'
+    };
+    
+    const traceProfit = {
+        x: monthlyLabels,
+        y: monthlyProfits,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Прибыль (тыс. ₽)',
+        line: { color: '#48bb78', width: 3 },
+        marker: { color: '#48bb78', size: 8, symbol: 'diamond' },
+        hovertemplate: '<b>%{x}</b><br>Прибыль: %{y:.0f} тыс. ₽<extra></extra>'
+    };
+    
+    const layout = {
+        title: {
+            text: '📈 Динамика выручки и прибыли по месяцам',
+            font: { size: 14, color: '#667eea', weight: '600' },
+            x: 0.02,
+            xanchor: 'left'
+        },
+        paper_bgcolor: plotBgColor,
+        plot_bgcolor: plotBgColor,
+        height: 350,
+        margin: { t: 50, l: 60, r: 40, b: 50 },
+        xaxis: {
+            title: { text: 'Месяц', font: { size: 11, color: textColor } },
+            tickangle: -30,
+            tickfont: { size: 10, color: textColor },
+            gridcolor: gridColor,
+            gridwidth: 0.5
+        },
+        yaxis: {
+            title: { text: 'Тысяч рублей (₽)', font: { size: 11, color: textColor } },
+            tickfont: { size: 10, color: textColor },
+            gridcolor: gridColor,
+            gridwidth: 0.5,
+            zerolinecolor: gridColor
+        },
+        legend: {
+            orientation: 'h',
+            yanchor: 'bottom',
+            y: 1.02,
+            xanchor: 'right',
+            x: 1,
+            bgcolor: 'rgba(0,0,0,0)',
+            font: { size: 11, color: textColor }
+        },
+        hovermode: 'x unified'
+    };
+    
+    Plotly.newPlot('monthlyRevenueChart', [traceRevenue, traceProfit], layout, { responsive: true, displayModeBar: false });
+}
+
+// Карусель метрик
+let carouselIdx = 0;
+let carouselInterval = null;
+
+function updateTopCarousel() {
+    const metric = metricsForCarousel[carouselIdx];
+    const carouselContent = document.getElementById('topCarouselContent');
+    if (!carouselContent) return;
+    
+    carouselContent.style.opacity = '0';
+    setTimeout(() => {
+        carouselContent.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="font-size: 38px;">${metric.icon}</div>
+                <div>
+                    <div style="font-size: 10px; opacity: 0.6; letter-spacing: 0.5px;">${metric.label}</div>
+                    <div style="font-size: 22px; font-weight: 800; color: ${metric.color};">${metric.value}</div>
+                    ${metric.detail ? `<div style="font-size: 11px; opacity: 0.7;">${metric.detail}</div>` : ''}
+                </div>
+            </div>
+        `;
+        carouselContent.style.opacity = '1';
+    }, 200);
+    
+    carouselIdx = (carouselIdx + 1) % metricsForCarousel.length;
+}
+
+function startTopCarousel() {
+    if (carouselInterval) clearInterval(carouselInterval);
+    carouselInterval = setInterval(updateTopCarousel, 5000);
+}
+
 // ========== НОВЫЕ SVG ГРАФИКИ В СТИЛЕ ДАШБОРДА ==========
 
 // 1. Водопадная диаграмма на SVG
@@ -3473,143 +3641,6 @@ function renderQuadrantMatrix(data, f) {
             const avgCheck = totalSalesQuantity > 0 ? f.netRevenue / totalSalesQuantity : 0;
             const efficiency = f.profit / (f.totalExpenses || 1);
 
-
-// ---- НАЧАЛО: БЛОК ПОЛЕЗНЫЕ СТАТЬИ (КАРУСЕЛЬ) ----
-
-// Массив со статьями - ЗАПОЛНИТЕ СВОИМИ ДАННЫМИ
-const articlesList = [
-    {
-        title: "Вы управляете ассортиментом или складом случайностей? Глубокая товарная и ценовая аналитика на маркетплейсах",
-        description: "Вы знаете, какой товар приносит 80% вашей прибыли? А какой просто занимает место, имитируя продажи? Если ответ «нет», вы не управляете ассортиментом — вы содержите склад случайных позиций. Глубокая товарная аналитика — это операция по разделению сиамских близнецов: «деньги» и «балласт».",
-        link: "https://dzen.ru/a/aUqz1yENXTiPF2Dt",
-        imageUrl: https://avatars.dzeninfra.ru/get-zen_doc/271828/pub_6948cf24c058d37e481f1a68_695d80dca5ebb71be8c38b22/scale_1200,
-        source: "Дзен"
-    },
-    {
-        title: "Оптимизация расходов на маркетплейсах",
-        description: "Советы по снижению затрат и повышению эффективности",
-        link: "https://dzen.ru/a/aUjPJMBY035IHxpo",
-        icon: "💰",
-        source: "Дзен"
-    },
-    {
-        title: "Управление товарными запасами",
-        description: "Как избежать кассовых разрывов и оптимизировать склад",
-        link: "#",
-        icon: "📦",
-        source: "Рекомендуем"
-    },
-    {
-        title: "5 ошибок в расчете себестоимости",
-        description: "Что нужно знать каждому финансисту",
-        link: "#",
-        icon: "⚠️",
-        source: "Чек-лист"
-    },
-    {
-        title: "Как увеличить средний чек",
-        description: "Практические инструменты для роста выручки",
-        link: "#",
-        icon: "📈",
-        source: "Совет дня"
-    }
-];
-
-// Карусель статей
-let articleCarouselIndex = 0;
-let articleCarouselInterval = null;
-
-function updateArticleCarousel() {
-    const article = articlesList[articleCarouselIndex];
-    const carouselContent = document.getElementById('articleCarouselContent');
-    if (!carouselContent) return;
-    
-    carouselContent.style.opacity = '0';
-    setTimeout(() => {
-        carouselContent.innerHTML = `
-            <a href="${article.link}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div style="width: 60px; height: 60px; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        ${article.imageUrl ? 
-                            `<img src="${article.imageUrl}" style="width: 100%; height: 100%; object-fit: cover;">` : 
-                            `<span style="font-size: 28px;">📄</span>`
-                        }
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
-                            <span style="font-size: 11px; background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">${article.source}</span>
-                        </div>
-                        <div style="font-size: 15px; font-weight: 600; margin-bottom: 6px; line-height: 1.3;">${article.title}</div>
-                        <div style="font-size: 12px; opacity: 0.7;">${article.description}</div>
-                    </div>
-                    <div style="font-size: 14px; color: #667eea;">→</div>
-                </div>
-            </a>
-        `;
-        carouselContent.style.opacity = '1';
-    }, 200);
-    
-    articleCarouselIndex = (articleCarouselIndex + 1) % articlesList.length;
-}
-
-// HTML для блока статей (обновленный)
-const articlesHtml = `
-<div class="metrics-grid" style="margin-bottom: 20px;">
-    <div class="metric-card" style="grid-column: span 4; padding: 20px; position: relative;">
-        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 18px;">📚</span>
-                <span style="font-size: 14px; font-weight: 600; color: #667eea;">ПОЛЕЗНЫЕ СТАТЬИ</span>
-            </div>
-            <div style="display: flex; gap: 8px;" id="articleCarouselDots">
-                ${articlesList.map((_, i) => `<div class="article-carousel-dot" data-idx="${i}" style="width: 8px; height: 8px; border-radius: 50%; background: ${i === 0 ? '#667eea' : 'rgba(102,126,234,0.3)'}; cursor: pointer; transition: all 0.2s;"></div>`).join('')}
-            </div>
-        </div>
-        <div id="articleCarouselContent" style="transition: opacity 0.3s ease; min-height: 100px;">
-            <a href="${articlesList[0].link}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div style="width: 60px; height: 60px; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        ${articlesList[0].imageUrl ? 
-                            `<img src="${articlesList[0].imageUrl}" style="width: 100%; height: 100%; object-fit: cover;">` : 
-                            `<span style="font-size: 28px;">📄</span>`
-                        }
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
-                            <span style="font-size: 11px; background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">${articlesList[0].source}</span>
-                        </div>
-                        <div style="font-size: 15px; font-weight: 600; margin-bottom: 6px; line-height: 1.3;">${articlesList[0].title}</div>
-                        <div style="font-size: 12px; opacity: 0.7;">${articlesList[0].description}</div>
-                    </div>
-                    <div style="font-size: 14px; color: #667eea;">→</div>
-                </div>
-            </a>
-        </div>
-    </div>
-</div>
-`;
-
-// Добавляем блок статей после карусели метрик
-// Найдите в коде место, где вставляется topPanelHtml, и добавьте articlesHtml после него
-
-// Запуск карусели статей
-startArticleCarousel();
-
-// Обработчики точек карусели статей
-document.querySelectorAll('.article-carousel-dot').forEach((dot, i) => {
-    dot.addEventListener('click', () => {
-        articleCarouselIndex = i;
-        updateArticleCarousel();
-        startArticleCarousel();
-    });
-});
-
-// Остановка карусели при уходе со страницы
-window.addEventListener('beforeunload', () => {
-    if (articleCarouselInterval) clearInterval(articleCarouselInterval);
-});
-
-// ---- КОНЕЦ: БЛОК ПОЛЕЗНЫЕ СТАТЬИ ----
 
 
 // ---- НАЧАЛО: ВЕРХНЯЯ ПАНЕЛЬ С КЛЮЧЕВЫМИ МЕТРИКАМИ И ГРАФИКОМ ----
