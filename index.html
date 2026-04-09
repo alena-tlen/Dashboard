@@ -3525,163 +3525,163 @@ function renderQuadrantMatrix(data, f) {
             let totalSalesQuantity = salesFromArticle + salesFromReference;
             
 
-// ---- НАЧАЛО: БЛОК ВЫРУЧКА ГРЯЗНАЯ (GROSS REVENUE) ----
-const grossRevenueData = currentData.filter(d => d.тип === 'Доход').reduce((sum, d) => sum + d.сумма, 0);
+// ---- НАЧАЛО: ВЕРХНЯЯ ПАНЕЛЬ С КЛЮЧЕВЫМИ МЕТРИКАМИ И ГРАФИКОМ ----
 
-// Сбор по каналам
-const grossByChannel = new Map();
+// Базовые расчеты
+const totalRevenue = currentData.filter(d => d.тип === 'Доход').reduce((sum, d) => sum + d.сумма, 0);
+const totalExpenses = currentData.filter(d => d.тип === 'Расход').reduce((sum, d) => sum + Math.abs(d.сумма), 0);
+const totalNDSOut = currentData.filter(d => d.статья === 'НДС' && d.подканал === 'НДС исходящий').reduce((sum, d) => sum + d.сумма, 0);
+const totalNDSIn = currentData.filter(d => d.статья === 'НДС' && d.подканал === 'НДС входящий').reduce((sum, d) => sum + d.сумма, 0);
+const totalNDS = totalNDSOut - totalNDSIn;
+const netRevenue = totalRevenue - totalNDSOut;
+const profit = netRevenue - totalExpenses;
+const profitability = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
+
+// Продажи в штуках
+let totalSalesQuantity = currentData.filter(d => {
+    const article = d.статья?.toLowerCase() || '';
+    return (article.includes('продажи') && (article.includes('шт') || article.includes('штук'))) || d.статья === 'Продажи шт.';
+}).reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
+totalSalesQuantity += currentData.filter(d => d.тип === 'Справочная' && (d.статья?.toLowerCase().includes('продажи') || d.подканал?.toLowerCase().includes('продажи'))).reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
+
+const avgCheck = totalSalesQuantity > 0 ? netRevenue / totalSalesQuantity : 0;
+const efficiency = profit / (totalExpenses || 1);
+
+// Сбор данных по месяцам для графика
+const monthlyData = new Map();
+monthsOrder.forEach(month => { monthlyData.set(month, { revenue: 0, profit: 0, expenses: 0 }); });
+
 currentData.forEach(d => {
-    if (d.тип === 'Доход' && d.канал) {
-        let channel = d.канал;
-        const amount = d.сумма;
-        if (!grossByChannel.has(channel)) {
-            grossByChannel.set(channel, { revenue: 0, subitems: new Map() });
-        }
-        const chData = grossByChannel.get(channel);
-        chData.revenue += amount;
-        const sub = d.подканал || d.статья;
-        if (sub) {
-            chData.subitems.set(sub, (chData.subitems.get(sub) || 0) + amount);
-        }
+    if (d.месяц && monthsOrder.includes(d.месяц)) {
+        const monthData = monthlyData.get(d.месяц);
+        if (d.тип === 'Доход') monthData.revenue += d.сумма;
+        if (d.тип === 'Расход') monthData.expenses += Math.abs(d.сумма);
     }
 });
 
-let grossChannels = Array.from(grossByChannel.entries()).map(([name, data]) => ({
-    name,
-    revenue: data.revenue,
-    percent: (data.revenue / grossRevenueData) * 100,
-    subitems: Array.from(data.subitems.entries()).map(([subName, subAmount]) => ({
-        name: subName,
-        amount: subAmount,
-        percentOfChannel: (subAmount / data.revenue) * 100
-    })).sort((a, b) => b.amount - a.amount)
-})).sort((a, b) => b.revenue - a.revenue);
+// Расчет прибыли по месяцам (с учетом НДС)
+monthlyData.forEach((data, month) => {
+    const ndsOut = currentData.filter(d => d.месяц === month && d.статья === 'НДС' && d.подканал === 'НДС исходящий').reduce((sum, d) => sum + d.сумма, 0);
+    const netRev = data.revenue - ndsOut;
+    data.profit = netRev - data.expenses;
+    data.netRevenue = netRev;
+});
 
-// Расчет метрик
-const grossAvgCheck = totalSalesQuantity > 0 ? grossRevenueData / totalSalesQuantity : 0;
-const topChannel = grossChannels[0];
-const top2Channel = grossChannels[1];
+// Преобразуем в массив для графика
+const monthlyLabels = monthsOrder.filter(m => monthlyData.get(m).revenue > 0 || monthlyData.get(m).profit !== 0);
+const monthlyRevenues = monthlyLabels.map(m => monthlyData.get(m).revenue / 1000);
+const monthlyProfits = monthlyLabels.map(m => monthlyData.get(m).profit / 1000);
 
-// ПОЛУЧЕНИЕ ДАННЫХ ЗА ПРОШЛЫЙ ПЕРИОД (переносим СЮДА, до использования)
-function getPreviousPeriodData() {
-    const selectedMonths = currentFilters.month || [];
-    const selectedYear = currentFilters.year;
-    if (!selectedYear || selectedMonths.length === 0) return null;
-    
-    const prevPeriodData = { byChannel: new Map(), total: 0 };
-    const currentYear = parseInt(selectedYear);
-    const isJanuary = selectedMonths.includes('январь');
-    const prevYear = isJanuary ? currentYear - 1 : currentYear;
-    const prevMonths = selectedMonths;
-    
-    originalData.forEach(d => {
-        if (d.тип === 'Доход' && d.канал && d.год == prevYear && prevMonths.includes(d.месяц)) {
-            const channel = d.канал;
-            const amount = d.сумма;
-            prevPeriodData.byChannel.set(channel, (prevPeriodData.byChannel.get(channel) || 0) + amount);
-            prevPeriodData.total += amount;
-        }
-    });
-    
-    return prevPeriodData;
+// Анализ для рекомендаций
+let healthStatus = { color: '#48bb78', text: 'Отлично', icon: '🚀' };
+let recommendations = [];
+
+if (profit < 0) {
+    healthStatus = { color: '#f56565', text: 'Критично', icon: '🔴' };
+    recommendations.push('⚠️ Компания убыточна! Срочно оптимизируйте расходы.');
+} else if (profitability < 10) {
+    healthStatus = { color: '#ed8936', text: 'Требует внимания', icon: '⚠️' };
+    recommendations.push('📉 Низкая рентабельность (<10%). Пересмотрите ценообразование.');
+} else if (profitability < 20) {
+    healthStatus = { color: '#f59e0b', text: 'Средняя', icon: '📊' };
+    recommendations.push('📈 Рентабельность можно улучшить. Оптимизируйте затраты.');
+} else {
+    healthStatus = { color: '#48bb78', text: 'Высокая', icon: '🎯' };
+    recommendations.push('✅ Отличная рентабельность! Масштабируйте успешные каналы.');
 }
 
-const prevPeriodData = getPreviousPeriodData();
+if (avgCheck < 1000 && avgCheck > 0) {
+    recommendations.push('💰 Средний чек ниже 1000₽. Работайте над апселлингом.');
+} else if (avgCheck > 5000) {
+    recommendations.push('💎 Высокий средний чек. Удерживайте качество обслуживания.');
+}
 
-// Метрики для карусели (теперь prevPeriodData уже определена)
-const growthPercent = prevPeriodData && prevPeriodData.total > 0 ? ((grossRevenueData - prevPeriodData.total) / prevPeriodData.total * 100) : null;
+if (efficiency < 0.5) {
+    recommendations.push('⚡ Эффективность низкая: 1₽ расходов приносит <0.5₽ прибыли.');
+} else if (efficiency > 1) {
+    recommendations.push('🏆 Отличная эффективность! 1₽ расходов приносит >1₽ прибыли.');
+}
 
-const metricsCarousel = [
-    { icon: "💰", label: "Общая выручка", value: formatCurrency(grossRevenueData), color: "#667eea" },
-    { icon: "🏆", label: "Лидер", value: topChannel?.name || "—", subValue: topChannel ? formatCurrency(topChannel.revenue) : "", color: "#48bb78" },
-    { icon: "📊", label: "Средний чек", value: formatCurrency(grossAvgCheck), color: "#4299e1" },
-    { icon: "📈", label: "Доля лидера", value: topChannel ? topChannel.percent.toFixed(1) + "%" : "0%", color: "#ed8936" },
-    { icon: "🥈", label: "2-е место", value: top2Channel?.name || "—", subValue: top2Channel ? top2Channel.percent.toFixed(1) + "%" : "", color: "#9f7aea" },
-    { icon: "📅", label: "Период", value: `${currentFilters.year || 'год'}`, subValue: currentFilters.month?.join(", ") || "все месяцы", color: "#a0aec0" }
+// Определяем лидера по выручке
+const revenueByChannel = {};
+currentData.forEach(d => {
+    if (d.тип === 'Доход' && d.канал) {
+        revenueByChannel[d.канал] = (revenueByChannel[d.канал] || 0) + d.сумма;
+    }
+});
+const topChannel = Object.entries(revenueByChannel).sort((a, b) => b[1] - a[1])[0];
+
+// Метрики для карусели (медленная, 6 секунд)
+const metricsForCarousel = [
+    { icon: "💰", label: "Выручка (с НДС)", value: formatCurrency(totalRevenue), color: "#4299e1", detail: `+${((totalRevenue / (totalRevenue - totalNDSOut) - 1) * 100).toFixed(0)}% НДС` },
+    { icon: "📈", label: "Чистая прибыль", value: formatCurrency(profit), color: profit >= 0 ? "#48bb78" : "#f56565", detail: `рентабельность ${profitability.toFixed(1)}%` },
+    { icon: "🏆", label: "Лидер продаж", value: topChannel?.[0] || "—", color: "#667eea", detail: topChannel ? formatCurrency(topChannel[1]) : "" },
+    { icon: "💳", label: "Средний чек", value: formatCurrency(avgCheck), color: "#9f7aea", detail: `продано ${totalSalesQuantity.toFixed(0)} шт` },
+    { icon: "⚡", label: "Эффективность", value: efficiency.toFixed(2) + " ₽", color: efficiency >= 1 ? "#48bb78" : "#ed8936", detail: "прибыли на 1₽ расходов" },
+    { icon: "📦", label: "Расходы", value: formatCurrency(totalExpenses), color: "#f56565", detail: `${((totalExpenses / netRevenue) * 100).toFixed(0)}% от выручки` }
 ];
 
-// Функция для линейного графика
-function renderGrossLineChart(containerId, currentChannels, prevData, selectedChannels = null) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    let channelsToShow = currentChannels;
-    if (selectedChannels && selectedChannels.length > 0) {
-        channelsToShow = currentChannels.filter(ch => selectedChannels.includes(ch.name));
-    }
-    
-    if (channelsToShow.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 80px; color: #a0aec0;">📊 Выберите каналы для отображения</div>';
+// Функция для линейного графика по месяцам
+function renderMonthlyLineChart() {
+    const container = document.getElementById('monthlyRevenueChart');
+    if (!container || monthlyLabels.length === 0) {
+        if (container) container.innerHTML = '<div style="text-align: center; padding: 80px; color: #a0aec0;">📊 Недостаточно данных для графика</div>';
         return;
     }
-    
-    const channelNames = channelsToShow.map(ch => ch.name);
-    const currentValues = channelsToShow.map(ch => ch.revenue / 1000);
-    const prevValues = channelsToShow.map(ch => prevData ? (prevData.byChannel.get(ch.name) || 0) / 1000 : 0);
     
     const isDarkMode = document.body.classList.contains('dark');
     const plotBgColor = isDarkMode ? '#1a1a2a' : 'white';
     const textColor = isDarkMode ? '#e2e8f0' : '#4a5568';
     const gridColor = isDarkMode ? '#2d3748' : '#e2e8f0';
     
-    const traceCurrent = {
-        x: channelNames,
-        y: currentValues,
+    const traceRevenue = {
+        x: monthlyLabels,
+        y: monthlyRevenues,
         type: 'scatter',
         mode: 'lines+markers',
-        name: 'Текущий период',
-        line: { color: '#667eea', width: 3, shape: 'spline' },
-        marker: { color: '#667eea', size: 8, symbol: 'circle' },
-        text: currentValues.map(v => formatCurrency(v * 1000)),
-        textposition: 'top center',
-        textfont: { size: 10, color: '#667eea' },
-        hovertemplate: '<b>%{x}</b><br>Текущий: %{text}<extra></extra>'
+        name: 'Выручка (тыс. ₽)',
+        line: { color: '#4299e1', width: 3 },
+        marker: { color: '#4299e1', size: 8 },
+        yaxis: 'y',
+        hovertemplate: '<b>%{x}</b><br>Выручка: %{y:.0f} тыс. ₽<extra></extra>'
     };
     
-    const traces = [traceCurrent];
-    
-    if (prevData && prevData.total > 0 && prevValues.some(v => v > 0)) {
-        const tracePrev = {
-            x: channelNames,
-            y: prevValues,
-            type: 'scatter',
-            mode: 'lines+markers',
-            name: 'Прошлый период',
-            line: { color: '#48bb78', width: 3, shape: 'spline', dash: 'dot' },
-            marker: { color: '#48bb78', size: 8, symbol: 'diamond' },
-            text: prevValues.map(v => v > 0 ? formatCurrency(v * 1000) : 'нет данных'),
-            textposition: 'bottom center',
-            textfont: { size: 10, color: '#48bb78' },
-            hovertemplate: '<b>%{x}</b><br>Прошлый: %{text}<extra></extra>'
-        };
-        traces.push(tracePrev);
-    }
+    const traceProfit = {
+        x: monthlyLabels,
+        y: monthlyProfits,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Прибыль (тыс. ₽)',
+        line: { color: '#48bb78', width: 3 },
+        marker: { color: '#48bb78', size: 8, symbol: 'diamond' },
+        yaxis: 'y',
+        hovertemplate: '<b>%{x}</b><br>Прибыль: %{y:.0f} тыс. ₽<extra></extra>'
+    };
     
     const layout = {
         title: {
-            text: '💰 Сравнение выручки по каналам (тыс. ₽)',
-            font: { size: 14, color: '#667eea', family: 'inherit' },
-            x: 0.05,
+            text: '📈 Динамика выручки и прибыли по месяцам',
+            font: { size: 14, color: '#667eea', weight: '600' },
+            x: 0.02,
             xanchor: 'left'
         },
         paper_bgcolor: plotBgColor,
         plot_bgcolor: plotBgColor,
-        height: 380,
-        margin: { t: 50, l: 60, r: 40, b: 60 },
+        height: 350,
+        margin: { t: 50, l: 60, r: 40, b: 50 },
         xaxis: {
-            title: { text: 'Каналы продаж', font: { size: 11, color: textColor } },
-            tickangle: -20,
+            title: { text: 'Месяц', font: { size: 11, color: textColor } },
+            tickangle: -30,
             tickfont: { size: 10, color: textColor },
             gridcolor: gridColor,
             gridwidth: 0.5
         },
         yaxis: {
-            title: { text: 'Выручка (тыс. ₽)', font: { size: 11, color: textColor } },
+            title: { text: 'Тысяч рублей (₽)', font: { size: 11, color: textColor } },
             tickfont: { size: 10, color: textColor },
             gridcolor: gridColor,
             gridwidth: 0.5,
-            zerolinecolor: gridColor,
-            zerolinewidth: 1
+            zerolinecolor: gridColor
         },
         legend: {
             orientation: 'h',
@@ -3692,229 +3692,124 @@ function renderGrossLineChart(containerId, currentChannels, prevData, selectedCh
             bgcolor: 'rgba(0,0,0,0)',
             font: { size: 11, color: textColor }
         },
-        hovermode: 'closest'
+        hovermode: 'x unified'
     };
     
-    Plotly.newPlot(containerId, traces, layout, { responsive: true, displayModeBar: false });
+    Plotly.newPlot('monthlyRevenueChart', [traceRevenue, traceProfit], layout, { responsive: true, displayModeBar: false });
 }
 
 // Карусель метрик
-let carouselIndex = 0;
+let carouselIdx = 0;
 let carouselInterval = null;
 
-function updateCarousel() {
-    const metric = metricsCarousel[carouselIndex];
-    const carouselContent = document.getElementById('carouselContent');
+function updateTopCarousel() {
+    const metric = metricsForCarousel[carouselIdx];
+    const carouselContent = document.getElementById('topCarouselContent');
     if (!carouselContent) return;
     
     carouselContent.style.opacity = '0';
     setTimeout(() => {
         carouselContent.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <div style="font-size: 36px;">${metric.icon}</div>
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="font-size: 38px;">${metric.icon}</div>
                 <div>
-                    <div style="font-size: 11px; opacity: 0.7; letter-spacing: 0.5px;">${metric.label}</div>
-                    <div style="font-size: 24px; font-weight: 800; color: ${metric.color};">${metric.value}</div>
-                    ${metric.subValue ? `<div style="font-size: 12px; opacity: 0.8;">${metric.subValue}</div>` : ''}
+                    <div style="font-size: 10px; opacity: 0.6; letter-spacing: 0.5px;">${metric.label}</div>
+                    <div style="font-size: 22px; font-weight: 800; color: ${metric.color};">${metric.value}</div>
+                    ${metric.detail ? `<div style="font-size: 11px; opacity: 0.7;">${metric.detail}</div>` : ''}
                 </div>
             </div>
         `;
         carouselContent.style.opacity = '1';
     }, 200);
     
-    carouselIndex = (carouselIndex + 1) % metricsCarousel.length;
+    carouselIdx = (carouselIdx + 1) % metricsForCarousel.length;
 }
 
-function startCarousel() {
+function startTopCarousel() {
     if (carouselInterval) clearInterval(carouselInterval);
-    carouselInterval = setInterval(updateCarousel, 4000);
+    carouselInterval = setInterval(updateTopCarousel, 5000);
 }
-
-// Фильтр каналов
-let selectedGrossChannels = [...grossChannels.map(ch => ch.name)];
 
 // HTML блока
-const grossHtml = `
-<div class="gross-revenue-section" style="background: ${document.body.classList.contains('dark') ? '#1a1a2a' : 'white'}; border-radius: 20px; padding: 20px; margin-bottom: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+const topPanelHtml = `
+<div style="margin-bottom: 24px;">
+    <!-- Здоровье компании + рекомендации -->
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="font-size: 48px;">${healthStatus.icon}</div>
+                <div>
+                    <div style="font-size: 12px; opacity: 0.8;">Состояние компании</div>
+                    <div style="font-size: 28px; font-weight: 800;">${healthStatus.text}</div>
+                </div>
+            </div>
+            <div style="flex: 1; max-width: 500px;">
+                <div style="font-size: 12px; opacity: 0.8; margin-bottom: 8px;">💡 Ключевые рекомендации</div>
+                <div style="font-size: 13px; line-height: 1.4;">${recommendations[0] || 'Анализ данных в норме'}</div>
+                ${recommendations[1] ? `<div style="font-size: 12px; opacity: 0.9; margin-top: 6px;">${recommendations[1]}</div>` : ''}
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 11px; opacity: 0.8;">Период анализа</div>
+                <div style="font-size: 14px; font-weight: 600;">${currentFilters.year || 'год'} ${currentFilters.month?.length ? currentFilters.month.join(', ') : 'все месяцы'}</div>
+            </div>
+        </div>
+    </div>
     
     <!-- Карусель метрик -->
-    <div style="background: linear-gradient(135deg, rgba(102,126,234,0.12) 0%, rgba(118,75,162,0.12) 100%); border-radius: 16px; padding: 16px 20px; margin-bottom: 24px; position: relative; overflow: hidden;">
-        <div id="carouselContent" style="transition: opacity 0.3s ease; min-height: 80px;">
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <div style="font-size: 36px;">💰</div>
+    <div style="background: ${document.body.classList.contains('dark') ? '#1a1a2a' : 'white'}; border-radius: 16px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: relative; border: 1px solid rgba(102,126,234,0.15);">
+        <div style="position: absolute; top: 12px; right: 16px; display: flex; gap: 8px;" id="topCarouselDots">
+            ${metricsForCarousel.map((_, i) => `<div class="top-carousel-dot" data-idx="${i}" style="width: 6px; height: 6px; border-radius: 50%; background: ${i === 0 ? '#667eea' : 'rgba(102,126,234,0.3)'}; cursor: pointer;"></div>`).join('')}
+        </div>
+        <div id="topCarouselContent" style="transition: opacity 0.3s ease; min-height: 85px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="font-size: 38px;">💰</div>
                 <div>
-                    <div style="font-size: 11px; opacity: 0.7; letter-spacing: 0.5px;">Общая выручка</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #667eea;">${formatCurrency(grossRevenueData)}</div>
+                    <div style="font-size: 10px; opacity: 0.6; letter-spacing: 0.5px;">Выручка (с НДС)</div>
+                    <div style="font-size: 22px; font-weight: 800; color: #4299e1;">${formatCurrency(totalRevenue)}</div>
+                    <div style="font-size: 11px; opacity: 0.7;">+${((totalRevenue / (totalRevenue - totalNDSOut) - 1) * 100).toFixed(0)}% НДС</div>
                 </div>
             </div>
         </div>
-        <div style="position: absolute; bottom: 8px; right: 12px; display: flex; gap: 6px;" id="carouselDots">
-            ${metricsCarousel.map((_, i) => `<div class="carousel-dot" data-index="${i}" style="width: 6px; height: 6px; border-radius: 50%; background: ${i === 0 ? '#667eea' : 'rgba(102,126,234,0.3)'}; cursor: pointer;"></div>`).join('')}
-        </div>
     </div>
     
-    <!-- Фильтр каналов -->
-    <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <span style="font-size: 12px; font-weight: 600; color: #667eea;">📊 Каналы:</span>
-            <div id="grossChannelFilter" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                ${grossChannels.map(ch => `
-                    <button class="gross-filter-chip" data-channel="${ch.name}" style="background: ${selectedGrossChannels.includes(ch.name) ? '#667eea' : 'rgba(102,126,234,0.1)'}; color: ${selectedGrossChannels.includes(ch.name) ? 'white' : 'inherit'}; border: none; padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.2s;">
-                        ${ch.name}
-                    </button>
-                `).join('')}
-            </div>
-        </div>
-        <button id="resetGrossFilterBtn" style="background: rgba(102,126,234,0.1); border: none; color: #667eea; padding: 5px 14px; border-radius: 20px; font-size: 11px; cursor: pointer;">🔄 Сбросить</button>
-    </div>
-    
-    <!-- Линейный график -->
-    <div id="grossRevenueChart" style="height: 400px; margin-bottom: 20px; background: ${document.body.classList.contains('dark') ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'}; border-radius: 12px;"></div>
-    
-    <!-- Разбивка по каналам -->
-    <div style="margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.15);">
-        <button id="toggleGrossChannelsBtn" style="width: 100%; background: rgba(102,126,234,0.05); border: none; color: #667eea; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
-            <span id="toggleIcon">▶</span> Показать разбивку по каналам
-        </button>
-        <div id="grossChannelsContainer" style="max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out;">
-            <div style="padding: 16px 0 8px 0;">
-                ${grossChannels.map((ch, idx) => `
-                    <div class="gross-channel-item" data-channel="${ch.name}" style="margin-bottom: 20px; border-bottom: 1px solid rgba(102,126,234,0.08); padding-bottom: 12px;">
-                        <div class="gross-channel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span class="gross-expand-icon" style="font-size: 12px; transition: transform 0.2s; color: #667eea;">▶</span>
-                                <span style="font-weight: 600; font-size: 15px;">${ch.name}</span>
-                                <span style="font-size: 14px; font-weight: 700; color: #667eea;">${formatCurrency(ch.revenue)}</span>
-                            </div>
-                            <span style="font-size: 12px; background: rgba(102,126,234,0.12); padding: 3px 12px; border-radius: 20px;">${ch.percent.toFixed(1)}%</span>
-                        </div>
-                        <div style="background: rgba(102,126,234,0.1); height: 6px; border-radius: 4px; overflow: hidden;">
-                            <div style="width: ${ch.percent}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 4px;"></div>
-                        </div>
-                        <div class="gross-channel-details" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; padding-left: 28px; margin-top: 8px;">
-                            ${ch.subitems.map(sub => `
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(102,126,234,0.06);">
-                                    <span style="font-size: 12px;">${sub.name}</span>
-                                    <div style="display: flex; align-items: center; gap: 12px;">
-                                        <span style="font-size: 12px; font-weight: 600;">${formatCurrency(sub.amount)}</span>
-                                        <span style="font-size: 10px; background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">${sub.percentOfChannel.toFixed(1)}%</span>
-                                    </div>
-                                </div>
-                            `).join('')}
-                            ${ch.subitems.length === 0 ? '<div style="font-size: 11px; padding: 8px 0; opacity: 0.5; text-align: center;">Нет данных по подканалам</div>' : ''}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
+    <!-- График динамики по месяцам -->
+    <div style="background: ${document.body.classList.contains('dark') ? '#1a1a2a' : 'white'}; border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid rgba(102,126,234,0.1);">
+        <div id="monthlyRevenueChart" style="height: 370px; width: 100%;"></div>
     </div>
 </div>
 `;
 
 // Вставка HTML
-const existingContent = document.getElementById('dashboardMetrics').innerHTML;
-document.getElementById('dashboardMetrics').innerHTML = grossHtml + existingContent;
+const currentMetricsHtml = document.getElementById('dashboardMetrics').innerHTML;
+document.getElementById('dashboardMetrics').innerHTML = topPanelHtml + currentMetricsHtml;
 
 // Запуск карусели
-startCarousel();
+startTopCarousel();
 
 // Обработчики точек карусели
-document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+document.querySelectorAll('.top-carousel-dot').forEach((dot, i) => {
     dot.addEventListener('click', () => {
-        carouselIndex = i;
-        updateCarousel();
-        startCarousel();
+        carouselIdx = i;
+        updateTopCarousel();
+        startTopCarousel();
     });
 });
-
-// Обработчик кнопки разбивки
-const toggleChannelsBtn = document.getElementById('toggleGrossChannelsBtn');
-const channelsContainerDiv = document.getElementById('grossChannelsContainer');
-let channelsOpen = false;
-
-if (toggleChannelsBtn && channelsContainerDiv) {
-    toggleChannelsBtn.onclick = () => {
-        if (!channelsOpen) {
-            channelsContainerDiv.style.maxHeight = channelsContainerDiv.scrollHeight + 'px';
-            toggleChannelsBtn.innerHTML = '<span id="toggleIcon">▼</span> Скрыть разбивку по каналам';
-        } else {
-            channelsContainerDiv.style.maxHeight = '0';
-            toggleChannelsBtn.innerHTML = '<span id="toggleIcon">▶</span> Показать разбивку по каналам';
-        }
-        channelsOpen = !channelsOpen;
-    };
-}
-
-// Обработчики раскрытия подканалов
-document.querySelectorAll('.gross-channel-header').forEach(header => {
-    header.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const parent = header.closest('.gross-channel-item');
-        const details = parent.querySelector('.gross-channel-details');
-        const icon = header.querySelector('.gross-expand-icon');
-        
-        if (details.style.maxHeight && details.style.maxHeight !== '0px') {
-            details.style.maxHeight = '0';
-            if (icon) icon.style.transform = 'rotate(0deg)';
-        } else {
-            details.style.maxHeight = details.scrollHeight + 'px';
-            if (icon) icon.style.transform = 'rotate(90deg)';
-        }
-    });
-});
-
-// Функция обновления графика
-function updateGrossChart() {
-    renderGrossLineChart('grossRevenueChart', grossChannels, prevPeriodData, selectedGrossChannels);
-}
-
-// Обработчики кнопок фильтра
-document.querySelectorAll('.gross-filter-chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const channel = btn.dataset.channel;
-        if (selectedGrossChannels.includes(channel)) {
-            if (selectedGrossChannels.length > 1) {
-                selectedGrossChannels = selectedGrossChannels.filter(c => c !== channel);
-                btn.style.background = 'rgba(102,126,234,0.1)';
-                btn.style.color = 'inherit';
-            }
-        } else {
-            selectedGrossChannels.push(channel);
-            btn.style.background = '#667eea';
-            btn.style.color = 'white';
-        }
-        updateGrossChart();
-    });
-});
-
-// Кнопка сброса
-const resetFilterBtn = document.getElementById('resetGrossFilterBtn');
-if (resetFilterBtn) {
-    resetFilterBtn.onclick = () => {
-        selectedGrossChannels = [...grossChannels.map(ch => ch.name)];
-        document.querySelectorAll('.gross-filter-chip').forEach(btn => {
-            btn.style.background = '#667eea';
-            btn.style.color = 'white';
-        });
-        updateGrossChart();
-    };
-}
 
 // Отрисовка графика
-renderGrossLineChart('grossRevenueChart', grossChannels, prevPeriodData, selectedGrossChannels);
+renderMonthlyLineChart();
 
 // Слушатель смены темы
-const themeObserver = new MutationObserver(() => {
-    renderGrossLineChart('grossRevenueChart', grossChannels, prevPeriodData, selectedGrossChannels);
+const topThemeObserver = new MutationObserver(() => {
+    renderMonthlyLineChart();
 });
-themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+topThemeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
-// Остановка карусели при уходе со страницы
+// Остановка карусели
 window.addEventListener('beforeunload', () => {
     if (carouselInterval) clearInterval(carouselInterval);
 });
 
-// ---- КОНЕЦ: БЛОК ВЫРУЧКА ГРЯЗНАЯ ----
+// ---- КОНЕЦ: ВЕРХНЯЯ ПАНЕЛЬ ----
 
 
             // Себестоимость - ищем по разным названиям
