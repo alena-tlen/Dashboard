@@ -3666,54 +3666,74 @@ function startTopCarousel() {
     carouselInterval = setInterval(updateTopCarousel, 5000);
 }
 
-// HTML блока
+// HTML блока (обновленный, в едином стиле)
 const topPanelHtml = `
 <div style="margin-bottom: 24px;">
-    <!-- Здоровье компании + рекомендации -->
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 20px; margin-bottom: 20px; color: white;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <div style="font-size: 48px;">${healthStatus.icon}</div>
-                <div>
-                    <div style="font-size: 12px; opacity: 0.8;">Состояние компании</div>
-                    <div style="font-size: 28px; font-weight: 800;">${healthStatus.text}</div>
+    <!-- Здоровье компании + рекомендации - в стиле карточек -->
+    <div class="metrics-grid" style="margin-bottom: 20px;">
+        <div class="metric-card" style="grid-column: span 4; padding: 20px;">
+            <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                <span style="font-size: 18px;">📊</span>
+                <span style="font-size: 14px; font-weight: 600; color: #667eea;">СОСТОЯНИЕ КОМПАНИИ</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    <div style="text-align: center; min-width: 100px;">
+                        <div style="font-size: 36px;">${healthStatus.icon}</div>
+                        <div style="font-size: 11px; opacity: 0.7;">Статус</div>
+                        <div style="font-size: 18px; font-weight: 700; color: ${healthStatus.color};">${healthStatus.text}</div>
+                    </div>
+                    <div style="width: 1px; height: 50px; background: rgba(102,126,234,0.2);"></div>
+                    <div>
+                        <div style="font-size: 11px; opacity: 0.7; margin-bottom: 6px;">💡 Ключевые рекомендации</div>
+                        <div style="font-size: 13px; line-height: 1.4;">${recommendations[0] || 'Анализ данных в норме'}</div>
+                        ${recommendations[1] ? `<div style="font-size: 12px; opacity: 0.8; margin-top: 6px;">${recommendations[1]}</div>` : ''}
+                    </div>
                 </div>
-            </div>
-            <div style="flex: 1; max-width: 500px;">
-                <div style="font-size: 12px; opacity: 0.8; margin-bottom: 8px;">💡 Ключевые рекомендации</div>
-                <div style="font-size: 13px; line-height: 1.4;">${recommendations[0] || 'Анализ данных в норме'}</div>
-                ${recommendations[1] ? `<div style="font-size: 12px; opacity: 0.9; margin-top: 6px;">${recommendations[1]}</div>` : ''}
-            </div>
-            <div style="text-align: right;">
-                <div style="font-size: 11px; opacity: 0.8;">Период анализа</div>
-                <div style="font-size: 14px; font-weight: 600;">${currentFilters.year || 'год'} ${currentFilters.month?.length ? currentFilters.month.join(', ') : 'все месяцы'}</div>
+                <div style="text-align: right;">
+                    <div style="font-size: 11px; opacity: 0.7;">Период анализа</div>
+                    <div style="font-size: 14px; font-weight: 600;">${currentFilters.year || 'год'} ${currentFilters.month?.length ? currentFilters.month.join(', ') : 'все месяцы'}</div>
+                </div>
             </div>
         </div>
     </div>
     
     <!-- Карусель метрик -->
-    <div style="background: ${document.body.classList.contains('dark') ? '#1a1a2a' : 'white'}; border-radius: 16px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: relative; border: 1px solid rgba(102,126,234,0.15);">
-        <div style="position: absolute; top: 12px; right: 16px; display: flex; gap: 8px;" id="topCarouselDots">
-            ${metricsForCarousel.map((_, i) => `<div class="top-carousel-dot" data-idx="${i}" style="width: 6px; height: 6px; border-radius: 50%; background: ${i === 0 ? '#667eea' : 'rgba(102,126,234,0.3)'}; cursor: pointer;"></div>`).join('')}
-        </div>
-        <div id="topCarouselContent" style="transition: opacity 0.3s ease; min-height: 85px;">
-            <div style="display: flex; align-items: center; gap: 14px;">
-                <div style="font-size: 38px;">💰</div>
-                <div>
-                    <div style="font-size: 10px; opacity: 0.6; letter-spacing: 0.5px;">Выручка (с НДС)</div>
-                    <div style="font-size: 22px; font-weight: 800; color: #4299e1;">${formatCurrency(totalRevenue)}</div>
-                    <div style="font-size: 11px; opacity: 0.7;">${((totalNDSOut / totalRevenue) * 100).toFixed(0)}% НДС</div>
+    <div class="metrics-grid" style="margin-bottom: 20px;">
+        <div class="metric-card" style="grid-column: span 4; padding: 20px; position: relative;">
+            <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px;">🎯</span>
+                    <span style="font-size: 14px; font-weight: 600; color: #667eea;">КЛЮЧЕВЫЕ МЕТРИКИ</span>
+                </div>
+                <div style="display: flex; gap: 8px;" id="topCarouselDots">
+                    ${metricsForCarousel.map((_, i) => `<div class="top-carousel-dot" data-idx="${i}" style="width: 8px; height: 8px; border-radius: 50%; background: ${i === 0 ? '#667eea' : 'rgba(102,126,234,0.3)'}; cursor: pointer; transition: all 0.2s;"></div>`).join('')}
+                </div>
+            </div>
+            <div id="topCarouselContent" style="transition: opacity 0.3s ease; min-height: 85px;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="font-size: 36px;">💰</div>
+                    <div>
+                        <div style="font-size: 11px; opacity: 0.6; letter-spacing: 0.5px;">Выручка (с НДС)</div>
+                        <div style="font-size: 24px; font-weight: 700; color: #4299e1;">${formatCurrency(totalRevenue)}</div>
+                        <div style="font-size: 11px; opacity: 0.7;">${((totalNDSOut / totalRevenue) * 100).toFixed(0)}% НДС</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
     <!-- График динамики по месяцам -->
-    <div style="background: ${document.body.classList.contains('dark') ? '#1a1a2a' : 'white'}; border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid rgba(102,126,234,0.1);">
-        <div id="monthlyRevenueChart" style="height: 370px; width: 100%;"></div>
+    <div class="metrics-grid" style="margin-bottom: 20px;">
+        <div class="metric-card" style="grid-column: span 4; padding: 20px;">
+            <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                <span style="font-size: 18px;">📈</span>
+                <span style="font-size: 14px; font-weight: 600; color: #667eea;">ДИНАМИКА ВЫРУЧКИ И ПРИБЫЛИ</span>
+            </div>
+            <div id="monthlyRevenueChart" style="height: 370px; width: 100%;"></div>
+        </div>
     </div>
 </div>
-`;
 
 // Запуск карусели
 startTopCarousel();
