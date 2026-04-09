@@ -774,56 +774,56 @@
     const USERS_FILE_PATH = 'users.xlsx';
     
     async function loadUsersFromFile() {
-        const authError = document.getElementById('authError');
-        const authInfo = document.getElementById('authSuccess');
-        try {
-            const response = await fetch(USERS_FILE_PATH);
-            if (!response.ok) {
-                if (authError) authError.textContent = `❌ Файл ${USERS_FILE_PATH} не найден`;
-                return false;
-            }
-            const arrayBuffer = await response.arrayBuffer();
-            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "", raw: true });
-            const users = [];
-            for (const row of jsonData) {
-                let email = row['почта'] || row['email'] || row['Email'] || '';
-                let password = row['пароль'] || row['password'] || row['Пароль'] || '';
-                let fio = row['фио'] || row['ФИО'] || row['name'] || '';
-                let access = row['доступ'] || row['access'] || row['Доступ'] || '';
-                email = String(email).trim().toLowerCase();
-                password = String(password).trim();
-                fio = String(fio).trim();
-                access = String(access).trim().toLowerCase();
-                if (!email || !password) continue;
-                const isBlocked = access === 'заблокирован' || access === 'blocked' || access === 'нет';
-                const isAllowed = access === 'разрешён' || access === 'разрешен' || access === 'да' || access === 'yes';
-                users.push({
-                    email: email, password: password, fio: fio || email.split('@')[0],
-                    isAdmin: false, blocked: isBlocked || (!isAllowed && access !== '')
-                });
-            }
-            if (users.length === 0) {
-                if (authError) authError.textContent = '❌ Файл не содержит данных';
-                return false;
-            }
-            authUsers = users;
-            usersLoaded = true;
-            const activeCount = users.filter(u => !u.blocked).length;
-            if (authInfo) {
-                authInfo.textContent = `✅ Загружено ${users.length} пользователей (${activeCount} активных)`;
-                authInfo.style.color = '#48bb78';
-                setTimeout(() => { if (authInfo) authInfo.textContent = ''; }, 3000);
-            }
-            updateStatusDisplay();
-            return true;
-        } catch (error) {
-            console.error('Ошибка загрузки:', error);
-            if (authError) authError.textContent = `❌ Ошибка загрузки файла: ${error.message}`;
+    const authError = document.getElementById('authError');
+    const authInfo = document.getElementById('authSuccess');
+    try {
+        const response = await fetch(USERS_FILE_PATH);
+        if (!response.ok) {
+            if (authError) authError.textContent = `❌ Файл ${USERS_FILE_PATH} не найден`;
             return false;
         }
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "", raw: true });
+        const users = [];
+        for (const row of jsonData) {
+            let email = row['почта'] || row['email'] || row['Email'] || '';
+            let password = row['пароль'] || row['password'] || row['Пароль'] || '';
+            let fio = row['фио'] || row['ФИО'] || row['name'] || '';
+            let access = row['доступ'] || row['access'] || row['Доступ'] || '';
+            email = String(email).trim().toLowerCase();
+            password = String(password).trim();
+            fio = String(fio).trim();
+            access = String(access).trim().toLowerCase();
+            if (!email || !password) continue;
+            const isBlocked = access === 'заблокирован' || access === 'blocked' || access === 'нет';
+            const isAllowed = access === 'разрешён' || access === 'разрешен' || access === 'да' || access === 'yes';
+            users.push({
+                email: email, password: password, fio: fio || email.split('@')[0],
+                isAdmin: false, blocked: isBlocked || (!isAllowed && access !== '')
+            });
+        }
+        if (users.length === 0) {
+            if (authError) authError.textContent = '❌ Файл не содержит данных';
+            return false;
+        }
+        authUsers = users;
+        usersLoaded = true;
+        const activeCount = users.filter(u => !u.blocked).length;
+        if (authInfo) {
+            authInfo.textContent = `✅ Загружено ${users.length} пользователей (${activeCount} активных)`;
+            authInfo.style.color = '#48bb78';
+            setTimeout(() => { if (authInfo) authInfo.textContent = ''; }, 3000);
+        }
+        updateStatusDisplay();
+        return true;
+    } catch (error) {
+        console.error('Ошибка загрузки:', error);
+        if (authError) authError.textContent = `❌ Ошибка загрузки файла: ${error.message}`;
+        return false;
     }
+}
     
     function updateStatusDisplay() {
         const authTitle = document.getElementById('authTitle');
