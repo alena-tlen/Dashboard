@@ -3715,10 +3715,6 @@ const topPanelHtml = `
 </div>
 `;
 
-// Вставка HTML (в начало)
-const currentMetricsHtml = document.getElementById('dashboardMetrics').innerHTML;
-document.getElementById('dashboardMetrics').innerHTML = topPanelHtml + currentMetricsHtml;
-
 // Запуск карусели
 startTopCarousel();
 
@@ -3925,12 +3921,12 @@ console.log('costData:', costData);
             const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false);
             const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true);
             
-            document.getElementById('dashboardMetrics').innerHTML = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
-                    ${revenueHtml}
-                    ${expensesHtml}
-                </div>
-                <div class="metrics-grid" style="margin-top: 24px;">
+            document.getElementById('dashboardMetrics').innerHTML = topPanelHtml + `
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+        ${revenueHtml}
+        ${expensesHtml}
+    </div>
+    <div class="metrics-grid" style="margin-top: 24px;">
                     <div class="metric-card">
                         <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                             <div style="display: flex; align-items: center; gap: 8px;">
