@@ -3481,7 +3481,6 @@ const netRevenue = totalRevenue - totalNDSOut;
 const profit = netRevenue - totalExpenses;
 const profitability = netRevenue > 0 ? (profit / netRevenue) * 100 : 0;
 
-const efficiency = profit / (totalExpenses || 1);
 
 // Сбор данных по месяцам для графика
 const monthlyDataMap = new Map();
