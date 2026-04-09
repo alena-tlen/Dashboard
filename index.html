@@ -3557,9 +3557,20 @@ let grossChannels = Array.from(grossByChannel.entries()).map(([name, data]) => (
     })).sort((a, b) => b.amount - a.amount)
 })).sort((a, b) => b.revenue - a.revenue);
 
-// Расчет дополнительных метрик
+// Расчет метрик для карусели
 const grossAvgCheck = totalSalesQuantity > 0 ? grossRevenueData / totalSalesQuantity : 0;
 const topChannel = grossChannels[0];
+const top2Channel = grossChannels[1];
+const growthPercent = prevPeriodData && prevPeriodData.total > 0 ? ((grossRevenueData - prevPeriodData.total) / prevPeriodData.total * 100) : null;
+
+const metricsCarousel = [
+    { icon: "💰", label: "Общая выручка", value: formatCurrency(grossRevenueData), color: "#667eea" },
+    { icon: "🏆", label: "Лидер", value: topChannel?.name || "—", subValue: topChannel ? formatCurrency(topChannel.revenue) : "", color: "#48bb78" },
+    { icon: "📊", label: "Средний чек", value: formatCurrency(grossAvgCheck), color: "#4299e1" },
+    { icon: "📈", label: "Доля лидера", value: topChannel ? topChannel.percent.toFixed(1) + "%" : "0%", color: "#ed8936" },
+    { icon: "🥈", label: "2-е место", value: top2Channel?.name || "—", subValue: top2Channel ? top2Channel.percent.toFixed(1) + "%" : "", color: "#9f7aea" },
+    { icon: "📅", label: "Период", value: `${currentFilters.year || 'год'}`, subValue: currentFilters.month?.join(", ") || "все месяцы", color: "#a0aec0" }
+];
 
 // Получение данных за прошлый период для сравнения
 function getPreviousPeriodData() {
@@ -3587,16 +3598,10 @@ function getPreviousPeriodData() {
 
 const prevPeriodData = getPreviousPeriodData();
 
-// Функция для отрисовки графика
-function renderGrossRevenueMultiChart(containerId, currentChannels, prevData, selectedChannels = null) {
+// Линейный график с двумя линиями
+function renderGrossLineChart(containerId, currentChannels, prevData, selectedChannels = null) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
-    const width = container.clientWidth || 800;
-    const height = 320;
-    const margin = { top: 50, right: 30, bottom: 60, left: 70 };
-    const chartWidth = width - margin.left - margin.right;
-    const chartHeight = height - margin.top - margin.bottom;
     
     let channelsToShow = currentChannels;
     if (selectedChannels && selectedChannels.length > 0) {
@@ -3608,186 +3613,182 @@ function renderGrossRevenueMultiChart(containerId, currentChannels, prevData, se
         return;
     }
     
-    const currentValues = channelsToShow.map(ch => ch.revenue);
-    const prevValues = channelsToShow.map(ch => prevData ? (prevData.byChannel.get(ch.name) || 0) : 0);
-    const maxValue = Math.max(...currentValues, ...prevValues, 1);
-    
-    const xScale = (i) => margin.left + (i + 0.5) * (chartWidth / channelsToShow.length);
-    const barWidth = (chartWidth / channelsToShow.length) * 0.45;
+    const channelNames = channelsToShow.map(ch => ch.name);
+    const currentValues = channelsToShow.map(ch => ch.revenue / 1000);
+    const prevValues = channelsToShow.map(ch => prevData ? (prevData.byChannel.get(ch.name) || 0) / 1000 : 0);
     
     const isDarkMode = document.body.classList.contains('dark');
+    const plotBgColor = isDarkMode ? '#1a1a2a' : 'white';
     const textColor = isDarkMode ? '#e2e8f0' : '#4a5568';
     const gridColor = isDarkMode ? '#2d3748' : '#e2e8f0';
-    const currentColor = '#667eea';
-    const prevColor = '#48bb78';
     
-    let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="background: transparent; font-family: inherit;">`;
-    svg += `<defs>
-        <linearGradient id="currentGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#667eea;stop-opacity:0.9"/>
-            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:0.6"/>
-        </linearGradient>
-        <linearGradient id="prevGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#48bb78;stop-opacity:0.9"/>
-            <stop offset="100%" style="stop-color:#38a169;stop-opacity:0.6"/>
-        </linearGradient>
-    </defs>`;
+    const traceCurrent = {
+        x: channelNames,
+        y: currentValues,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Текущий период',
+        line: { color: '#667eea', width: 3, shape: 'spline' },
+        marker: { color: '#667eea', size: 8, symbol: 'circle' },
+        text: currentValues.map(v => formatCurrency(v * 1000)),
+        textposition: 'top center',
+        textfont: { size: 10, color: '#667eea' },
+        hovertemplate: '<b>%{x}</b><br>Текущий: %{text}<extra></extra>'
+    };
     
-    // Заголовок
-    svg += `<text x="${width/2}" y="22" text-anchor="middle" font-size="13" font-weight="600" fill="#667eea">💰 Сравнение выручки по каналам (текущий vs прошлый период)</text>`;
+    const traces = [traceCurrent];
     
-    // Оси
-    svg += `<line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + chartHeight}" stroke="${gridColor}" stroke-width="1"/>`;
-    svg += `<line x1="${margin.left}" y1="${margin.top + chartHeight}" x2="${margin.left + chartWidth}" y2="${margin.top + chartHeight}" stroke="${gridColor}" stroke-width="1"/>`;
-    
-    // Сетка Y
-    for (let i = 0; i <= 4; i++) {
-        const value = (maxValue / 4) * i;
-        const y = margin.top + chartHeight - (i / 4) * chartHeight;
-        svg += `<text x="${margin.left - 10}" y="${y + 4}" text-anchor="end" font-size="10" fill="${textColor}">${(value / 1000).toFixed(0)}k</text>`;
-        svg += `<line x1="${margin.left - 5}" y1="${y}" x2="${margin.left + chartWidth}" y2="${y}" stroke="${gridColor}" stroke-width="0.5" stroke-dasharray="3,3"/>`;
+    if (prevData && prevData.total > 0 && prevValues.some(v => v > 0)) {
+        const tracePrev = {
+            x: channelNames,
+            y: prevValues,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Прошлый период',
+            line: { color: '#48bb78', width: 3, shape: 'spline', dash: 'dot' },
+            marker: { color: '#48bb78', size: 8, symbol: 'diamond' },
+            text: prevValues.map(v => v > 0 ? formatCurrency(v * 1000) : 'нет данных'),
+            textposition: 'bottom center',
+            textfont: { size: 10, color: '#48bb78' },
+            hovertemplate: '<b>%{x}</b><br>Прошлый: %{text}<extra></extra>'
+        };
+        traces.push(tracePrev);
     }
     
-    // Столбцы текущего периода
-    channelsToShow.forEach((channel, i) => {
-        const x = xScale(i);
-        const currentHeight = (channel.revenue / maxValue) * chartHeight;
-        const y = margin.top + chartHeight - currentHeight;
-        
-        svg += `<rect x="${x - barWidth/2}" y="${y}" width="${barWidth}" height="${currentHeight}" rx="4" fill="url(#currentGrad)" opacity="0.85">`;
-        svg += `<title>${channel.name} (текущий): ${formatCurrency(channel.revenue)}</title>`;
-        svg += `</rect>`;
-        svg += `<text x="${x}" y="${y - 5}" text-anchor="middle" font-size="9" fill="#667eea" font-weight="500">${(channel.revenue / 1000).toFixed(0)}k</text>`;
-    });
+    const layout = {
+        title: {
+            text: '💰 Сравнение выручки по каналам (тыс. ₽)',
+            font: { size: 14, color: '#667eea', family: 'inherit' },
+            x: 0.05,
+            xanchor: 'left'
+        },
+        paper_bgcolor: plotBgColor,
+        plot_bgcolor: plotBgColor,
+        height: 380,
+        margin: { t: 50, l: 60, r: 40, b: 60 },
+        xaxis: {
+            title: { text: 'Каналы продаж', font: { size: 11, color: textColor } },
+            tickangle: -20,
+            tickfont: { size: 10, color: textColor },
+            gridcolor: gridColor,
+            gridwidth: 0.5
+        },
+        yaxis: {
+            title: { text: 'Выручка (тыс. ₽)', font: { size: 11, color: textColor } },
+            tickfont: { size: 10, color: textColor },
+            gridcolor: gridColor,
+            gridwidth: 0.5,
+            zerolinecolor: gridColor,
+            zerolinewidth: 1
+        },
+        legend: {
+            orientation: 'h',
+            yanchor: 'bottom',
+            y: 1.02,
+            xanchor: 'right',
+            x: 1,
+            bgcolor: 'rgba(0,0,0,0)',
+            font: { size: 11, color: textColor }
+        },
+        hovermode: 'closest'
+    };
     
-    // Линия прошлого периода
-    if (prevData && prevData.total > 0) {
-        let linePoints = '';
-        channelsToShow.forEach((channel, i) => {
-            const x = xScale(i);
-            const prevValue = prevData.byChannel.get(channel.name) || 0;
-            if (prevValue > 0) {
-                const prevHeight = (prevValue / maxValue) * chartHeight;
-                const y = margin.top + chartHeight - prevHeight;
-                linePoints += `${x},${y} `;
-                svg += `<circle cx="${x}" cy="${y}" r="4" fill="#48bb78" stroke="white" stroke-width="1.5">`;
-                svg += `<title>${channel.name} (прошлый): ${formatCurrency(prevValue)}</title>`;
-                svg += `</circle>`;
-                svg += `<text x="${x}" y="${y - 8}" text-anchor="middle" font-size="8" fill="#48bb78">${(prevValue / 1000).toFixed(0)}k</text>`;
-            }
-        });
-        if (linePoints) {
-            svg += `<polyline points="${linePoints.trim()}" fill="none" stroke="#48bb78" stroke-width="2" stroke-dasharray="6,4"/>`;
-        }
-    }
-    
-    // Подписи X
-    channelsToShow.forEach((channel, i) => {
-        const x = xScale(i);
-        svg += `<text x="${x}" y="${margin.top + chartHeight + 18}" text-anchor="middle" font-size="10" fill="${textColor}" transform="rotate(-20, ${x}, ${margin.top + chartHeight + 18})">${channel.name.slice(0, 10)}</text>`;
-    });
-    
-    // Легенда
-    svg += `<rect x="${width - 140}" y="8" width="130" height="32" rx="6" fill="${isDarkMode ? '#1a1a2a' : 'white'}" opacity="0.9" stroke="${gridColor}" stroke-width="0.5"/>`;
-    svg += `<rect x="${width - 135}" y="14" width="12" height="12" rx="2" fill="url(#currentGrad)"/>`;
-    svg += `<text x="${width - 120}" y="24" font-size="10" fill="${textColor}">Текущий</text>`;
-    if (prevData && prevData.total > 0) {
-        svg += `<line x1="${width - 80}" y1="20" x2="${width - 68}" y2="20" stroke="#48bb78" stroke-width="2" stroke-dasharray="4,3"/>`;
-        svg += `<circle cx="${width - 74}" cy="20" r="3" fill="#48bb78"/>`;
-        svg += `<text x="${width - 63}" y="24" font-size="10" fill="${textColor}">Прошлый</text>`;
-    }
-    
-    svg += `</svg>`;
-    container.innerHTML = svg;
+    Plotly.newPlot(containerId, traces, layout, { responsive: true, displayModeBar: false });
 }
 
-// Фильтр каналов
-let selectedGrossChannels = [...grossChannels.map(ch => ch.name)];
-let channelsContainerOpen = false;
-let submenuOpenState = {};
+// Карусель метрик
+let carouselIndex = 0;
+let carouselInterval = null;
+
+function updateCarousel() {
+    const metric = metricsCarousel[carouselIndex];
+    const carouselContent = document.getElementById('carouselContent');
+    if (!carouselContent) return;
+    
+    carouselContent.style.opacity = '0';
+    setTimeout(() => {
+        carouselContent.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="font-size: 36px;">${metric.icon}</div>
+                <div>
+                    <div style="font-size: 11px; opacity: 0.7; letter-spacing: 0.5px;">${metric.label}</div>
+                    <div style="font-size: 24px; font-weight: 800; color: ${metric.color};">${metric.value}</div>
+                    ${metric.subValue ? `<div style="font-size: 12px; opacity: 0.8;">${metric.subValue}</div>` : ''}
+                </div>
+            </div>
+        `;
+        carouselContent.style.opacity = '1';
+    }, 200);
+    
+    carouselIndex = (carouselIndex + 1) % metricsCarousel.length;
+}
+
+function startCarousel() {
+    if (carouselInterval) clearInterval(carouselInterval);
+    carouselInterval = setInterval(updateCarousel, 4000);
+}
 
 // HTML блока
 const grossHtml = `
 <div class="gross-revenue-section" style="background: ${document.body.classList.contains('dark') ? '#1a1a2a' : 'white'}; border-radius: 20px; padding: 20px; margin-bottom: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
     
-    <!-- Верхняя плашка с ключевыми метриками -->
-    <div style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-radius: 16px; padding: 16px 20px; margin-bottom: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-            <div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;">
+    <!-- Карусель метрик -->
+    <div style="background: linear-gradient(135deg, rgba(102,126,234,0.12) 0%, rgba(118,75,162,0.12) 100%); border-radius: 16px; padding: 16px 20px; margin-bottom: 24px; position: relative; overflow: hidden;">
+        <div id="carouselContent" style="transition: opacity 0.3s ease; min-height: 80px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="font-size: 36px;">💰</div>
                 <div>
-                    <div style="font-size: 12px; opacity: 0.7;">💰 Gross Revenue</div>
-                    <div style="font-size: 28px; font-weight: 800;">${formatCurrency(grossRevenueData)}</div>
-                </div>
-                <div style="width: 1px; height: 40px; background: rgba(102,126,234,0.3);"></div>
-                <div>
-                    <div style="font-size: 11px; opacity: 0.7;">🏆 Лидер по выручке</div>
-                    <div style="font-size: 18px; font-weight: 700;">${topChannel?.name || '—'}</div>
-                    <div style="font-size: 12px;">${topChannel ? formatCurrency(topChannel.revenue) : ''}</div>
-                </div>
-                <div style="width: 1px; height: 40px; background: rgba(102,126,234,0.3);"></div>
-                <div>
-                    <div style="font-size: 11px; opacity: 0.7;">📊 Средний чек (грязный)</div>
-                    <div style="font-size: 18px; font-weight: 700;">${formatCurrency(grossAvgCheck)}</div>
-                </div>
-                <div style="width: 1px; height: 40px; background: rgba(102,126,234,0.3);"></div>
-                <div>
-                    <div style="font-size: 11px; opacity: 0.7;">📈 Доля топ-канала</div>
-                    <div style="font-size: 18px; font-weight: 700; color: #667eea;">${topChannel ? topChannel.percent.toFixed(1) : '0'}%</div>
+                    <div style="font-size: 11px; opacity: 0.7; letter-spacing: 0.5px;">Общая выручка</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #667eea;">${formatCurrency(grossRevenueData)}</div>
                 </div>
             </div>
-            <div style="display: flex; gap: 8px;">
-                <span style="background: rgba(102,126,234,0.15); padding: 4px 12px; border-radius: 20px; font-size: 11px;">📅 ${currentFilters.year || 'год'} ${currentFilters.month?.join(', ') || 'все месяцы'}</span>
-            </div>
+        </div>
+        <div style="position: absolute; bottom: 8px; right: 12px; display: flex; gap: 6px;" id="carouselDots">
+            ${metricsCarousel.map((_, i) => `<div class="carousel-dot" data-index="${i}" style="width: 6px; height: 6px; border-radius: 50%; background: ${i === 0 ? '#667eea' : 'rgba(102,126,234,0.3)'}; cursor: pointer;"></div>`).join('')}
         </div>
     </div>
     
-    <!-- Фильтр каналов для графика -->
-    <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <span style="font-size: 12px; font-weight: 600; color: #667eea;">📊 Показать на графике:</span>
+    <!-- Фильтр каналов -->
+    <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-size: 12px; font-weight: 600; color: #667eea;">📊 Каналы:</span>
             <div id="grossChannelFilter" style="display: flex; gap: 8px; flex-wrap: wrap;">
                 ${grossChannels.map(ch => `
-                    <label class="gross-filter-chip" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; background: ${selectedGrossChannels.includes(ch.name) ? '#667eea' : 'rgba(102,126,234,0.1)'}; color: ${selectedGrossChannels.includes(ch.name) ? 'white' : 'inherit'}; padding: 5px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s;">
-                        <input type="checkbox" value="${ch.name}" ${selectedGrossChannels.includes(ch.name) ? 'checked' : ''} style="display: none;"> 
+                    <button class="gross-filter-chip" data-channel="${ch.name}" style="background: ${selectedGrossChannels.includes(ch.name) ? '#667eea' : 'rgba(102,126,234,0.1)'}; color: ${selectedGrossChannels.includes(ch.name) ? 'white' : 'inherit'}; border: none; padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.2s;">
                         ${ch.name}
-                    </label>
+                    </button>
                 `).join('')}
             </div>
         </div>
-        <button id="resetGrossFilterBtn" style="background: rgba(102,126,234,0.1); border: none; color: #667eea; padding: 5px 14px; border-radius: 20px; font-size: 11px; cursor: pointer; transition: all 0.2s;">🔄 Сбросить фильтр</button>
+        <button id="resetGrossFilterBtn" style="background: rgba(102,126,234,0.1); border: none; color: #667eea; padding: 5px 14px; border-radius: 20px; font-size: 11px; cursor: pointer;">🔄 Сбросить</button>
     </div>
     
-    <!-- График -->
-    <div id="grossRevenueChart" class="gross-chart-container" style="height: 340px; margin-bottom: 20px; background: ${document.body.classList.contains('dark') ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'}; border-radius: 12px;"></div>
+    <!-- Линейный график -->
+    <div id="grossRevenueChart" style="height: 400px; margin-bottom: 20px; background: ${document.body.classList.contains('dark') ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'}; border-radius: 12px;"></div>
     
     <!-- Разбивка по каналам -->
-    <div style="margin-top: 20px; border-top: 1px solid rgba(102,126,234,0.15); padding-top: 16px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-size: 14px; font-weight: 600;">📋 Разбивка по каналам</span>
-            <button id="toggleGrossChannelsBtn" style="background: rgba(102,126,234,0.1); border: none; color: #667eea; padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
-                <span>▶</span> Показать все каналы
-            </button>
-        </div>
+    <div style="margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.15);">
+        <button id="toggleGrossChannelsBtn" style="width: 100%; background: rgba(102,126,234,0.05); border: none; color: #667eea; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
+            <span id="toggleIcon">▶</span> Показать разбивку по каналам
+        </button>
         <div id="grossChannelsContainer" style="max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out;">
-            <div style="padding-top: 8px;">
+            <div style="padding: 16px 0 8px 0;">
                 ${grossChannels.map((ch, idx) => `
-                    <div class="gross-channel-item" data-channel="${ch.name}" style="margin-bottom: 18px; border-bottom: 1px solid rgba(102,126,234,0.08); padding-bottom: 12px;">
-                        <div class="gross-channel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; cursor: pointer;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="gross-channel-item" data-channel="${ch.name}" style="margin-bottom: 20px; border-bottom: 1px solid rgba(102,126,234,0.08); padding-bottom: 12px;">
+                        <div class="gross-channel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
                                 <span class="gross-expand-icon" style="font-size: 12px; transition: transform 0.2s; color: #667eea;">▶</span>
                                 <span style="font-weight: 600; font-size: 15px;">${ch.name}</span>
                                 <span style="font-size: 14px; font-weight: 700; color: #667eea;">${formatCurrency(ch.revenue)}</span>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <span style="font-size: 12px; background: rgba(102,126,234,0.12); padding: 3px 10px; border-radius: 20px;">${ch.percent.toFixed(1)}%</span>
-                            </div>
+                            <span style="font-size: 12px; background: rgba(102,126,234,0.12); padding: 3px 12px; border-radius: 20px;">${ch.percent.toFixed(1)}%</span>
                         </div>
                         <div style="background: rgba(102,126,234,0.1); height: 6px; border-radius: 4px; overflow: hidden;">
-                            <div class="gross-progress-bar" style="width: ${ch.percent}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 4px;"></div>
+                            <div style="width: ${ch.percent}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 4px;"></div>
                         </div>
-                        <div class="gross-channel-details" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; padding-left: 24px; margin-top: 8px;">
+                        <div class="gross-channel-details" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; padding-left: 28px; margin-top: 8px;">
                             ${ch.subitems.map(sub => `
-                                <div class="gross-subitem" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(102,126,234,0.08);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(102,126,234,0.06);">
                                     <span style="font-size: 12px;">${sub.name}</span>
                                     <div style="display: flex; align-items: center; gap: 12px;">
                                         <span style="font-size: 12px; font-weight: 600;">${formatCurrency(sub.amount)}</span>
@@ -3795,7 +3796,7 @@ const grossHtml = `
                                     </div>
                                 </div>
                             `).join('')}
-                            ${ch.subitems.length === 0 ? '<div style="font-size: 11px; padding: 8px 0; opacity: 0.5;">Нет данных по подканалам</div>' : ''}
+                            ${ch.subitems.length === 0 ? '<div style="font-size: 11px; padding: 8px 0; opacity: 0.5; text-align: center;">Нет данных по подканалам</div>' : ''}
                         </div>
                     </div>
                 `).join('')}
@@ -3805,102 +3806,111 @@ const grossHtml = `
 </div>
 `;
 
-// Вставка HTML в начало
+// Вставка HTML
 const existingContent = document.getElementById('dashboardMetrics').innerHTML;
 document.getElementById('dashboardMetrics').innerHTML = grossHtml + existingContent;
 
-// Обработчик для кнопки "Показать/скрыть все каналы"
+// Запуск карусели
+startCarousel();
+
+// Обработчики точек карусели
+document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+    dot.addEventListener('click', () => {
+        carouselIndex = i;
+        updateCarousel();
+        startCarousel();
+    });
+});
+
+// Обработчик кнопки разбивки
 const toggleChannelsBtn = document.getElementById('toggleGrossChannelsBtn');
 const channelsContainerDiv = document.getElementById('grossChannelsContainer');
+const toggleIcon = document.getElementById('toggleIcon');
+let channelsOpen = false;
+
 if (toggleChannelsBtn && channelsContainerDiv) {
     toggleChannelsBtn.onclick = () => {
-        if (!channelsContainerOpen) {
+        if (!channelsOpen) {
             channelsContainerDiv.style.maxHeight = channelsContainerDiv.scrollHeight + 'px';
-            toggleChannelsBtn.innerHTML = '<span>▼</span> Скрыть все каналы';
-            document.querySelectorAll('.gross-channel-item').forEach((item, i) => {
-                setTimeout(() => { item.style.opacity = '1'; }, i * 50);
-            });
+            toggleChannelsBtn.innerHTML = '<span id="toggleIcon">▼</span> Скрыть разбивку по каналам';
         } else {
             channelsContainerDiv.style.maxHeight = '0';
-            toggleChannelsBtn.innerHTML = '<span>▶</span> Показать все каналы';
+            toggleChannelsBtn.innerHTML = '<span id="toggleIcon">▶</span> Показать разбивку по каналам';
         }
-        channelsContainerOpen = !channelsContainerOpen;
+        channelsOpen = !channelsOpen;
     };
 }
 
-// Обработчики для раскрытия подканалов
+// Обработчики раскрытия подканалов
 document.querySelectorAll('.gross-channel-header').forEach(header => {
     header.addEventListener('click', (e) => {
         e.stopPropagation();
         const parent = header.closest('.gross-channel-item');
         const details = parent.querySelector('.gross-channel-details');
         const icon = header.querySelector('.gross-expand-icon');
-        const channelName = parent.dataset.channel;
+        
         if (details.style.maxHeight && details.style.maxHeight !== '0px') {
             details.style.maxHeight = '0';
             if (icon) icon.style.transform = 'rotate(0deg)';
-            submenuOpenState[channelName] = false;
         } else {
             details.style.maxHeight = details.scrollHeight + 'px';
             if (icon) icon.style.transform = 'rotate(90deg)';
-            submenuOpenState[channelName] = true;
         }
     });
 });
 
-// Обработчики фильтрации каналов на графике
-const filterCheckboxes = document.querySelectorAll('#grossChannelFilter .gross-filter-chip');
-const resetFilterBtn = document.getElementById('resetGrossFilterBtn');
+// Фильтр каналов
+let selectedGrossChannels = [...grossChannels.map(ch => ch.name)];
 
 function updateGrossChart() {
-    selectedGrossChannels = Array.from(document.querySelectorAll('#grossChannelFilter input[type="checkbox"]'))
-        .filter(cb => cb.checked)
-        .map(cb => cb.value);
-    
-    // Обновляем стили чипов
-    document.querySelectorAll('#grossChannelFilter .gross-filter-chip').forEach(chip => {
-        const checkbox = chip.querySelector('input');
-        if (checkbox && checkbox.checked) {
-            chip.style.background = '#667eea';
-            chip.style.color = 'white';
-        } else {
-            chip.style.background = 'rgba(102,126,234,0.1)';
-            chip.style.color = 'inherit';
-        }
-    });
-    
-    renderGrossRevenueMultiChart('grossRevenueChart', grossChannels, prevPeriodData, selectedGrossChannels);
+    renderGrossLineChart('grossRevenueChart', grossChannels, prevPeriodData, selectedGrossChannels);
 }
 
-// Назначаем обработчики на чипы
-document.querySelectorAll('#grossChannelFilter .gross-filter-chip').forEach(chip => {
-    const checkbox = chip.querySelector('input');
-    if (checkbox) {
-        chip.addEventListener('click', (e) => {
-            e.stopPropagation();
-            checkbox.checked = !checkbox.checked;
-            updateGrossChart();
-        });
-    }
+// Обработчики кнопок фильтра
+document.querySelectorAll('.gross-filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const channel = btn.dataset.channel;
+        if (selectedGrossChannels.includes(channel)) {
+            if (selectedGrossChannels.length > 1) {
+                selectedGrossChannels = selectedGrossChannels.filter(c => c !== channel);
+                btn.style.background = 'rgba(102,126,234,0.1)';
+                btn.style.color = 'inherit';
+            }
+        } else {
+            selectedGrossChannels.push(channel);
+            btn.style.background = '#667eea';
+            btn.style.color = 'white';
+        }
+        updateGrossChart();
+    });
 });
 
+// Кнопка сброса
+const resetFilterBtn = document.getElementById('resetGrossFilterBtn');
 if (resetFilterBtn) {
     resetFilterBtn.onclick = () => {
-        document.querySelectorAll('#grossChannelFilter input[type="checkbox"]').forEach(cb => {
-            cb.checked = true;
+        selectedGrossChannels = [...grossChannels.map(ch => ch.name)];
+        document.querySelectorAll('.gross-filter-chip').forEach(btn => {
+            btn.style.background = '#667eea';
+            btn.style.color = 'white';
         });
         updateGrossChart();
     };
 }
 
 // Отрисовка графика
-renderGrossRevenueMultiChart('grossRevenueChart', grossChannels, prevPeriodData, selectedGrossChannels);
+renderGrossLineChart('grossRevenueChart', grossChannels, prevPeriodData, selectedGrossChannels);
 
-// Слушатель смены темы для перерисовки графика
+// Слушатель смены темы
 const themeObserver = new MutationObserver(() => {
-    renderGrossRevenueMultiChart('grossRevenueChart', grossChannels, prevPeriodData, selectedGrossChannels);
+    renderGrossLineChart('grossRevenueChart', grossChannels, prevPeriodData, selectedGrossChannels);
 });
 themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+// Остановка карусели при уходе со страницы
+window.addEventListener('beforeunload', () => {
+    if (carouselInterval) clearInterval(carouselInterval);
+});
 
 // ---- КОНЕЦ: БЛОК ВЫРУЧКА ГРЯЗНАЯ ----
 
