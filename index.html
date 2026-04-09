@@ -3479,10 +3479,10 @@ function renderQuadrantMatrix(data, f) {
 // Массив со статьями - ЗАПОЛНИТЕ СВОИМИ ДАННЫМИ
 const articlesList = [
     {
-        title: "Как анализировать финансовые показатели",
-        description: "Разбираем ключевые метрики и учимся читать отчетность",
+        title: "Вы управляете ассортиментом или складом случайностей? Глубокая товарная и ценовая аналитика на маркетплейсах",
+        description: "Вы знаете, какой товар приносит 80% вашей прибыли? А какой просто занимает место, имитируя продажи? Если ответ «нет», вы не управляете ассортиментом — вы содержите склад случайных позиций. Глубокая товарная аналитика — это операция по разделению сиамских близнецов: «деньги» и «балласт».",
         link: "https://dzen.ru/a/aUqz1yENXTiPF2Dt",
-        icon: "📊",
+        imageUrl: https://avatars.dzeninfra.ru/get-zen_doc/271828/pub_6948cf24c058d37e481f1a68_695d80dca5ebb71be8c38b22/scale_1200,
         source: "Дзен"
     },
     {
@@ -3529,7 +3529,12 @@ function updateArticleCarousel() {
         carouselContent.innerHTML = `
             <a href="${article.link}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
                 <div style="display: flex; align-items: center; gap: 16px;">
-                    <div style="font-size: 42px; min-width: 60px; text-align: center;">${article.icon}</div>
+                    <div style="width: 60px; height: 60px; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        ${article.imageUrl ? 
+                            `<img src="${article.imageUrl}" style="width: 100%; height: 100%; object-fit: cover;">` : 
+                            `<span style="font-size: 28px;">📄</span>`
+                        }
+                    </div>
                     <div style="flex: 1;">
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
                             <span style="font-size: 11px; background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">${article.source}</span>
@@ -3547,12 +3552,7 @@ function updateArticleCarousel() {
     articleCarouselIndex = (articleCarouselIndex + 1) % articlesList.length;
 }
 
-function startArticleCarousel() {
-    if (articleCarouselInterval) clearInterval(articleCarouselInterval);
-    articleCarouselInterval = setInterval(updateArticleCarousel, 6000);
-}
-
-// HTML для блока статей
+// HTML для блока статей (обновленный)
 const articlesHtml = `
 <div class="metrics-grid" style="margin-bottom: 20px;">
     <div class="metric-card" style="grid-column: span 4; padding: 20px; position: relative;">
@@ -3568,7 +3568,12 @@ const articlesHtml = `
         <div id="articleCarouselContent" style="transition: opacity 0.3s ease; min-height: 100px;">
             <a href="${articlesList[0].link}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
                 <div style="display: flex; align-items: center; gap: 16px;">
-                    <div style="font-size: 42px; min-width: 60px; text-align: center;">${articlesList[0].icon}</div>
+                    <div style="width: 60px; height: 60px; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        ${articlesList[0].imageUrl ? 
+                            `<img src="${articlesList[0].imageUrl}" style="width: 100%; height: 100%; object-fit: cover;">` : 
+                            `<span style="font-size: 28px;">📄</span>`
+                        }
+                    </div>
                     <div style="flex: 1;">
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
                             <span style="font-size: 11px; background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">${articlesList[0].source}</span>
