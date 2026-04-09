@@ -3557,22 +3557,12 @@ let grossChannels = Array.from(grossByChannel.entries()).map(([name, data]) => (
     })).sort((a, b) => b.amount - a.amount)
 })).sort((a, b) => b.revenue - a.revenue);
 
-// Расчет метрик для карусели
+// Расчет метрик
 const grossAvgCheck = totalSalesQuantity > 0 ? grossRevenueData / totalSalesQuantity : 0;
 const topChannel = grossChannels[0];
 const top2Channel = grossChannels[1];
-const growthPercent = prevPeriodData && prevPeriodData.total > 0 ? ((grossRevenueData - prevPeriodData.total) / prevPeriodData.total * 100) : null;
 
-const metricsCarousel = [
-    { icon: "💰", label: "Общая выручка", value: formatCurrency(grossRevenueData), color: "#667eea" },
-    { icon: "🏆", label: "Лидер", value: topChannel?.name || "—", subValue: topChannel ? formatCurrency(topChannel.revenue) : "", color: "#48bb78" },
-    { icon: "📊", label: "Средний чек", value: formatCurrency(grossAvgCheck), color: "#4299e1" },
-    { icon: "📈", label: "Доля лидера", value: topChannel ? topChannel.percent.toFixed(1) + "%" : "0%", color: "#ed8936" },
-    { icon: "🥈", label: "2-е место", value: top2Channel?.name || "—", subValue: top2Channel ? top2Channel.percent.toFixed(1) + "%" : "", color: "#9f7aea" },
-    { icon: "📅", label: "Период", value: `${currentFilters.year || 'год'}`, subValue: currentFilters.month?.join(", ") || "все месяцы", color: "#a0aec0" }
-];
-
-// Получение данных за прошлый период для сравнения
+// ПОЛУЧЕНИЕ ДАННЫХ ЗА ПРОШЛЫЙ ПЕРИОД (переносим СЮДА, до использования)
 function getPreviousPeriodData() {
     const selectedMonths = currentFilters.month || [];
     const selectedYear = currentFilters.year;
@@ -3598,7 +3588,19 @@ function getPreviousPeriodData() {
 
 const prevPeriodData = getPreviousPeriodData();
 
-// Линейный график с двумя линиями
+// Метрики для карусели (теперь prevPeriodData уже определена)
+const growthPercent = prevPeriodData && prevPeriodData.total > 0 ? ((grossRevenueData - prevPeriodData.total) / prevPeriodData.total * 100) : null;
+
+const metricsCarousel = [
+    { icon: "💰", label: "Общая выручка", value: formatCurrency(grossRevenueData), color: "#667eea" },
+    { icon: "🏆", label: "Лидер", value: topChannel?.name || "—", subValue: topChannel ? formatCurrency(topChannel.revenue) : "", color: "#48bb78" },
+    { icon: "📊", label: "Средний чек", value: formatCurrency(grossAvgCheck), color: "#4299e1" },
+    { icon: "📈", label: "Доля лидера", value: topChannel ? topChannel.percent.toFixed(1) + "%" : "0%", color: "#ed8936" },
+    { icon: "🥈", label: "2-е место", value: top2Channel?.name || "—", subValue: top2Channel ? top2Channel.percent.toFixed(1) + "%" : "", color: "#9f7aea" },
+    { icon: "📅", label: "Период", value: `${currentFilters.year || 'год'}`, subValue: currentFilters.month?.join(", ") || "все месяцы", color: "#a0aec0" }
+];
+
+// Функция для линейного графика
 function renderGrossLineChart(containerId, currentChannels, prevData, selectedChannels = null) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -3728,6 +3730,9 @@ function startCarousel() {
     carouselInterval = setInterval(updateCarousel, 4000);
 }
 
+// Фильтр каналов
+let selectedGrossChannels = [...grossChannels.map(ch => ch.name)];
+
 // HTML блока
 const grossHtml = `
 <div class="gross-revenue-section" style="background: ${document.body.classList.contains('dark') ? '#1a1a2a' : 'white'}; border-radius: 20px; padding: 20px; margin-bottom: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
@@ -3825,7 +3830,6 @@ document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
 // Обработчик кнопки разбивки
 const toggleChannelsBtn = document.getElementById('toggleGrossChannelsBtn');
 const channelsContainerDiv = document.getElementById('grossChannelsContainer');
-const toggleIcon = document.getElementById('toggleIcon');
 let channelsOpen = false;
 
 if (toggleChannelsBtn && channelsContainerDiv) {
@@ -3859,9 +3863,7 @@ document.querySelectorAll('.gross-channel-header').forEach(header => {
     });
 });
 
-// Фильтр каналов
-let selectedGrossChannels = [...grossChannels.map(ch => ch.name)];
-
+// Функция обновления графика
 function updateGrossChart() {
     renderGrossLineChart('grossRevenueChart', grossChannels, prevPeriodData, selectedGrossChannels);
 }
