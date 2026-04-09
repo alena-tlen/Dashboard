@@ -3776,7 +3776,6 @@ console.log('costData:', costData);
             const costChange = fPrev ? getChangePercent(costData, prevCostData) : null;
             const avgCostChange = fPrev ? getChangePercent(avgCost, prevAvgCost) : null;
             
-            const efficiency = f.profit / (f.totalExpenses || 1);
             const prevEfficiency = fPrev ? fPrev.profit / (fPrev.totalExpenses || 1) : 0;
             const efficiencyChange = fPrev ? getChangePercent(efficiency, prevEfficiency) : null;
             
