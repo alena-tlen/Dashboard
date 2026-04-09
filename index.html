@@ -4108,6 +4108,16 @@ console.log('costData:', costData);
                     </div>
                 `;
             }
+            const articlesHtml = `
+<div class="metrics-grid" style="margin-bottom: 20px;">
+    <div class="metric-card" style="grid-column: span 4; padding: 20px;">
+        <div class="metric-title">📚 ПОЛЕЗНЫЕ СТАТЬИ</div>
+        <div id="articleCarouselContent">
+            <!-- Содержимое карусели статей -->
+        </div>
+    </div>
+</div>
+`;
             
             const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false);
             const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true);
