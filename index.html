@@ -1377,6 +1377,64 @@ if (document.readyState === 'loading') {
         const layout = { margin: { t: 5, l: 5, r: 5, b: 5 }, height: 40, xaxis: { showticklabels: false, showgrid: false }, yaxis: { showticklabels: false, showgrid: false }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' };
         Plotly.newPlot(elementId, [trace], layout, { displayModeBar: false });
     }
+
+    // Анимированный мини-график для блока доходов
+function renderAnimatedMiniChart(elementId, data, color) {
+    if (!data || data.length === 0) return;
+    if (typeof Plotly === 'undefined') return;
+    
+    const isDarkMode = document.body.classList.contains('dark');
+    const textColor = isDarkMode ? '#e2e8f0' : '#4a5568';
+    const gridColor = isDarkMode ? '#2d3748' : '#e2e8f0';
+    
+    const trace = {
+        y: data,
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: { color: color, width: 3, shape: 'spline' },
+        marker: { color: color, size: 6, symbol: 'circle' },
+        fill: 'tozeroy',
+        fillcolor: color + '20',
+        hovertemplate: '<b>%{y:.0f} тыс. ₽</b><extra></extra>'
+    };
+    
+    const layout = {
+        margin: { t: 20, l: 40, r: 20, b: 20 },
+        height: 120,
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        xaxis: {
+            showticklabels: true,
+            tickfont: { size: 9, color: textColor },
+            tickangle: -30,
+            showgrid: true,
+            gridcolor: gridColor,
+            gridwidth: 0.5,
+            zeroline: false
+        },
+        yaxis: {
+            showticklabels: true,
+            tickfont: { size: 9, color: textColor },
+            showgrid: true,
+            gridcolor: gridColor,
+            gridwidth: 0.5,
+            zeroline: false,
+            tickprefix: '₽',
+            ticksuffix: 'K'
+        },
+        hovermode: 'x unified',
+        transition: {
+            duration: 500,
+            easing: 'cubic-in-out'
+        }
+    };
+    
+    Plotly.newPlot(elementId, [trace], layout, { 
+        responsive: true, 
+        displayModeBar: false,
+        staticPlot: false
+    });
+}
     
     function readExcelFile(file) {
         return new Promise((resolve, reject) => {
@@ -4127,6 +4185,15 @@ const monthlyLabels = monthsOrder.filter(m => monthlyDataMap.get(m).revenue > 0 
 const monthlyRevenues = monthlyLabels.map(m => monthlyDataMap.get(m).revenue / 1000);
 const monthlyProfits = monthlyLabels.map(m => monthlyDataMap.get(m).profit / 1000);
 
+// ========== ОТРИСОВКА МИНИ-ГРАФИКА ДЛЯ БЛОКА ДОХОДОВ ==========
+// Этот код будет ждать создания элемента и отрисует график
+setTimeout(() => {
+    const chartContainer = document.getElementById('revenueMiniChartNew');
+    if (chartContainer && monthlyRevenues.length > 0) {
+        renderAnimatedMiniChart('revenueMiniChartNew', monthlyRevenues, '#48bb78');
+    }
+}, 100);
+
 // Анализ для рекомендаций
 let healthStatus = { color: '#48bb78', text: 'Отлично', icon: '🚀' };
 let recommendations = [];
@@ -4340,16 +4407,6 @@ const topPanelHtml = `
         </div>
     </div>
     
-    <!-- График динамики по месяцам -->
-    <div class="metrics-grid" style="margin-bottom: 20px;">
-        <div class="metric-card" style="grid-column: span 4; padding: 20px;">
-            <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                <span style="font-size: 18px;">📈</span>
-                <span style="font-size: 14px; font-weight: 600; color: #667eea;">ДИНАМИКА ВЫРУЧКИ И ПРИБЫЛИ</span>
-            </div>
-            <div id="monthlyRevenueChart" style="height: 370px; width: 100%;"></div>
-        </div>
-    </div>
 </div>
 `;
 
@@ -4371,6 +4428,10 @@ renderMonthlyLineChart();
 // Слушатель смены темы
 const topThemeObserver = new MutationObserver(() => {
     renderMonthlyLineChart();
+    // Обновляем мини-график при смене темы
+    if (monthlyRevenues.length > 0) {
+        renderAnimatedMiniChart('revenueMiniChartNew', monthlyRevenues, '#48bb78');
+    }
 });
 topThemeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
@@ -4483,54 +4544,65 @@ console.log('costData:', costData);
                 return `<span class="metric-change ${colorClass}" style="font-size: 11px; padding: 2px 6px; border-radius: 12px; display: inline-block; margin-left: 8px;">${change.formatted}</span>`;
             }
             
-            function createCollapsibleBlock(title, icon, total, totalChange, channels, isExpense = false) {
-                const channelItemsHtml = channels.map((channel, channelIdx) => {
-                    const channelPercent = (channel.total / total) * 100;
-                    const sortedItems = [...channel.items].sort((a, b) => b.amount - a.amount);
-                    const itemsHtml = sortedItems.map((item, itemIdx) => {
-                        const itemPercentOfTotal = (item.amount / total) * 100;
-                        const itemPercentOfChannel = (item.amount / channel.total) * 100;
-                        const gradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
-                        return `
-                            <div class="sub-item" data-item-name="${item.name}" style="margin-bottom: 12px; opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; transition-delay: ${itemIdx * 0.03}s;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
-                                    <span style="font-size: 13px; font-weight: 500;">${item.name}</span>
-                                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                                        <span style="font-size: 13px; font-weight: 600;">${formatCurrency(item.amount)}</span>
-                                        <span style="font-size: 12px; background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">${itemPercentOfTotal.toFixed(1)}% от дохода</span>
-                                    </div>
-                                </div>
-                                <div style="background: rgba(102,126,234,0.15); height: 6px; border-radius: 3px; overflow: hidden;">
-                                    <div class="sub-progress-bar" style="width: ${itemPercentOfChannel}%; height: 100%; background: ${gradient}; border-radius: 3px;"></div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                    const channelGradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
-                    return `
-                        <div class="channel-item" data-channel-name="${channel.name}" style="margin-bottom: 20px; border-bottom: 1px solid rgba(102,126,234,0.2); padding-bottom: 16px;">
-                            <div class="channel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span class="channel-icon" style="font-size: 20px;">${channel.name === 'Wildberries' ? '🛍️' : channel.name === 'Ozon' ? '📦' : channel.name === 'Детский мир' ? '🧸' : channel.name === 'Lamoda' ? '👗' : channel.name === 'Оптовики' ? '📊' : '📁'}</span>
-                                    <span style="font-weight: 700; font-size: 15px;">${channel.name}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <span class="channel-total" style="font-size: 14px; font-weight: 600;">${formatCurrency(channel.total)}</span>
-                                    <span class="channel-percent" style="font-size: 12px; background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">${channelPercent.toFixed(1)}%</span>
-                                    <span class="expand-icon" style="font-size: 14px; transition: transform 0.3s; cursor: pointer;">▶</span>
-                                </div>
-                            </div>
-                            <div style="background: rgba(102,126,234,0.1); height: 8px; border-radius: 4px; margin-bottom: 12px; overflow: hidden;">
-                                <div class="channel-progress-bar" style="width: ${channelPercent}%; height: 100%; background: ${channelGradient}; border-radius: 4px;"></div>
-                            </div>
-                            <div class="channel-details" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
-                                <div style="padding-top: 12px; padding-left: 30px;">${itemsHtml}</div>
-                            </div>
+            function createCollapsibleBlock(title, icon, total, totalChange, channels, isExpense = false, monthlyDataMap = null) {
+    const channelItemsHtml = channels.map((channel, channelIdx) => {
+        const channelPercent = (channel.total / total) * 100;
+        const sortedItems = [...channel.items].sort((a, b) => b.amount - a.amount);
+        const itemsHtml = sortedItems.map((item, itemIdx) => {
+            const itemPercentOfTotal = (item.amount / total) * 100;
+            const itemPercentOfChannel = (item.amount / channel.total) * 100;
+            const gradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
+            return `
+                <div class="sub-item" data-item-name="${item.name}" style="margin-bottom: 12px; opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; transition-delay: ${itemIdx * 0.03}s;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-size: 13px; font-weight: 500;">${item.name}</span>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <span style="font-size: 13px; font-weight: 600;">${formatCurrency(item.amount)}</span>
+                            <span style="font-size: 12px; background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">${itemPercentOfTotal.toFixed(1)}% от дохода</span>
                         </div>
-                    `;
-                }).join('');
-                
-                return `
+                    </div>
+                    <div style="background: rgba(102,126,234,0.15); height: 6px; border-radius: 3px; overflow: hidden;">
+                        <div class="sub-progress-bar" style="width: ${itemPercentOfChannel}%; height: 100%; background: ${gradient}; border-radius: 3px;"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        const channelGradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
+        return `
+            <div class="channel-item" data-channel-name="${channel.name}" style="margin-bottom: 20px; border-bottom: 1px solid rgba(102,126,234,0.2); padding-bottom: 16px;">
+                <div class="channel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="channel-icon" style="font-size: 20px;">${channel.name === 'Wildberries' ? '🛍️' : channel.name === 'Ozon' ? '📦' : channel.name === 'Детский мир' ? '🧸' : channel.name === 'Lamoda' ? '👗' : channel.name === 'Оптовики' ? '📊' : '📁'}</span>
+                        <span style="font-weight: 700; font-size: 15px;">${channel.name}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="channel-total" style="font-size: 14px; font-weight: 600;">${formatCurrency(channel.total)}</span>
+                        <span class="channel-percent" style="font-size: 12px; background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">${channelPercent.toFixed(1)}%</span>
+                        <span class="expand-icon" style="font-size: 14px; transition: transform 0.3s; cursor: pointer;">▶</span>
+                    </div>
+                </div>
+                <div style="background: rgba(102,126,234,0.1); height: 8px; border-radius: 4px; margin-bottom: 12px; overflow: hidden;">
+                    <div class="channel-progress-bar" style="width: ${channelPercent}%; height: 100%; background: ${channelGradient}; border-radius: 4px;"></div>
+                </div>
+                <div class="channel-details" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
+                    <div style="padding-top: 12px; padding-left: 30px;">${itemsHtml}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Создаем мини-график для блока доходов
+    const chartHtml = (!isExpense && monthlyDataMap) ? `
+        <div style="margin-bottom: 20px; padding: 16px; background: rgba(102,126,234,0.05); border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 12px; font-weight: 600; color: #667eea;">📈 ДИНАМИКА ВЫРУЧКИ ПО МЕСЯЦАМ</span>
+                <span style="font-size: 10px; opacity: 0.6;">тыс. ₽</span>
+            </div>
+            <div id="revenueMiniChartNew" style="height: 120px; width: 100%;"></div>
+        </div>
+    ` : '';
+    
+    return `
         <div class="metric-card" style="overflow: hidden; padding: 20px; height: 100%; display: flex; flex-direction: column;">
             <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
                 <span style="font-size: 20px;">${icon}</span>
@@ -4543,6 +4615,7 @@ console.log('costData:', costData);
                 </div>
                 <div class="metric-sub">общая сумма</div>
             </div>
+            ${chartHtml}
             <div class="channels-container" style="flex: 1; overflow-y: visible; padding-right: 5px;">
                 ${channelItemsHtml}
             </div>
@@ -4554,8 +4627,10 @@ console.log('costData:', costData);
 }
             
             
-            const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false);
-            const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true);
+            const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false, monthlyDataMap);
+            const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true, null);
+
+
             
             document.getElementById('dashboardMetrics').innerHTML = topPanelHtml + `
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
