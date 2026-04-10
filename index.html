@@ -16,6 +16,7 @@
         }
     </script>
     <script src="https://cdn.plot.ly/plotly-2.27.1.min.js" charset="utf-8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2993,6 +2994,9 @@ function startArticleCarousel() {
 }
 
 // Функция для линейного графика (должна быть определена до использования)
+// Красивый график динамики выручки с Chart.js
+let revenueChart = null;
+
 function renderMonthlyLineChart() {
     const container = document.getElementById('monthlyRevenueChart');
     if (!container || monthlyLabels.length === 0) {
@@ -3001,70 +3005,121 @@ function renderMonthlyLineChart() {
     }
     
     const isDarkMode = document.body.classList.contains('dark');
-    const plotBgColor = isDarkMode ? '#1a1a2a' : 'white';
     const textColor = isDarkMode ? '#e2e8f0' : '#4a5568';
-    const gridColor = isDarkMode ? '#2d3748' : '#e2e8f0';
+    const gridColor = isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
     
-    const traceRevenue = {
-        x: monthlyLabels,
-        y: monthlyRevenues,
-        type: 'scatter',
-        mode: 'lines+markers',
-        name: 'Выручка (тыс. ₽)',
-        line: { color: '#4299e1', width: 3 },
-        marker: { color: '#4299e1', size: 8 },
-        hovertemplate: '<b>%{x}</b><br>Выручка: %{y:.0f} тыс. ₽<extra></extra>'
-    };
+    const ctx = document.createElement('canvas');
+    ctx.style.width = '100%';
+    ctx.style.height = '100%';
+    container.innerHTML = '';
+    container.appendChild(ctx);
     
-    const traceProfit = {
-        x: monthlyLabels,
-        y: monthlyProfits,
-        type: 'scatter',
-        mode: 'lines+markers',
-        name: 'Прибыль (тыс. ₽)',
-        line: { color: '#48bb78', width: 3 },
-        marker: { color: '#48bb78', size: 8, symbol: 'diamond' },
-        hovertemplate: '<b>%{x}</b><br>Прибыль: %{y:.0f} тыс. ₽<extra></extra>'
-    };
+    if (revenueChart) {
+        revenueChart.destroy();
+    }
     
-    const layout = {
-        title: {
-            text: '📈 Динамика выручки и прибыли по месяцам',
-            font: { size: 14, color: '#667eea', weight: '600' },
-            x: 0.02,
-            xanchor: 'left'
+    revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: monthlyLabels,
+            datasets: [{
+                label: 'Выручка (тыс. ₽)',
+                data: monthlyRevenues,
+                borderColor: '#48bb78',
+                backgroundColor: 'rgba(72, 187, 120, 0.1)',
+                borderWidth: 3,
+                pointRadius: 4,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#48bb78',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                tension: 0.4,
+                fill: true,
+                pointHoverBackgroundColor: '#ffffff',
+                pointHoverBorderColor: '#48bb78',
+                pointHoverBorderWidth: 3
+            }]
         },
-        paper_bgcolor: plotBgColor,
-        plot_bgcolor: plotBgColor,
-        height: 350,
-        margin: { t: 50, l: 60, r: 40, b: 50 },
-        xaxis: {
-            title: { text: 'Месяц', font: { size: 11, color: textColor } },
-            tickangle: -30,
-            tickfont: { size: 10, color: textColor },
-            gridcolor: gridColor,
-            gridwidth: 0.5
-        },
-        yaxis: {
-            title: { text: 'Тысяч рублей (₽)', font: { size: 11, color: textColor } },
-            tickfont: { size: 10, color: textColor },
-            gridcolor: gridColor,
-            gridwidth: 0.5,
-            zerolinecolor: gridColor
-        },
-        legend: {
-            orientation: 'h',
-            yanchor: 'bottom',
-            y: 1.02,
-            xanchor: 'right',
-            x: 1,
-            bgcolor: 'rgba(0,0,0,0)',
-            font: { size: 11, color: textColor }
-        },
-        hovermode: 'x unified'
-    };
-    
-    Plotly.newPlot('monthlyRevenueChart', [traceRevenue, traceProfit], layout, { responsive: true, displayModeBar: false });
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
+                    titleColor: textColor,
+                    bodyColor: textColor,
+                    borderColor: '#48bb78',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            return `💰 ${context.parsed.y.toFixed(0)} тыс. ₽`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: textColor,
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        },
+                        maxRotation: 45,
+                        minRotation: 45
+                    },
+                    title: {
+                        display: false
+                    }
+                },
+                y: {
+                    display: false,
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.4
+                },
+                point: {
+                    hoverRadius: 8,
+                    radius: 4
+                }
+            },
+            layout: {
+                padding: {
+                    top: 20,
+                    bottom: 10,
+                    left: 0,
+                    right: 10
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            },
+            hover: {
+                mode: 'nearest',
+                intersect: false
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
 }
 
 // Карусель метрик
