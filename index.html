@@ -4709,6 +4709,10 @@ if (!quadrantContainer && document.getElementById('dashboardMetrics')) {
 if (quadrantContainer) {
     quadrantContainer.innerHTML = renderQuadrantMatrix(currentData, f);
 }
+        // Запуск карусели статей после отрисовки
+setTimeout(() => {
+    startArticleCarousel();
+}, 100);
 
         } finally {
             isRendering = false;
