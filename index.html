@@ -573,6 +573,170 @@
     transition: height 0.3s ease;
 }
 
+/* ========== БЛОК СТАТЕЙ В ПРАВОЙ ПАНЕЛИ ========== */
+.articles-sidebar {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(102,126,234,0.3);
+}
+
+.articles-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #667eea;
+}
+
+.articles-carousel-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    background: rgba(102,126,234,0.05);
+}
+
+.articles-carousel {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+}
+
+.article-card {
+    flex: 0 0 100%;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.article-card:hover {
+    background: rgba(102,126,234,0.15);
+    transform: translateY(-2px);
+}
+
+body.dark .article-card {
+    background: rgba(255,255,255,0.03);
+}
+
+body.dark .article-card:hover {
+    background: rgba(102,126,234,0.2);
+}
+
+.article-content {
+    display: flex;
+    gap: 12px;
+}
+
+.article-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.article-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.article-image span {
+    font-size: 28px;
+}
+
+.article-info {
+    flex: 1;
+}
+
+.article-source {
+    font-size: 10px;
+    background: rgba(102,126,234,0.15);
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+    margin-bottom: 6px;
+}
+
+.article-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+.article-description {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.article-arrow {
+    font-size: 16px;
+    color: #667eea;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Навигация карусели */
+.articles-nav {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.articles-nav-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(102,126,234,0.1);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s;
+    color: #667eea;
+}
+
+.articles-nav-btn:hover {
+    background: rgba(102,126,234,0.3);
+    transform: scale(1.05);
+}
+
+.articles-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.articles-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(102,126,234,0.3);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.articles-dot.active {
+    background: #667eea;
+    width: 20px;
+    border-radius: 4px;
+}
+
 
 </style>
 </head>
@@ -667,6 +831,24 @@
                     </div>
                 </div>
                 
+                <!-- Блок полезные статьи -->
+<div class="articles-sidebar">
+    <div class="articles-header">
+        <span>📚</span>
+        <span>ПОЛЕЗНЫЕ СТАТЬИ</span>
+    </div>
+    <div class="articles-carousel-container">
+        <div class="articles-carousel" id="articlesCarousel">
+            <!-- Статьи будут загружены динамически -->
+        </div>
+    </div>
+    <div class="articles-nav">
+        <button class="articles-nav-btn" id="prevArticleBtn">◀</button>
+        <button class="articles-nav-btn" id="nextArticleBtn">▶</button>
+    </div>
+    <div class="articles-dots" id="articlesDots"></div>
+</div>
+
                 <div class="theme-toggle">
                     <span class="theme-toggle-label">🌙 Темная тема</span>
                     <div class="toggle-switch active" id="themeToggle"><div class="slider"></div></div>
@@ -892,6 +1074,203 @@
             };
         }
     }
+
+// ========== БЛОК СТАТЕЙ - ЗАГРУЗКА ИЗ JSON ==========
+let articlesData = [];
+let currentArticleIndex = 0;
+let articleInterval = null;
+let isArticleAnimating = false;
+
+// Загрузка статей из JSON файла
+async function loadArticles() {
+    try {
+        const response = await fetch('articles.json');
+        if (!response.ok) {
+            throw new Error('Не удалось загрузить статьи');
+        }
+        const data = await response.json();
+        articlesData = data.articles || [];
+        renderArticles();
+        startArticleCarouselNew();
+        createArticleDots();
+    } catch (error) {
+        console.error('Ошибка загрузки статей:', error);
+        // Если файл не загрузился, используем статьи по умолчанию
+        articlesData = [
+            {
+                title: "Вы управляете ассортиментом или складом случайностей?",
+                description: "Глубокая товарная и ценовая аналитика на маркетплейсах",
+                link: "https://dzen.ru/a/aUqz1yENXTiPF2Dt",
+                imageUrl: "",
+                source: "Дзен"
+            },
+            {
+                title: "Оптимизация расходов на маркетплейсах",
+                description: "Советы по снижению затрат и повышению эффективности",
+                link: "https://dzen.ru/a/aUjPJMBY035IHxpo",
+                imageUrl: "",
+                source: "Дзен"
+            }
+        ];
+        renderArticles();
+        startArticleCarouselNew();
+        createArticleDots();
+    }
+}
+
+// Отрисовка статей в карусели
+function renderArticles() {
+    const carousel = document.getElementById('articlesCarousel');
+    if (!carousel) return;
+    
+    carousel.innerHTML = articlesData.map((article, index) => `
+        <a href="${article.link}" target="_blank" class="article-card" data-index="${index}">
+            <div class="article-content">
+                <div class="article-image">
+                    ${article.imageUrl ? 
+                        `<img src="${article.imageUrl}" alt="статья">` : 
+                        `<span>📄</span>`
+                    }
+                </div>
+                <div class="article-info">
+                    <div class="article-source">${article.source}</div>
+                    <div class="article-title">${article.title}</div>
+                    <div class="article-description">${article.description}</div>
+                </div>
+                <div class="article-arrow">→</div>
+            </div>
+        </a>
+    `).join('');
+    
+    // Обновляем позицию карусели
+    updateCarouselPosition();
+}
+
+// Обновление позиции карусели
+function updateCarouselPosition() {
+    const carousel = document.getElementById('articlesCarousel');
+    if (!carousel) return;
+    const offset = -currentArticleIndex * 100;
+    carousel.style.transform = `translateX(${offset}%)`;
+}
+
+// Создание точек навигации
+function createArticleDots() {
+    const dotsContainer = document.getElementById('articlesDots');
+    if (!dotsContainer) return;
+    
+    dotsContainer.innerHTML = articlesData.map((_, index) => `
+        <div class="articles-dot ${index === currentArticleIndex ? 'active' : ''}" data-index="${index}"></div>
+    `).join('');
+    
+    // Добавляем обработчики для точек
+    document.querySelectorAll('.articles-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            const index = parseInt(dot.dataset.index);
+            if (!isNaN(index) && index !== currentArticleIndex) {
+                goToArticle(index);
+            }
+        });
+    });
+}
+
+// Переход к определенной статье
+function goToArticle(index) {
+    if (isArticleAnimating || index < 0 || index >= articlesData.length) return;
+    
+    isArticleAnimating = true;
+    currentArticleIndex = index;
+    updateCarouselPosition();
+    
+    // Обновляем активную точку
+    document.querySelectorAll('.articles-dot').forEach((dot, i) => {
+        if (i === currentArticleIndex) {
+            dot.classList.add('active');
+        } else {
+            dot.classList.remove('active');
+        }
+    });
+    
+    // Сбрасываем таймер автопрокрутки
+    resetArticleTimer();
+    
+    setTimeout(() => {
+        isArticleAnimating = false;
+    }, 500);
+}
+
+// Следующая статья
+function nextArticle() {
+    let newIndex = currentArticleIndex + 1;
+    if (newIndex >= articlesData.length) {
+        newIndex = 0;
+    }
+    goToArticle(newIndex);
+}
+
+// Предыдущая статья
+function prevArticle() {
+    let newIndex = currentArticleIndex - 1;
+    if (newIndex < 0) {
+        newIndex = articlesData.length - 1;
+    }
+    goToArticle(newIndex);
+}
+
+// Запуск автопрокрутки (15 секунд)
+function startArticleCarouselNew() {
+    if (articleInterval) clearInterval(articleInterval);
+    articleInterval = setInterval(() => {
+        nextArticle();
+    }, 15000); // 15 секунд
+}
+
+// Сброс таймера автопрокрутки
+function resetArticleTimer() {
+    if (articleInterval) {
+        clearInterval(articleInterval);
+        startArticleCarouselNew();
+    }
+}
+
+// Остановка автопрокрутки при наведении
+function setupArticleHoverEvents() {
+    const container = document.querySelector('.articles-carousel-container');
+    if (!container) return;
+    
+    container.addEventListener('mouseenter', () => {
+        if (articleInterval) {
+            clearInterval(articleInterval);
+            articleInterval = null;
+        }
+    });
+    
+    container.addEventListener('mouseleave', () => {
+        if (!articleInterval) {
+            startArticleCarouselNew();
+        }
+    });
+}
+
+// Инициализация блока статей
+function initArticlesBlock() {
+    loadArticles();
+    setupArticleHoverEvents();
+    
+    // Добавляем обработчики для кнопок навигации
+    const prevBtn = document.getElementById('prevArticleBtn');
+    const nextBtn = document.getElementById('nextArticleBtn');
+    
+    if (prevBtn) prevBtn.addEventListener('click', prevArticle);
+    if (nextBtn) nextBtn.addEventListener('click', nextArticle);
+}
+
+// Запускаем инициализацию после загрузки страницы
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initArticlesBlock);
+} else {
+    initArticlesBlock();
+}
 
     // ========== ОСНОВНЫЕ ПЕРЕМЕННЫЕ ==========
     let originalData = [], currentData = [];
@@ -4108,16 +4487,7 @@ console.log('costData:', costData);
                     </div>
                 `;
             }
-            const articlesHtml = `
-<div class="metrics-grid" style="margin-bottom: 20px;">
-    <div class="metric-card" style="grid-column: span 4; padding: 20px;">
-        <div class="metric-title">📚 ПОЛЕЗНЫЕ СТАТЬИ</div>
-        <div id="articleCarouselContent">
-            <!-- Содержимое карусели статей -->
-        </div>
-    </div>
-</div>
-`;
+            
             
             const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false);
             const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true);
@@ -4711,7 +5081,7 @@ if (quadrantContainer) {
 }
         // Запуск карусели статей после отрисовки
 setTimeout(() => {
-    startArticleCarousel();
+    startArticleCarouselNew();
 }, 100);
 
         } finally {
