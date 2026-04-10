@@ -3010,11 +3010,6 @@ function renderMonthlyLineChart() {
         if (container) container.innerHTML = '<div style="text-align: center; padding: 80px; color: #a0aec0;">📊 Недостаточно данных для графика</div>';
         return;
     }
-    const container = document.getElementById('monthlyRevenueChart');
-    if (!container || monthlyLabels.length === 0) {
-        if (container) container.innerHTML = '<div style="text-align: center; padding: 80px; color: #a0aec0;">📊 Недостаточно данных для графика</div>';
-        return;
-    }
     
     const isDarkMode = document.body.classList.contains('dark');
     const textColor = isDarkMode ? '#e2e8f0' : '#4a5568';
