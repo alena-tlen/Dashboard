@@ -2993,45 +2993,49 @@ function startArticleCarousel() {
     articleCarouselInterval = setInterval(updateArticleCarousel, 5000);
 }
 
-// Функция для линейного графика (должна быть определена до использования)
-// Красивый график динамики выручки с Chart.js
+// ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ЛИНЕЙНОГО ГРАФИКА ==========
 let revenueChart = null;
 
-function renderMonthlyLineChart() {
-     console.log('renderMonthlyLineChart вызван');
-    console.log('monthlyLabels:', monthlyLabels);
-    console.log('monthlyRevenues:', monthlyRevenues);
-    
+function renderMonthlyLineChart(labels, revenues) {
+    // 1. Находим контейнер
     const container = document.getElementById('monthlyRevenueChart');
-    console.log('container:', container);
     
-    if (!container || monthlyLabels.length === 0) {
-        console.log('Нет данных для графика');
-        if (container) container.innerHTML = '<div style="text-align: center; padding: 80px; color: #a0aec0;">📊 Недостаточно данных для графика</div>';
+    // 2. Проверяем, существуют ли данные и контейнер
+    if (!container) {
+        console.warn('Контейнер monthlyRevenueChart не найден');
         return;
     }
     
+    // 3. Если данных нет, показываем сообщение и выходим
+    if (!labels || labels.length === 0 || !revenues || revenues.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 80px; color: #a0aec0;">📊 Недостаточно данных для графика</div>';
+        return;
+    }
+    
+    // 4. Получаем текущую тему для цветов
     const isDarkMode = document.body.classList.contains('dark');
     const textColor = isDarkMode ? '#e2e8f0' : '#4a5568';
-    const gridColor = isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
     
+    // 5. Создаем canvas элемент
     const ctx = document.createElement('canvas');
     ctx.style.width = '100%';
     ctx.style.height = '100%';
     container.innerHTML = '';
     container.appendChild(ctx);
     
+    // 6. Уничтожаем старый график, если он существует
     if (revenueChart) {
         revenueChart.destroy();
     }
     
+    // 7. Создаем новый график
     revenueChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: monthlyLabels,
+            labels: labels,
             datasets: [{
                 label: 'Выручка (тыс. ₽)',
-                data: monthlyRevenues,
+                data: revenues,
                 borderColor: '#48bb78',
                 backgroundColor: 'rgba(72, 187, 120, 0.1)',
                 borderWidth: 3,
@@ -3051,9 +3055,7 @@ function renderMonthlyLineChart() {
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
                     mode: 'index',
                     intersect: false,
@@ -3071,46 +3073,26 @@ function renderMonthlyLineChart() {
             },
             scales: {
                 x: {
-                    grid: {
-                        display: false,
-                        drawBorder: false
-                    },
+                    grid: { display: false, drawBorder: false },
                     ticks: {
                         color: textColor,
-                        font: {
-                            size: 11,
-                            weight: '500'
-                        },
+                        font: { size: 11, weight: '500' },
                         maxRotation: 45,
                         minRotation: 45
                     },
-                    title: {
-                        display: false
-                    }
+                    title: { display: false }
                 },
                 y: {
                     display: false,
-                    grid: {
-                        display: false
-                    }
+                    grid: { display: false }
                 }
             },
             elements: {
-                line: {
-                    tension: 0.4
-                },
-                point: {
-                    hoverRadius: 8,
-                    radius: 4
-                }
+                line: { tension: 0.4 },
+                point: { hoverRadius: 8, radius: 4 }
             },
             layout: {
-                padding: {
-                    top: 20,
-                    bottom: 10,
-                    left: 0,
-                    right: 10
-                }
+                padding: { top: 20, bottom: 10, left: 0, right: 10 }
             },
             interaction: {
                 mode: 'nearest',
@@ -4224,9 +4206,9 @@ setTimeout(() => {
     }
 }, 100);
 
-// Отрисовка основного графика - ВАЖНО: вызываем после определения данных!
+// Отрисовка основного графика - передаем данные как параметры
 setTimeout(() => {
-    renderMonthlyLineChart();
+    renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
 }, 150);
 
 // Анализ для рекомендаций
@@ -4388,7 +4370,7 @@ renderMonthlyLineChart();
 
 // Слушатель смены темы
 const topThemeObserver = new MutationObserver(() => {
-    renderMonthlyLineChart();
+    renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
     // Обновляем мини-график при смене темы
     if (monthlyRevenues.length > 0) {
         renderAnimatedMiniChart('revenueMiniChartNew', monthlyRevenues, '#48bb78');
