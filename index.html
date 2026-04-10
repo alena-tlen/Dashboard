@@ -3122,37 +3122,6 @@ function renderMonthlyLineChart() {
     });
 }
 
-// Карусель метрик
-let carouselIdx = 0;
-let carouselInterval = null;
-
-function updateTopCarousel() {
-    const metric = metricsForCarousel[carouselIdx];
-    const carouselContent = document.getElementById('topCarouselContent');
-    if (!carouselContent) return;
-    
-    carouselContent.style.opacity = '0';
-    setTimeout(() => {
-        carouselContent.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 14px;">
-                <div style="font-size: 38px;">${metric.icon}</div>
-                <div>
-                    <div style="font-size: 10px; opacity: 0.6; letter-spacing: 0.5px;">${metric.label}</div>
-                    <div style="font-size: 22px; font-weight: 800; color: ${metric.color};">${metric.value}</div>
-                    ${metric.detail ? `<div style="font-size: 11px; opacity: 0.7;">${metric.detail}</div>` : ''}
-                </div>
-            </div>
-        `;
-        carouselContent.style.opacity = '1';
-    }, 200);
-    
-    carouselIdx = (carouselIdx + 1) % metricsForCarousel.length;
-}
-
-function startTopCarousel() {
-    if (carouselInterval) clearInterval(carouselInterval);
-    carouselInterval = setInterval(updateTopCarousel, 5000);
-}
 
 // ========== НОВЫЕ SVG ГРАФИКИ В СТИЛЕ ДАШБОРДА ==========
 
