@@ -2998,6 +2998,18 @@ function startArticleCarousel() {
 let revenueChart = null;
 
 function renderMonthlyLineChart() {
+     console.log('renderMonthlyLineChart вызван');
+    console.log('monthlyLabels:', monthlyLabels);
+    console.log('monthlyRevenues:', monthlyRevenues);
+    
+    const container = document.getElementById('monthlyRevenueChart');
+    console.log('container:', container);
+    
+    if (!container || monthlyLabels.length === 0) {
+        console.log('Нет данных для графика');
+        if (container) container.innerHTML = '<div style="text-align: center; padding: 80px; color: #a0aec0;">📊 Недостаточно данных для графика</div>';
+        return;
+    }
     const container = document.getElementById('monthlyRevenueChart');
     if (!container || monthlyLabels.length === 0) {
         if (container) container.innerHTML = '<div style="text-align: center; padding: 80px; color: #a0aec0;">📊 Недостаточно данных для графика</div>';
@@ -4209,14 +4221,18 @@ const monthlyLabels = monthsOrder.filter(m => monthlyDataMap.get(m).revenue > 0 
 const monthlyRevenues = monthlyLabels.map(m => monthlyDataMap.get(m).revenue / 1000);
 const monthlyProfits = monthlyLabels.map(m => monthlyDataMap.get(m).profit / 1000);
 
-// ========== ОТРИСОВКА МИНИ-ГРАФИКА ДЛЯ БЛОКА ДОХОДОВ ==========
-// Этот код будет ждать создания элемента и отрисует график
+// Отрисовка мини-графика для блока доходов
 setTimeout(() => {
     const chartContainer = document.getElementById('revenueMiniChartNew');
     if (chartContainer && monthlyRevenues.length > 0) {
         renderAnimatedMiniChart('revenueMiniChartNew', monthlyRevenues, '#48bb78');
     }
 }, 100);
+
+// Отрисовка основного графика - ВАЖНО: вызываем после определения данных!
+setTimeout(() => {
+    renderMonthlyLineChart();
+}, 150);
 
 // Анализ для рекомендаций
 let healthStatus = { color: '#48bb78', text: 'Отлично', icon: '🚀' };
