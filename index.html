@@ -875,6 +875,55 @@ body.dark .chart-gradient-overlay {
         transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
     }
 
+/* Явные стили для светлой темы */
+body.light .metric-card {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+body.light .metric-card .metric-title {
+    color: #4a5568 !important;
+}
+
+body.light .metric-card .metric-value {
+    color: #1a1a2e !important;
+}
+
+body.light .channels-main-container {
+    background: transparent !important;
+}
+
+body.light .channel-item {
+    border-bottom-color: rgba(0,0,0,0.1) !important;
+}
+
+body.light .sub-item {
+    color: #4a5568 !important;
+}
+
+/* Явные стили для темной темы */
+body.dark .metric-card {
+    background: #1a1a2a !important;
+    border: 1px solid #2d2d3a !important;
+}
+
+body.dark .metric-card .metric-title {
+    color: #a0aec0 !important;
+}
+
+body.dark .metric-card .metric-value {
+    color: #e2e8f0 !important;
+}
+
+body.dark .channel-item {
+    border-bottom-color: rgba(255,255,255,0.1) !important;
+}
+
+body.dark .sub-item {
+    color: #cbd5e0 !important;
+}
+
+
 </style>
 </head>
 <body>
@@ -4300,6 +4349,9 @@ function renderMiniChartJS(elementId, labels, data, color) {
                         },
                         labelColor: function() {
                             return { borderColor: 'transparent', backgroundColor: 'transparent' };
+                        },
+                        labelTextColor: function() {
+                            return isDarkMode ? '#e2e8f0' : '#4a5568';
                         }
                     }
                 }
@@ -4468,7 +4520,8 @@ function startTopCarousel() {
     carouselInterval = setInterval(updateTopCarousel, 5000);
 }
 
-// HTML блока (обновленный, в едином стиле)
+// В topPanelHtml, после карусели метрик, добавьте блок для графика:
+
 const topPanelHtml = `
 <div style="margin-bottom: 24px;">
     <!-- Здоровье компании + рекомендации - в стиле карточек -->
@@ -4525,6 +4578,17 @@ const topPanelHtml = `
         </div>
     </div>
     
+    <!-- ДОБАВЬТЕ ЭТОТ БЛОК - контейнер для графика -->
+    <div class="metrics-grid" style="margin-bottom: 20px;">
+        <div class="metric-card" style="grid-column: span 4; padding: 20px;">
+            <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                <span style="font-size: 18px;">📈</span>
+                <span style="font-size: 14px; font-weight: 600; color: #667eea;">ДИНАМИКА ВЫРУЧКИ</span>
+            </div>
+            <div id="monthlyRevenueChart" style="height: 300px; width: 100%;"></div>
+        </div>
+    </div>
+    
 </div>
 `;
 
@@ -4548,8 +4612,11 @@ const topThemeObserver = new MutationObserver(() => {
     renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
     // Обновляем мини-график при смене темы
     if (monthlyRevenues.length > 0) {
-    renderMiniChartJS('revenueMiniChartNew', monthlyLabels, monthlyRevenues, '#48bb78');
-}
+        // Небольшая задержка для корректного пересчета
+        setTimeout(() => {
+            renderMiniChartJS('revenueMiniChartNew', monthlyLabels, monthlyRevenues, '#48bb78');
+        }, 50);
+    }
 });
 topThemeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
