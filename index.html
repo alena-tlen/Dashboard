@@ -4493,43 +4493,12 @@ const metricsForCarousel = [
 ];
 
 
-// Карусель метрик
-let carouselIdx = 0;
-let carouselInterval = null;
-
-function updateTopCarousel() {
-    const metric = metricsForCarousel[carouselIdx];
-    const carouselContent = document.getElementById('topCarouselContent');
-    if (!carouselContent) return;
-    
-    carouselContent.style.opacity = '0';
-    setTimeout(() => {
-        carouselContent.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 14px;">
-                <div style="font-size: 38px;">${metric.icon}</div>
-                <div>
-                    <div style="font-size: 10px; opacity: 0.6; letter-spacing: 0.5px;">${metric.label}</div>
-                    <div style="font-size: 22px; font-weight: 800; color: ${metric.color};">${metric.value}</div>
-                    ${metric.detail ? `<div style="font-size: 11px; opacity: 0.7;">${metric.detail}</div>` : ''}
-                </div>
-            </div>
-        `;
-        carouselContent.style.opacity = '1';
-    }, 200);
-    
-    carouselIdx = (carouselIdx + 1) % metricsForCarousel.length;
-}
-
-function startTopCarousel() {
-    if (carouselInterval) clearInterval(carouselInterval);
-    carouselInterval = setInterval(updateTopCarousel, 5000);
-}
-
 // В topPanelHtml, после карусели метрик, добавьте блок для графика:
 
+// HTML блока (упрощенный, без лишних блоков)
 const topPanelHtml = `
 <div style="margin-bottom: 24px;">
-    <!-- Здоровье компании + рекомендации - в стиле карточек -->
+    <!-- Только блок "Состояние компании" -->
     <div class="metrics-grid" style="margin-bottom: 20px;">
         <div class="metric-card" style="grid-column: span 4; padding: 20px;">
             <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
@@ -4557,78 +4526,8 @@ const topPanelHtml = `
             </div>
         </div>
     </div>
-    
-    <!-- Карусель метрик -->
-    <div class="metrics-grid" style="margin-bottom: 20px;">
-        <div class="metric-card" style="grid-column: span 4; padding: 20px; position: relative;">
-            <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 18px;">🎯</span>
-                    <span style="font-size: 14px; font-weight: 600; color: #667eea;">КЛЮЧЕВЫЕ МЕТРИКИ</span>
-                </div>
-                <div style="display: flex; gap: 8px;" id="topCarouselDots">
-                    ${metricsForCarousel.map((_, i) => `<div class="top-carousel-dot" data-idx="${i}" style="width: 8px; height: 8px; border-radius: 50%; background: ${i === 0 ? '#667eea' : 'rgba(102,126,234,0.3)'}; cursor: pointer; transition: all 0.2s;"></div>`).join('')}
-                </div>
-            </div>
-            <div id="topCarouselContent" style="transition: opacity 0.3s ease; min-height: 85px;">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div style="font-size: 36px;">💰</div>
-                    <div>
-                        <div style="font-size: 11px; opacity: 0.6; letter-spacing: 0.5px;">Выручка (с НДС)</div>
-                        <div style="font-size: 24px; font-weight: 700; color: #4299e1;">${formatCurrency(totalRevenue)}</div>
-                        <div style="font-size: 11px; opacity: 0.7;">${((totalNDSOut / totalRevenue) * 100).toFixed(0)}% НДС</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- ДОБАВЬТЕ ЭТОТ БЛОК - контейнер для графика -->
-    <div class="metrics-grid" style="margin-bottom: 20px;">
-        <div class="metric-card" style="grid-column: span 4; padding: 20px;">
-            <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                <span style="font-size: 18px;">📈</span>
-                <span style="font-size: 14px; font-weight: 600; color: #667eea;">ДИНАМИКА ВЫРУЧКИ</span>
-            </div>
-            <div id="monthlyRevenueChart" style="height: 300px; width: 100%;"></div>
-        </div>
-    </div>
-    
 </div>
 `;
-
-// Запуск карусели
-startTopCarousel();
-
-// Обработчики точек карусели
-document.querySelectorAll('.top-carousel-dot').forEach((dot, i) => {
-    dot.addEventListener('click', () => {
-        carouselIdx = i;
-        updateTopCarousel();
-        startTopCarousel();
-    });
-});
-
-// Отрисовка графика
-renderMonthlyLineChart();
-
-// Слушатель смены темы
-const topThemeObserver = new MutationObserver(() => {
-    renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
-    // Обновляем мини-график при смене темы
-    if (monthlyRevenues.length > 0) {
-        // Небольшая задержка для корректного пересчета
-        setTimeout(() => {
-            renderMiniChartJS('revenueMiniChartNew', monthlyLabels, monthlyRevenues, '#48bb78');
-        }, 50);
-    }
-});
-topThemeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-
-// Остановка карусели
-window.addEventListener('beforeunload', () => {
-    if (carouselInterval) clearInterval(carouselInterval);
-});
 
 // ---- КОНЕЦ: ВЕРХНЯЯ ПАНЕЛЬ ----
             
