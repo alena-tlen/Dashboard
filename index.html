@@ -4160,6 +4160,75 @@ function renderQuadrantMatrix(data, f) {
             const efficiency = f.profit / (f.totalExpenses || 1);
 
 
+// Новая функция для мини-графика через Chart.js
+let miniRevenueChart = null;
+
+function renderMiniChartJS(elementId, labels, data, color) {
+    const canvas = document.getElementById(elementId);
+    if (!canvas || !labels || labels.length === 0 || !data || data.length === 0) return;
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    const textColor = isDarkMode ? '#e2e8f0' : '#4a5568';
+    const gridColor = isDarkMode ? '#2d3748' : '#e2e8f0';
+    
+    // Уничтожаем старый график если есть
+    if (miniRevenueChart) {
+        miniRevenueChart.destroy();
+        miniRevenueChart = null;
+    }
+    
+    miniRevenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Выручка',
+                data: data,
+                borderColor: color,
+                backgroundColor: color + '20',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                pointBackgroundColor: color,
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 1,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `💰 ${context.parsed.y.toFixed(0)} тыс. ₽`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: textColor, font: { size: 9 }, maxRotation: 30, minRotation: 30 },
+                    grid: { display: false }
+                },
+                y: {
+                    ticks: { color: textColor, font: { size: 9 }, callback: function(value) { return value + 'K'; } },
+                    grid: { color: gridColor, drawBorder: false }
+                }
+            },
+            elements: { point: { hoverRadius: 6, radius: 3 } },
+            layout: { padding: { top: 10, bottom: 5, left: 5, right: 5 } },
+            animation: { duration: 800, easing: 'easeInOutQuart' }
+        }
+    });
+}
+
 
 // ---- НАЧАЛО: ВЕРХНЯЯ ПАНЕЛЬ С КЛЮЧЕВЫМИ МЕТРИКАМИ И ГРАФИКОМ ----
 
@@ -4198,11 +4267,10 @@ const monthlyLabels = monthsOrder.filter(m => monthlyDataMap.get(m).revenue > 0 
 const monthlyRevenues = monthlyLabels.map(m => monthlyDataMap.get(m).revenue / 1000);
 const monthlyProfits = monthlyLabels.map(m => monthlyDataMap.get(m).profit / 1000);
 
-// Отрисовка мини-графика для блока доходов
+// Отрисовка мини-графика для блока доходов через Chart.js
 setTimeout(() => {
-    const chartContainer = document.getElementById('revenueMiniChartNew');
-    if (chartContainer && monthlyRevenues.length > 0) {
-        renderAnimatedMiniChart('revenueMiniChartNew', monthlyRevenues, '#48bb78');
+    if (monthlyLabels.length > 0 && monthlyRevenues.length > 0) {
+        renderMiniChartJS('revenueMiniChartNew', monthlyLabels, monthlyRevenues, '#48bb78');
     }
 }, 100);
 
@@ -4373,8 +4441,8 @@ const topThemeObserver = new MutationObserver(() => {
     renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
     // Обновляем мини-график при смене темы
     if (monthlyRevenues.length > 0) {
-        renderAnimatedMiniChart('revenueMiniChartNew', monthlyRevenues, '#48bb78');
-    }
+    renderMiniChartJS('revenueMiniChartNew', monthlyLabels, monthlyRevenues, '#48bb78');
+}
 });
 topThemeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
@@ -4535,15 +4603,15 @@ console.log('costData:', costData);
     }).join('');
     
     // Создаем мини-график для блока доходов
-    const chartHtml = (!isExpense && monthlyDataMap) ? `
-        <div style="margin-bottom: 20px; padding: 16px; background: rgba(102,126,234,0.05); border-radius: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span style="font-size: 12px; font-weight: 600; color: #667eea;">📈 ДИНАМИКА ВЫРУЧКИ ПО МЕСЯЦАМ</span>
-                <span style="font-size: 10px; opacity: 0.6;">тыс. ₽</span>
-            </div>
-            <div id="revenueMiniChartNew" style="height: 120px; width: 100%;"></div>
+const chartHtml = (!isExpense && monthlyDataMap) ? `
+    <div style="margin-bottom: 20px; padding: 16px; background: rgba(102,126,234,0.05); border-radius: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 12px; font-weight: 600; color: #667eea;">📈 ДИНАМИКА ВЫРУЧКИ ПО МЕСЯЦАМ</span>
+            <span style="font-size: 10px; opacity: 0.6;">тыс. ₽</span>
         </div>
-    ` : '';
+        <canvas id="revenueMiniChartNew" style="height: 120px; width: 100%;"></canvas>
+    </div>
+` : '';
     
     return `
         <div class="metric-card" style="overflow: hidden; padding: 20px; height: 100%; display: flex; flex-direction: column;">
