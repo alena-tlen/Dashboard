@@ -4868,7 +4868,7 @@ console.log('costData:', costData);
                     <span style="font-size: 16px; font-weight: 700;">${title}</span>
                 </div>
                 <!-- Кнопка раскрытия каналов в правом верхнем углу -->
-                <button class="toggle-channels-main-btn" style="background: rgba(102,126,234,0.15); border: none; border-radius: 20px; padding: 4px 12px; font-size: 11px; color: #667eea; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                <button class="toggle-channels-${isExpense ? 'expense' : 'revenue'}-btn" style="background: rgba(102,126,234,0.15); border: none; border-radius: 20px; padding: 4px 12px; font-size: 11px; color: #667eea; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
                     <span class="toggle-icon-main">▶</span> Показать каналы
                 </button>
             </div>
@@ -5221,40 +5221,54 @@ if (toggleCostBtn && costContainer) {
                     };
                 }
 
-// Обработчик для главной кнопки раскрытия каналов (Доходы)
-// Обработчик для главной кнопки раскрытия каналов (Доходы)
-const toggleChannelsMainBtn = document.querySelector('.toggle-channels-main-btn');
-const channelsMainContainer = document.querySelector('.channels-main-container');
-if (toggleChannelsMainBtn && channelsMainContainer) {
-    toggleChannelsMainBtn.onclick = () => {
-        const isVisible = channelsMainContainer.style.maxHeight !== '0px' && channelsMainContainer.style.maxHeight !== '0';
-        
+
+// Для доходов
+const toggleRevenueBtn = document.querySelector('.toggle-channels-revenue-btn');
+const revenueContainer = document.querySelector('.channels-revenue-container');
+if (toggleRevenueBtn && revenueContainer) {
+    toggleRevenueBtn.onclick = () => {
+        const isVisible = revenueContainer.style.maxHeight !== '0px' && revenueContainer.style.maxHeight !== '0';
         if (isVisible) {
-            // Плавное скрытие
-            channelsMainContainer.style.maxHeight = '0';
-            channelsMainContainer.style.opacity = '0';
-            channelsMainContainer.style.marginBottom = '0px';
-            toggleChannelsMainBtn.innerHTML = '<span class="toggle-icon-main">▶</span> Показать каналы';
+            revenueContainer.style.maxHeight = '0';
+            revenueContainer.style.opacity = '0';
+            toggleRevenueBtn.innerHTML = '<span class="toggle-icon-main">▶</span> Показать каналы';
         } else {
-            // Плавное появление
-            channelsMainContainer.style.display = 'block';
-            // Небольшая задержка для корректного расчета высоты
+            revenueContainer.style.display = 'block';
             setTimeout(() => {
-                channelsMainContainer.style.maxHeight = channelsMainContainer.scrollHeight + 'px';
-                channelsMainContainer.style.opacity = '1';
-                channelsMainContainer.style.marginBottom = '20px';
+                revenueContainer.style.maxHeight = revenueContainer.scrollHeight + 'px';
+                revenueContainer.style.opacity = '1';
             }, 10);
-            toggleChannelsMainBtn.innerHTML = '<span class="toggle-icon-main">▼</span> Скрыть каналы';
-            
-            // Анимация появления элементов
-            const items = channelsMainContainer.querySelectorAll('.channel-item');
+            toggleRevenueBtn.innerHTML = '<span class="toggle-icon-main">▼</span> Скрыть каналы';
+            const items = revenueContainer.querySelectorAll('.channel-item');
             items.forEach((item, idx) => {
                 item.style.opacity = '0';
-                item.style.transform = 'translateX(-10px)';
-                setTimeout(() => { 
-                    item.style.opacity = '1'; 
-                    item.style.transform = 'translateX(0)'; 
-                }, idx * 50 + 150);
+                setTimeout(() => { item.style.opacity = '1'; }, idx * 50 + 150);
+            });
+        }
+    };
+}
+
+// Для расходов
+const toggleExpenseBtn = document.querySelector('.toggle-channels-expense-btn');
+const expenseContainer = document.querySelector('.channels-expense-container');
+if (toggleExpenseBtn && expenseContainer) {
+    toggleExpenseBtn.onclick = () => {
+        const isVisible = expenseContainer.style.maxHeight !== '0px' && expenseContainer.style.maxHeight !== '0';
+        if (isVisible) {
+            expenseContainer.style.maxHeight = '0';
+            expenseContainer.style.opacity = '0';
+            toggleExpenseBtn.innerHTML = '<span class="toggle-icon-main">▶</span> Показать каналы';
+        } else {
+            expenseContainer.style.display = 'block';
+            setTimeout(() => {
+                expenseContainer.style.maxHeight = expenseContainer.scrollHeight + 'px';
+                expenseContainer.style.opacity = '1';
+            }, 10);
+            toggleExpenseBtn.innerHTML = '<span class="toggle-icon-main">▼</span> Скрыть каналы';
+            const items = expenseContainer.querySelectorAll('.channel-item');
+            items.forEach((item, idx) => {
+                item.style.opacity = '0';
+                setTimeout(() => { item.style.opacity = '1'; }, idx * 50 + 150);
             });
         }
     };
@@ -5262,12 +5276,16 @@ if (toggleChannelsMainBtn && channelsMainContainer) {
 
 // Обработчик для кнопки "Раскрыть подканалы" внутри контейнера каналов
 const toggleAllSubChannelsBtn = document.querySelector('.toggle-all-channels-btn');
-if (toggleAllSubChannelsBtn && channelsMainContainer) {
+if (toggleAllSubChannelsBtn) { 
     toggleAllSubChannelsBtn.onclick = (e) => {
         e.stopPropagation();
-        const allChannelItems = channelsMainContainer.querySelectorAll('.channel-item');
-        const allDetailsDivs = channelsMainContainer.querySelectorAll('.channel-details');
-        const allExpandIcons = channelsMainContainer.querySelectorAll('.expand-icon');
+        // Находим родительский контейнер каналов
+        const container = e.currentTarget.closest('.metric-card').querySelector('.channels-main-container');
+        if (!container) return;
+        
+        const allChannelItems = container.querySelectorAll('.channel-item');
+        const allDetailsDivs = container.querySelectorAll('.channel-details');
+        const allExpandIcons = container.querySelectorAll('.expand-icon');
         
         const allOpen = Array.from(allDetailsDivs).every(details => details.style.maxHeight && details.style.maxHeight !== '0px');
         
