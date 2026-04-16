@@ -4274,31 +4274,6 @@ function renderMiniChartJS(elementId, labels, data, color) {
         }
     });
 }
-    
-    // Плавная анимация появления данных слева направо
-    const duration = 1000;
-    const startTime = performance.now();
-    
-    function animateData(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
-        
-        const newData = data.map((value, index) => {
-            const pointProgress = Math.max(0, Math.min(1, (progress - index * 0.05) / (1 - index * 0.05)));
-            return value * (pointProgress > 0 ? Math.min(1, pointProgress * 1.2) : 0);
-        });
-        
-        miniRevenueChart.data.datasets[0].data = newData;
-        miniRevenueChart.update('none');
-        
-        if (progress < 1) {
-            requestAnimationFrame(animateData);
-        }
-    }
-    
-    requestAnimationFrame(animateData);
-}
 
 
 // ---- НАЧАЛО: ВЕРХНЯЯ ПАНЕЛЬ С КЛЮЧЕВЫМИ МЕТРИКАМИ И ГРАФИКОМ ----
