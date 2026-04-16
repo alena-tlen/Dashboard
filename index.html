@@ -928,6 +928,19 @@ body.dark .sub-item {
     color: #cbd5e0 !important;
 }
 
+/* Плавное появление элементов каналов */
+.channel-item {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.channels-main-container {
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin-bottom 0.3s ease;
+}
+
+/* Убираем display:none, используем max-height для анимации */
+.channels-main-container:not([style*="max-height: 0"]) {
+    overflow-y: auto;
+}
 
 </style>
 </head>
@@ -4699,48 +4712,48 @@ console.log('costData:', costData);
     }).join('');
     
     // График как фоновая волна (выходит за пределы блока)
+// Контейнер с каналами (скрыт по умолчанию)
 const chartHtml = (!isExpense && monthlyDataMap && monthlyLabelsParam && monthlyRevenuesParam && monthlyRevenuesParam.length > 0) ? `
     <div class="revenue-chart-wrapper" style="margin-top: 16px;">
         <div class="chart-gradient-overlay"></div>
         <canvas id="revenueMiniChartNew" style="height: 100px; width: 100%; display: block;"></canvas>
     </div>
 ` : '';
-    
-    return `
-        <div class="metric-card" style="overflow: hidden; padding: 20px; height: 100%; display: flex; flex-direction: column; background: ${document.body.classList.contains('dark') ? '#1a1a2a' : 'white'};">
-            <!-- Заголовок и сумма -->
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                <div class="metric-title" style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 20px;">${icon}</span>
-                    <span style="font-size: 16px; font-weight: 700;">${title}</span>
-                </div>
-                <!-- Кнопка раскрытия каналов в правом верхнем углу -->
-                <button class="toggle-channels-main-btn" style="background: rgba(102,126,234,0.15); border: none; border-radius: 20px; padding: 4px 12px; font-size: 11px; color: #667eea; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
-                    <span class="toggle-icon-main">▶</span> Показать каналы
-                </button>
+
+return `
+    <div class="metric-card" style="overflow: hidden; padding: 20px; height: 100%; display: flex; flex-direction: column; background: ${document.body.classList.contains('dark') ? '#1a1a2a' : 'white'};">
+        <!-- Заголовок и сумма -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+            <div class="metric-title" style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">${icon}</span>
+                <span style="font-size: 16px; font-weight: 700;">${title}</span>
             </div>
-            
-            <!-- Общая сумма -->
-            <div style="margin-bottom: 20px;">
-                <div class="metric-value" id="${isExpense ? 'expensesTotal' : 'revenueTotal'}" style="font-size: 32px;">${formatCurrency(total)}</div>
-                ${getChangeHtml(totalChange, isExpense)}
-                <div class="metric-sub" style="margin-top: 4px;">общая сумма</div>
-            </div>
-            
-            <!-- Контейнер с каналами (скрыт по умолчанию) -->
-            <div class="channels-main-container" style="display: none; max-height: 400px; overflow-y: auto; margin-bottom: 20px; padding-right: 5px;">
-                ${channelItemsHtml}
-                <!-- Кнопка раскрытия подканалов -->
-                <button class="toggle-all-channels-btn" style="margin-top: 16px; background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center; border-top: 1px solid rgba(102,126,234,0.1);">
-                    <span>▶</span> Раскрыть подканалы
-                </button>
-            </div>
-            
-            <!-- График всегда внизу -->
-            ${chartHtml}
+            <!-- Кнопка раскрытия каналов в правом верхнем углу -->
+            <button class="toggle-channels-main-btn" style="background: rgba(102,126,234,0.15); border: none; border-radius: 20px; padding: 4px 12px; font-size: 11px; color: #667eea; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                <span class="toggle-icon-main">▶</span> Показать каналы
+            </button>
         </div>
-    `;
-}
+        
+        <!-- Общая сумма -->
+        <div style="margin-bottom: 20px;">
+            <div class="metric-value" id="${isExpense ? 'expensesTotal' : 'revenueTotal'}" style="font-size: 32px;">${formatCurrency(total)}</div>
+            ${getChangeHtml(totalChange, isExpense)}
+            <div class="metric-sub" style="margin-top: 4px;">общая сумма</div>
+        </div>
+        
+        <!-- Контейнер с каналами (скрыт по умолчанию с плавной анимацией) -->
+        <div class="channels-main-container" style="max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease; margin-bottom: 0px; padding-right: 5px;">
+            ${channelItemsHtml}
+            <!-- Кнопка раскрытия подканалов -->
+            <button class="toggle-all-channels-btn" style="margin-top: 16px; background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center; border-top: 1px solid rgba(102,126,234,0.1);">
+                <span>▶</span> Раскрыть подканалы
+            </button>
+        </div>
+        
+        <!-- График всегда внизу -->
+        ${chartHtml}
+    </div>
+`;
             
             
             const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false, monthlyDataMap, monthlyLabels, monthlyRevenues);
@@ -5070,24 +5083,39 @@ if (toggleCostBtn && costContainer) {
                 }
 
 // Обработчик для главной кнопки раскрытия каналов (Доходы)
+// Обработчик для главной кнопки раскрытия каналов (Доходы)
 const toggleChannelsMainBtn = document.querySelector('.toggle-channels-main-btn');
 const channelsMainContainer = document.querySelector('.channels-main-container');
 if (toggleChannelsMainBtn && channelsMainContainer) {
     toggleChannelsMainBtn.onclick = () => {
-        const isVisible = channelsMainContainer.style.display === 'block';
+        const isVisible = channelsMainContainer.style.maxHeight !== '0px' && channelsMainContainer.style.maxHeight !== '0';
+        
         if (isVisible) {
-            channelsMainContainer.style.display = 'none';
+            // Плавное скрытие
+            channelsMainContainer.style.maxHeight = '0';
+            channelsMainContainer.style.opacity = '0';
+            channelsMainContainer.style.marginBottom = '0px';
             toggleChannelsMainBtn.innerHTML = '<span class="toggle-icon-main">▶</span> Показать каналы';
         } else {
+            // Плавное появление
             channelsMainContainer.style.display = 'block';
+            // Небольшая задержка для корректного расчета высоты
+            setTimeout(() => {
+                channelsMainContainer.style.maxHeight = channelsMainContainer.scrollHeight + 'px';
+                channelsMainContainer.style.opacity = '1';
+                channelsMainContainer.style.marginBottom = '20px';
+            }, 10);
             toggleChannelsMainBtn.innerHTML = '<span class="toggle-icon-main">▼</span> Скрыть каналы';
+            
             // Анимация появления элементов
             const items = channelsMainContainer.querySelectorAll('.channel-item');
             items.forEach((item, idx) => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateX(-10px)';
                 setTimeout(() => { 
                     item.style.opacity = '1'; 
                     item.style.transform = 'translateX(0)'; 
-                }, idx * 50);
+                }, idx * 50 + 150);
             });
         }
     };
