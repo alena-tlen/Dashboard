@@ -4393,6 +4393,95 @@ function renderMiniChartJS(elementId, labels, data, color) {
             layout: {
                 padding: { top: 5, bottom: 5, left: 5, right: 5 }
             },
+            interaction: {// Новая функция для мини-графика - как фоновая волна
+let miniRevenueChart = null;
+
+function renderMiniChartJS(elementId, labels, data, color) {
+    const canvas = document.getElementById(elementId);
+    if (!canvas || !labels || labels.length === 0 || !data || data.length === 0) return;
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    
+    // Цвет фоновой области графика (полупрозрачный)
+    const areaColor = isDarkMode ? 'rgba(72, 187, 120, 0.08)' : 'rgba(72, 187, 120, 0.05)';
+    
+    const trendColor = data[data.length-1] >= data[0] ? '#48bb78' : '#f56565';
+    const lineColor = trendColor;
+    
+    if (miniRevenueChart) {
+        miniRevenueChart.destroy();
+        miniRevenueChart = null;
+    }
+    
+    miniRevenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '',
+                data: data,
+                borderColor: lineColor,
+                backgroundColor: areaColor,
+                borderWidth: 2,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointBackgroundColor: lineColor,
+                pointBorderColor: 'transparent',
+                pointBorderWidth: 0,
+                tension: 0.4,
+                fill: true,
+                cubicInterpolationMode: 'monotone'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
+                    titleColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    bodyColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    borderColor: lineColor,
+                    borderWidth: 1,
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].label;
+                        },
+                        label: function(context) {
+                            return `${context.parsed.y.toFixed(0)} тыс. ₽`;
+                        },
+                        labelColor: function() {
+                            return { borderColor: 'transparent', backgroundColor: 'transparent' };
+                        },
+                        labelTextColor: function() {
+                            return isDarkMode ? '#e2e8f0' : '#4a5568';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { 
+                    display: false,
+                    grid: { display: false },
+                    ticks: { display: false }
+                },
+                y: { 
+                    display: false,
+                    grid: { display: false },
+                    ticks: { display: false }
+                }
+            },
+            elements: {
+                line: { tension: 0.4 },
+                point: { hoverRadius: 6, radius: 0 }
+            },
+            layout: {
+                padding: { top: 5, bottom: 5, left: 5, right: 5 }
+            },
             interaction: {
                 mode: 'nearest',
                 axis: 'x',
