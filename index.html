@@ -132,7 +132,10 @@
     .btn-danger { background: #f56565; color: white; }
     .btn-info { background: #4299e1; color: white; }
     .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px; }
-    .metric-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s; }
+    .metric-card {
+    overflow: hidden !important;
+    position: relative;
+}
     body.dark .metric-card { background: #1a1a2a; border: 1px solid #2d2d3a; }
     .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     .metric-title { font-size: 13px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -823,6 +826,54 @@ body.dark .article-card:hover {
     scrollbar-width: thin;
     scrollbar-color: rgba(102,126,234,0.3) rgba(102,126,234,0.1);
 }
+
+/* Стиль для контейнера графика - как фоновая волна */
+.revenue-chart-wrapper {
+    margin-left: -20px !important;
+    margin-right: -20px !important;
+    margin-bottom: -20px !important;
+    width: calc(100% + 40px) !important;
+}
+
+.revenue-chart-wrapper canvas {
+    display: block;
+    width: 100%;
+    height: 100px;
+    opacity: 0.85;
+    transition: opacity 0.3s ease;
+}
+
+.revenue-chart-wrapper:hover canvas {
+    opacity: 1;
+}
+
+/* Градиентный переход между блоком и графиком */
+.chart-gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.05));
+    pointer-events: none;
+    z-index: 2;
+}
+
+body.dark .chart-gradient-overlay {
+    background: linear-gradient(to bottom, rgba(26,26,42,0), rgba(26,26,42,0.1));
+}
+
+ /* Плавный переход цветов при смене темы */
+    .metric-card,
+    .revenue-chart-wrapper canvas,
+    .channels-main-container,
+    .channel-item,
+    .sub-item,
+    button,
+    select,
+    .ai-message {
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    }
 
 </style>
 </head>
@@ -4186,7 +4237,7 @@ function renderQuadrantMatrix(data, f) {
             const efficiency = f.profit / (f.totalExpenses || 1);
 
 
-// Новая функция для мини-графика в стиле дашборда с анимацией слева направо
+// Новая функция для мини-графика - как фоновая волна
 let miniRevenueChart = null;
 
 function renderMiniChartJS(elementId, labels, data, color) {
@@ -4195,9 +4246,9 @@ function renderMiniChartJS(elementId, labels, data, color) {
     
     const ctx = canvas.getContext('2d');
     const isDarkMode = document.body.classList.contains('dark');
-    const textColor = isDarkMode ? '#e2e8f0' : '#4a5568';
-    const gridColor = isDarkMode ? '#2d3748' : '#e2e8f0';
-    const areaColor = isDarkMode ? 'rgba(72, 187, 120, 0.15)' : 'rgba(72, 187, 120, 0.08)';
+    
+    // Цвет фоновой области графика (полупрозрачный)
+    const areaColor = isDarkMode ? 'rgba(72, 187, 120, 0.08)' : 'rgba(72, 187, 120, 0.05)';
     
     const trendColor = data[data.length-1] >= data[0] ? '#48bb78' : '#f56565';
     const lineColor = trendColor;
@@ -4207,24 +4258,24 @@ function renderMiniChartJS(elementId, labels, data, color) {
         miniRevenueChart = null;
     }
     
-    // Показываем сразу все данные для анимации рисования линии
     miniRevenueChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Выручка',
-                data: data,  // сразу все данные, анимация будет через transition
+                label: '',
+                data: data,
                 borderColor: lineColor,
                 backgroundColor: areaColor,
-                borderWidth: 2.5,
+                borderWidth: 2,
                 pointRadius: 0,
                 pointHoverRadius: 5,
                 pointBackgroundColor: lineColor,
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2,
+                pointBorderColor: 'transparent',
+                pointBorderWidth: 0,
                 tension: 0.4,
-                fill: true
+                fill: true,
+                cubicInterpolationMode: 'monotone'
             }]
         },
         options: {
@@ -4236,11 +4287,12 @@ function renderMiniChartJS(elementId, labels, data, color) {
                     mode: 'index',
                     intersect: false,
                     backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
-                    titleColor: textColor,
-                    bodyColor: textColor,
+                    titleColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    bodyColor: isDarkMode ? '#e2e8f0' : '#4a5568',
                     borderColor: lineColor,
                     borderWidth: 1,
                     callbacks: {
+                        title: function() { return ''; },
                         label: function(context) {
                             return `💰 ${context.parsed.y.toFixed(0)} тыс. ₽`;
                         }
@@ -4248,33 +4300,15 @@ function renderMiniChartJS(elementId, labels, data, color) {
                 }
             },
             scales: {
-                x: {
-                    ticks: { 
-                        color: textColor, 
-                        font: { size: 9, weight: '500' },
-                        maxRotation: 0,
-                        autoSkip: true,
-                        maxTicksLimit: 7
-                    },
+                x: { 
+                    display: false,
                     grid: { display: false },
-                    border: { display: false }
+                    ticks: { display: false }
                 },
-                y: {
-                    position: 'right',
-                    ticks: { 
-                        color: textColor, 
-                        font: { size: 9 },
-                        callback: function(value) { 
-                            if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
-                            return value;
-                        }
-                    },
-                    grid: { 
-                        color: gridColor,
-                        drawBorder: false,
-                        lineWidth: 0.5
-                    },
-                    border: { display: false }
+                y: { 
+                    display: false,
+                    grid: { display: false },
+                    ticks: { display: false }
                 }
             },
             elements: {
@@ -4282,15 +4316,11 @@ function renderMiniChartJS(elementId, labels, data, color) {
                 point: { hoverRadius: 6, radius: 0 }
             },
             layout: {
-                padding: { top: 15, bottom: 5, left: 5, right: 30 }
+                padding: { top: 5, bottom: 5, left: 5, right: 5 }
             },
             interaction: {
                 mode: 'nearest',
                 axis: 'x',
-                intersect: false
-            },
-            hover: {
-                mode: 'nearest',
                 intersect: false
             },
             animation: {
@@ -4692,20 +4722,13 @@ console.log('costData:', costData);
         `;
     }).join('');
     
-    // График в самом низу, как фон блока (без отдельного окна)
-    const chartHtml = (!isExpense && monthlyDataMap && monthlyLabelsParam && monthlyRevenuesParam && monthlyRevenuesParam.length > 0) ? `
-        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(102,126,234,0.1);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 11px; font-weight: 600; color: #667eea;">📈 ДИНАМИКА ВЫРУЧКИ</span>
-                    <span style="font-size: 10px; background: ${changeBgColor}; padding: 2px 8px; border-radius: 20px; color: ${changeColor}; font-weight: 600;">
-                        ${changePercent >= 0 ? `+${changePercent.toFixed(0)}%` : `${changePercent.toFixed(0)}%`}
-                    </span>
-                </div>
-            </div>
-            <canvas id="revenueMiniChartNew" style="height: 100px; width: 100%;"></canvas>
-        </div>
-    ` : '';
+    // График как фоновая волна (выходит за пределы блока)
+const chartHtml = (!isExpense && monthlyDataMap && monthlyLabelsParam && monthlyRevenuesParam && monthlyRevenuesParam.length > 0) ? `
+    <div class="revenue-chart-wrapper" style="margin-top: 16px;">
+        <div class="chart-gradient-overlay"></div>
+        <canvas id="revenueMiniChartNew" style="height: 100px; width: 100%; display: block;"></canvas>
+    </div>
+` : '';
     
     return `
         <div class="metric-card" style="overflow: hidden; padding: 20px; height: 100%; display: flex; flex-direction: column; background: ${document.body.classList.contains('dark') ? '#1a1a2a' : 'white'};">
