@@ -4688,27 +4688,11 @@ const chartHtml = (!isExpense && monthlyDataMap) ? `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 8px;">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 11px; font-weight: 600; color: #667eea;">📈 ДИНАМИКА ВЫРУЧКИ</span>
-                <span style="font-size: 10px; background: ${(() => {
-                    const trend = monthlyRevenues[monthlyRevenues.length-1] >= monthlyRevenues[0];
-                    return trend ? '#48bb7820' : '#f5656520';
-                })()}; padding: 2px 8px; border-radius: 20px; color: ${(() => {
-                    const trend = monthlyRevenues[monthlyRevenues.length-1] >= monthlyRevenues[0];
-                    return trend ? '#48bb78' : '#f56565';
-                })()};">
-                    ${(() => {
-                        const change = ((monthlyRevenues[monthlyRevenues.length-1] - monthlyRevenues[0]) / monthlyRevenues[0] * 100).toFixed(0);
-                        return change >= 0 ? `+${change}%` : `${change}%`;
-                    })()}
-                </span>
+                <span style="font-size: 10px; background: rgba(72,187,120,0.2); padding: 2px 8px; border-radius: 20px; color: #48bb78;">+0%</span>
             </div>
             <span style="font-size: 10px; opacity: 0.5;">тыс. ₽</span>
         </div>
         <canvas id="revenueMiniChartNew" style="height: 100px; width: 100%;"></canvas>
-        <div style="display: flex; justify-content: space-between; margin-top: 8px; padding: 0 8px;">
-            ${labels.slice(0, 7).map((label, i) => `
-                <span style="font-size: 8px; opacity: 0.5; text-align: center; width: 30px;">${label.slice(0, 3)}</span>
-            `).join('')}
-        </div>
     </div>
 ` : '';
     
