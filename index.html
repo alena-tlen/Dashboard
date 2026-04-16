@@ -4160,9 +4160,6 @@ function renderQuadrantMatrix(data, f) {
             const efficiency = f.profit / (f.totalExpenses || 1);
 
 
-// Новая функция для мини-графика через Chart.js
-let miniRevenueChart = null;
-
 // Новая функция для мини-графика в стиле дашборда с анимацией слева направо
 let miniRevenueChart = null;
 
@@ -4175,9 +4172,8 @@ function renderMiniChartJS(elementId, labels, data, color) {
     const textColor = isDarkMode ? '#e2e8f0' : '#4a5568';
     const gridColor = isDarkMode ? '#2d3748' : '#e2e8f0';
     const areaColor = isDarkMode ? 'rgba(72, 187, 120, 0.15)' : 'rgba(72, 187, 120, 0.08)';
-
-
-// ========== ДОБАВЬТЕ ЭТОТ БЛОК ==========
+    
+    // ========== ДОБАВЬТЕ ЭТОТ БЛОК ==========
     // Определяем цвет линии в зависимости от тренда
     const trendColor = data[data.length-1] >= data[0] ? '#48bb78' : '#f56565';
     // Используйте trendColor вместо color для динамического цвета
@@ -4200,12 +4196,12 @@ function renderMiniChartJS(elementId, labels, data, color) {
             datasets: [{
                 label: 'Выручка',
                 data: animatedData,
-                borderColor: color,
+                borderColor: lineColor,  // ← ЗДЕСЬ используем lineColor вместо color
                 backgroundColor: areaColor,
                 borderWidth: 2.5,
                 pointRadius: 0,
                 pointHoverRadius: 5,
-                pointBackgroundColor: color,
+                pointBackgroundColor: lineColor,  // ← И ЗДЕСЬ тоже
                 pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
                 tension: 0.4,
@@ -4226,7 +4222,7 @@ function renderMiniChartJS(elementId, labels, data, color) {
                     backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
                     titleColor: textColor,
                     bodyColor: textColor,
-                    borderColor: color,
+                    borderColor: lineColor,  // ← И ЗДЕСЬ
                     borderWidth: 1,
                     callbacks: {
                         label: function(context) {
@@ -4283,31 +4279,27 @@ function renderMiniChartJS(elementId, labels, data, color) {
                 intersect: false
             },
             animation: {
-                duration: 0 // отключаем стандартную анимацию, сделаем свою
+                duration: 0
             }
         }
     });
     
     // Плавная анимация появления данных слева направо
-    const duration = 1000; // 1 секунда
+    const duration = 1000;
     const startTime = performance.now();
     
     function animateData(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        
-        // Easing function для плавности
         const easeOutCubic = 1 - Math.pow(1 - progress, 3);
         
-        // Обновляем данные с анимацией
         const newData = data.map((value, index) => {
-            // Каждая точка появляется с задержкой пропорционально индексу
             const pointProgress = Math.max(0, Math.min(1, (progress - index * 0.05) / (1 - index * 0.05)));
             return value * (pointProgress > 0 ? Math.min(1, pointProgress * 1.2) : 0);
         });
         
         miniRevenueChart.data.datasets[0].data = newData;
-        miniRevenueChart.update('none'); // обновляем без анимации чтобы не конфликтовать
+        miniRevenueChart.update('none');
         
         if (progress < 1) {
             requestAnimationFrame(animateData);
