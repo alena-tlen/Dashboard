@@ -4410,6 +4410,108 @@ function renderMiniChartJS(elementId, labels, data, color) {
     });
 }
 
+// Функция для мини-графика расходов
+let miniExpenseChart = null;
+
+function renderExpenseMiniChartJS(elementId, labels, data, color) {
+    const canvas = document.getElementById(elementId);
+    if (!canvas || !labels || labels.length === 0 || !data || data.length === 0) return;
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    
+    // Цвет фоновой области графика (полупрозрачный красный)
+    const areaColor = isDarkMode ? 'rgba(245, 101, 101, 0.08)' : 'rgba(245, 101, 101, 0.05)';
+    
+    const trendColor = '#f56565';
+    const lineColor = trendColor;
+    
+    if (miniExpenseChart) {
+        miniExpenseChart.destroy();
+        miniExpenseChart = null;
+    }
+    
+    miniExpenseChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '',
+                data: data,
+                borderColor: lineColor,
+                backgroundColor: areaColor,
+                borderWidth: 2,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointBackgroundColor: lineColor,
+                pointBorderColor: 'transparent',
+                pointBorderWidth: 0,
+                tension: 0.4,
+                fill: true,
+                cubicInterpolationMode: 'monotone'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
+                    titleColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    bodyColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    borderColor: lineColor,
+                    borderWidth: 1,
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].label;
+                        },
+                        label: function(context) {
+                            return `${context.parsed.y.toFixed(0)} тыс. ₽`;
+                        },
+                        labelColor: function() {
+                            return { borderColor: 'transparent', backgroundColor: 'transparent' };
+                        },
+                        labelTextColor: function() {
+                            return isDarkMode ? '#e2e8f0' : '#4a5568';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { 
+                    display: false,
+                    grid: { display: false },
+                    ticks: { display: false }
+                },
+                y: { 
+                    display: false,
+                    grid: { display: false },
+                    ticks: { display: false }
+                }
+            },
+            elements: {
+                line: { tension: 0.4 },
+                point: { hoverRadius: 6, radius: 0 }
+            },
+            layout: {
+                padding: { top: 5, bottom: 5, left: 5, right: 5 }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            },
+            animation: {
+                duration: 1200,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+}
+
 
 // ---- НАЧАЛО: ВЕРХНЯЯ ПАНЕЛЬ С КЛЮЧЕВЫМИ МЕТРИКАМИ И ГРАФИКОМ ----
 
@@ -4452,6 +4554,13 @@ const monthlyProfits = monthlyLabels.map(m => monthlyDataMap.get(m).profit / 100
 setTimeout(() => {
     if (monthlyLabels.length > 0 && monthlyRevenues.length > 0) {
         renderMiniChartJS('revenueMiniChartNew', monthlyLabels, monthlyRevenues, '#48bb78');
+    }
+}, 100);
+
+// Отрисовка графика расходов
+setTimeout(() => {
+    if (monthlyLabels.length > 0 && monthlyRevenues.length > 0) {
+        renderExpenseMiniChartJS('expenseMiniChartNew', monthlyLabels, monthlyRevenues, '#f56565');
     }
 }, 100);
 
@@ -4650,7 +4759,7 @@ console.log('costData:', costData);
                 return `<span class="metric-change ${colorClass}" style="font-size: 11px; padding: 2px 6px; border-radius: 12px; display: inline-block; margin-left: 8px;">${change.formatted}</span>`;
             }
             
-            function createCollapsibleBlock(title, icon, total, totalChange, channels, isExpense = false, monthlyDataMap = null, monthlyLabelsParam = null, monthlyRevenuesParam = null) {
+            function createCollapsibleBlock(title, icon, total, totalChange, channels, isExpense = false, monthlyDataMap = null, monthlyLabelsParam = null, monthlyRevenuesParam = null, totalRevenue = null) {
     // Вычисляем процент изменения для отображения
     let changePercent = 0;
     let changeColor = '#48bb78';
@@ -4671,18 +4780,30 @@ console.log('costData:', costData);
     // Генерация HTML для каналов (скрыто по умолчанию)
     const channelItemsHtml = channels.map((channel, channelIdx) => {
         const channelPercent = (channel.total / total) * 100;
+        // Процент от общих доходов (если передан totalRevenue)
+        const channelPercentOfRevenue = (totalRevenue && totalRevenue > 0) ? (channel.total / totalRevenue) * 100 : null;
+        
         const sortedItems = [...channel.items].sort((a, b) => b.amount - a.amount);
         const itemsHtml = sortedItems.map((item, itemIdx) => {
             const itemPercentOfTotal = (item.amount / total) * 100;
+            const itemPercentOfRevenue = (totalRevenue && totalRevenue > 0) ? (item.amount / totalRevenue) * 100 : null;
             const itemPercentOfChannel = (item.amount / channel.total) * 100;
+            // Для расходов используем красную/оранжевую градиентную шкалу
             const gradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
+            
+            // Формируем подпись с процентами
+            let percentText = `${itemPercentOfTotal.toFixed(1)}% от ${isExpense ? 'расходов' : 'дохода'}`;
+            if (isExpense && itemPercentOfRevenue !== null) {
+                percentText = `${itemPercentOfTotal.toFixed(1)}% от расходов / ${itemPercentOfRevenue.toFixed(1)}% от доходов`;
+            }
+            
             return `
                 <div class="sub-item" data-item-name="${item.name}" style="margin-bottom: 12px; opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; transition-delay: ${itemIdx * 0.03}s;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
                         <span style="font-size: 13px; font-weight: 500;">${item.name}</span>
                         <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                             <span style="font-size: 13px; font-weight: 600;">${formatCurrency(item.amount)}</span>
-                            <span style="font-size: 12px; background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">${itemPercentOfTotal.toFixed(1)}% от дохода</span>
+                            <span style="font-size: 11px; background: rgba(102,126,234,0.1); padding: 2px 8px; border-radius: 12px;">${percentText}</span>
                         </div>
                     </div>
                     <div style="background: rgba(102,126,234,0.15); height: 6px; border-radius: 3px; overflow: hidden;">
@@ -4691,6 +4812,13 @@ console.log('costData:', costData);
                 </div>
             `;
         }).join('');
+        
+        // Формируем подпись для канала с двумя процентами
+        let channelPercentText = `${channelPercent.toFixed(1)}% от ${isExpense ? 'расходов' : 'дохода'}`;
+        if (isExpense && channelPercentOfRevenue !== null) {
+            channelPercentText = `${channelPercent.toFixed(1)}% от расходов / ${channelPercentOfRevenue.toFixed(1)}% от доходов`;
+        }
+        
         const channelGradient = isExpense ? 'linear-gradient(90deg, #f56565, #ed8936)' : 'linear-gradient(90deg, #48bb78, #8dd934)';
         return `
             <div class="channel-item" data-channel-name="${channel.name}" style="margin-bottom: 20px; border-bottom: 1px solid rgba(102,126,234,0.2); padding-bottom: 16px;">
@@ -4701,7 +4829,7 @@ console.log('costData:', costData);
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span class="channel-total" style="font-size: 14px; font-weight: 600;">${formatCurrency(channel.total)}</span>
-                        <span class="channel-percent" style="font-size: 12px; background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">${channelPercent.toFixed(1)}%</span>
+                        <span class="channel-percent" style="font-size: 11px; background: rgba(102,126,234,0.15); padding: 2px 8px; border-radius: 12px;">${channelPercentText}</span>
                         <span class="expand-icon" style="font-size: 14px; transition: transform 0.3s; cursor: pointer;">▶</span>
                     </div>
                 </div>
@@ -4715,11 +4843,19 @@ console.log('costData:', costData);
         `;
     }).join('');
     
-    // График как фоновая волна
-    const chartHtml = (!isExpense && monthlyDataMap && monthlyLabelsParam && monthlyRevenuesParam && monthlyRevenuesParam.length > 0) ? `
+    // Процент изменения общей суммы (для отображения в углу)
+    let totalPercentChange = 0;
+    let totalChangeColor = '#48bb78';
+    if (totalChange) {
+        totalPercentChange = totalChange.percent;
+        totalChangeColor = totalPercentChange >= 0 ? '#48bb78' : '#f56565';
+    }
+    
+    // График для доходов И расходов
+    const chartHtml = (monthlyDataMap && monthlyLabelsParam && monthlyRevenuesParam && monthlyRevenuesParam.length > 0) ? `
         <div class="revenue-chart-wrapper" style="margin-top: 16px;">
             <div class="chart-gradient-overlay"></div>
-            <canvas id="revenueMiniChartNew" style="height: 100px; width: 100%; display: block;"></canvas>
+            <canvas id="${isExpense ? 'expenseMiniChartNew' : 'revenueMiniChartNew'}" style="height: 100px; width: 100%; display: block; margin: 0; padding: 0;"></canvas>
         </div>
     ` : '';
     
@@ -4741,7 +4877,7 @@ console.log('costData:', costData);
             <div style="margin-bottom: 20px;">
                 <div class="metric-value" id="${isExpense ? 'expensesTotal' : 'revenueTotal'}" style="font-size: 32px;">${formatCurrency(total)}</div>
                 ${getChangeHtml(totalChange, isExpense)}
-                <div class="metric-sub" style="margin-top: 4px;">общая сумма</div>
+                <div class="metric-sub" style="margin-top: 4px;">${isExpense ? 'общая сумма расходов' : 'общая сумма доходов'}</div>
             </div>
             
             <!-- Контейнер с каналами (скрыт по умолчанию с плавной анимацией) -->
@@ -4760,9 +4896,8 @@ console.log('costData:', costData);
 }
             
             
-            const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false, monthlyDataMap, monthlyLabels, monthlyRevenues);
-            const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true, null, null, null);
-
+            const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false, monthlyDataMap, monthlyLabels, monthlyRevenues, null);
+            const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true, monthlyDataMap, monthlyLabels, monthlyRevenues, f.totalRevenue);
             
             document.getElementById('dashboardMetrics').innerHTML = topPanelHtml + `
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
