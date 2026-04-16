@@ -4173,42 +4173,32 @@ function renderMiniChartJS(elementId, labels, data, color) {
     const gridColor = isDarkMode ? '#2d3748' : '#e2e8f0';
     const areaColor = isDarkMode ? 'rgba(72, 187, 120, 0.15)' : 'rgba(72, 187, 120, 0.08)';
     
-    // ========== ДОБАВЬТЕ ЭТОТ БЛОК ==========
-    // Определяем цвет линии в зависимости от тренда
     const trendColor = data[data.length-1] >= data[0] ? '#48bb78' : '#f56565';
-    // Используйте trendColor вместо color для динамического цвета
     const lineColor = trendColor;
-    // =======================================
     
-    // Уничтожаем старый график если есть
     if (miniRevenueChart) {
         miniRevenueChart.destroy();
         miniRevenueChart = null;
     }
     
-    // Создаём анимированные данные (начинаем с нуля)
-    const animatedData = new Array(data.length).fill(0);
-    
+    // Показываем сразу все данные для анимации рисования линии
     miniRevenueChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
                 label: 'Выручка',
-                data: animatedData,
-                borderColor: lineColor,  // ← ЗДЕСЬ используем lineColor вместо color
+                data: data,  // сразу все данные, анимация будет через transition
+                borderColor: lineColor,
                 backgroundColor: areaColor,
                 borderWidth: 2.5,
                 pointRadius: 0,
                 pointHoverRadius: 5,
-                pointBackgroundColor: lineColor,  // ← И ЗДЕСЬ тоже
+                pointBackgroundColor: lineColor,
                 pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
                 tension: 0.4,
-                fill: true,
-                segment: {
-                    borderDash: (ctx) => [0, 0],
-                }
+                fill: true
             }]
         },
         options: {
@@ -4222,7 +4212,7 @@ function renderMiniChartJS(elementId, labels, data, color) {
                     backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
                     titleColor: textColor,
                     bodyColor: textColor,
-                    borderColor: lineColor,  // ← И ЗДЕСЬ
+                    borderColor: lineColor,
                     borderWidth: 1,
                     callbacks: {
                         label: function(context) {
@@ -4251,8 +4241,7 @@ function renderMiniChartJS(elementId, labels, data, color) {
                         callback: function(value) { 
                             if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
                             return value;
-                        },
-                        stepSize: Math.ceil(Math.max(...data) / 4 / 100) * 100
+                        }
                     },
                     grid: { 
                         color: gridColor,
@@ -4279,10 +4268,12 @@ function renderMiniChartJS(elementId, labels, data, color) {
                 intersect: false
             },
             animation: {
-                duration: 0
+                duration: 1200,
+                easing: 'easeInOutQuart'
             }
         }
     });
+}
     
     // Плавная анимация появления данных слева направо
     const duration = 1000;
@@ -4635,7 +4626,7 @@ console.log('costData:', costData);
                 return `<span class="metric-change ${colorClass}" style="font-size: 11px; padding: 2px 6px; border-radius: 12px; display: inline-block; margin-left: 8px;">${change.formatted}</span>`;
             }
             
-            function createCollapsibleBlock(title, icon, total, totalChange, channels, isExpense = false, monthlyDataMap = null) {
+            function createCollapsibleBlock(title, icon, total, totalChange, channels, isExpense = false, monthlyDataMap = null, monthlyLabelsParam = null, monthlyRevenuesParam = null) {
     const channelItemsHtml = channels.map((channel, channelIdx) => {
         const channelPercent = (channel.total / total) * 100;
         const sortedItems = [...channel.items].sort((a, b) => b.amount - a.amount);
@@ -4682,19 +4673,38 @@ console.log('costData:', costData);
         `;
     }).join('');
     
-    // Создаем мини-график для блока доходов
-const chartHtml = (!isExpense && monthlyDataMap) ? `
-    <div style="margin-bottom: 20px; padding: 12px 8px 8px 8px; background: ${document.body.classList.contains('dark') ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'}; border-radius: 12px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 8px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 11px; font-weight: 600; color: #667eea;">📈 ДИНАМИКА ВЫРУЧКИ</span>
-                <span style="font-size: 10px; background: rgba(72,187,120,0.2); padding: 2px 8px; border-radius: 20px; color: #48bb78;">+0%</span>
+    // Вычисляем процент изменения для отображения
+    let changePercent = 0;
+    let changeColor = '#48bb78';
+    let changeBgColor = 'rgba(72,187,120,0.2)';
+    
+    if (monthlyRevenuesParam && monthlyRevenuesParam.length >= 2) {
+        const firstValue = monthlyRevenuesParam[0];
+        const lastValue = monthlyRevenuesParam[monthlyRevenuesParam.length - 1];
+        if (firstValue !== 0) {
+            changePercent = ((lastValue - firstValue) / firstValue) * 100;
+            if (changePercent < 0) {
+                changeColor = '#f56565';
+                changeBgColor = 'rgba(245,101,101,0.2)';
+            }
+        }
+    }
+    
+    // ГРАФИК ТЕПЕРЬ ВНИЗУ БЛОКА (после всех каналов)
+    const chartHtml = (!isExpense && monthlyDataMap && monthlyLabelsParam && monthlyRevenuesParam && monthlyRevenuesParam.length > 0) ? `
+        <div style="margin-top: 20px; padding: 16px 12px 12px 12px; background: ${document.body.classList.contains('dark') ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}; border-radius: 12px; border-top: 1px solid rgba(102,126,234,0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 11px; font-weight: 600; color: #667eea;">📈 ДИНАМИКА ВЫРУЧКИ</span>
+                    <span style="font-size: 10px; background: ${changeBgColor}; padding: 2px 8px; border-radius: 20px; color: ${changeColor}; font-weight: 600;">
+                        ${changePercent >= 0 ? `+${changePercent.toFixed(0)}%` : `${changePercent.toFixed(0)}%`}
+                    </span>
+                </div>
+                <span style="font-size: 10px; opacity: 0.5;">тыс. ₽</span>
             </div>
-            <span style="font-size: 10px; opacity: 0.5;">тыс. ₽</span>
+            <canvas id="revenueMiniChartNew" style="height: 110px; width: 100%;"></canvas>
         </div>
-        <canvas id="revenueMiniChartNew" style="height: 100px; width: 100%;"></canvas>
-    </div>
-` : '';
+    ` : '';
     
     return `
         <div class="metric-card" style="overflow: hidden; padding: 20px; height: 100%; display: flex; flex-direction: column;">
@@ -4709,11 +4719,11 @@ const chartHtml = (!isExpense && monthlyDataMap) ? `
                 </div>
                 <div class="metric-sub">общая сумма</div>
             </div>
-            ${chartHtml}
-            <div class="channels-container" style="flex: 1; overflow-y: visible; padding-right: 5px;">
+            <div class="channels-container" style="flex: 1; overflow-y: visible; padding-right: 5px; max-height: 400px; overflow-y: auto;">
                 ${channelItemsHtml}
             </div>
-            <button class="toggle-all-channels-btn" style="margin-top: 16px; background: none; border: none; color: #667eea; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center;">
+            ${chartHtml}
+            <button class="toggle-all-channels-btn" style="margin-top: 16px; background: none; border: none; color: #667eea; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center; border-top: 1px solid rgba(102,126,234,0.1);">
                 <span>▶</span> Показать все подканалы
             </button>
         </div>
@@ -4721,9 +4731,8 @@ const chartHtml = (!isExpense && monthlyDataMap) ? `
 }
             
             
-            const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false, monthlyDataMap);
-            const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true, null);
-
+            const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false, monthlyDataMap, monthlyLabels, monthlyRevenues);
+            const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true, null, null, null);
 
             
             document.getElementById('dashboardMetrics').innerHTML = topPanelHtml + `
