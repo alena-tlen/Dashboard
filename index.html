@@ -5275,12 +5275,13 @@ if (toggleExpenseBtn && expenseContainer) {
 }
 
 // Обработчик для кнопки "Раскрыть подканалы" внутри контейнера каналов
-const toggleAllSubChannelsBtn = document.querySelector('.toggle-all-channels-btn');
-if (toggleAllSubChannelsBtn) { 
-    toggleAllSubChannelsBtn.onclick = (e) => {
+// Обработчик для кнопок "Раскрыть подканалы" внутри контейнеров каналов
+const toggleAllSubChannelsBtns = document.querySelectorAll('.toggle-all-channels-btn');
+toggleAllSubChannelsBtns.forEach(btn => {
+    btn.onclick = (e) => {
         e.stopPropagation();
-        // Находим родительский контейнер каналов
-        const container = e.currentTarget.closest('.metric-card').querySelector('.channels-revenue-container, .channels-expense-container');
+        // Находим родительский контейнер каналов (ищем среди обоих типов)
+        const container = btn.closest('.metric-card').querySelector('.channels-revenue-container, .channels-expense-container');
         if (!container) return;
         
         const allChannelItems = container.querySelectorAll('.channel-item');
@@ -5292,14 +5293,14 @@ if (toggleAllSubChannelsBtn) {
         if (allOpen) {
             allDetailsDivs.forEach(details => details.style.maxHeight = '0');
             allExpandIcons.forEach(icon => icon.style.transform = 'rotate(0deg)');
-            toggleAllSubChannelsBtn.innerHTML = '<span>▶</span> Раскрыть подканалы';
+            btn.innerHTML = '<span>▶</span> Раскрыть подканалы';
             allChannelItems.forEach(item => { 
                 if (window._openChannels) window._openChannels[item.dataset.channelName] = false; 
             });
         } else {
             allDetailsDivs.forEach(details => { details.style.maxHeight = details.scrollHeight + 'px'; });
             allExpandIcons.forEach(icon => icon.style.transform = 'rotate(90deg)');
-            toggleAllSubChannelsBtn.innerHTML = '<span>▼</span> Скрыть подканалы';
+            btn.innerHTML = '<span>▼</span> Скрыть подканалы';
             allDetailsDivs.forEach((details, idx) => {
                 const items = details.querySelectorAll('.sub-item');
                 items.forEach((item, itemIdx) => {
@@ -5314,7 +5315,7 @@ if (toggleAllSubChannelsBtn) {
             });
         }
     };
-}
+});
 
             }, 200);
             
