@@ -4163,6 +4163,9 @@ function renderQuadrantMatrix(data, f) {
 // Новая функция для мини-графика через Chart.js
 let miniRevenueChart = null;
 
+// Новая функция для мини-графика в стиле дашборда с анимацией слева направо
+let miniRevenueChart = null;
+
 function renderMiniChartJS(elementId, labels, data, color) {
     const canvas = document.getElementById(elementId);
     if (!canvas || !labels || labels.length === 0 || !data || data.length === 0) return;
@@ -4171,6 +4174,15 @@ function renderMiniChartJS(elementId, labels, data, color) {
     const isDarkMode = document.body.classList.contains('dark');
     const textColor = isDarkMode ? '#e2e8f0' : '#4a5568';
     const gridColor = isDarkMode ? '#2d3748' : '#e2e8f0';
+    const areaColor = isDarkMode ? 'rgba(72, 187, 120, 0.15)' : 'rgba(72, 187, 120, 0.08)';
+
+
+// ========== ДОБАВЬТЕ ЭТОТ БЛОК ==========
+    // Определяем цвет линии в зависимости от тренда
+    const trendColor = data[data.length-1] >= data[0] ? '#48bb78' : '#f56565';
+    // Используйте trendColor вместо color для динамического цвета
+    const lineColor = trendColor;
+    // =======================================
     
     // Уничтожаем старый график если есть
     if (miniRevenueChart) {
@@ -4178,23 +4190,29 @@ function renderMiniChartJS(elementId, labels, data, color) {
         miniRevenueChart = null;
     }
     
+    // Создаём анимированные данные (начинаем с нуля)
+    const animatedData = new Array(data.length).fill(0);
+    
     miniRevenueChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
                 label: 'Выручка',
-                data: data,
+                data: animatedData,
                 borderColor: color,
-                backgroundColor: color + '20',
-                borderWidth: 2,
-                pointRadius: 3,
-                pointHoverRadius: 6,
+                backgroundColor: areaColor,
+                borderWidth: 2.5,
+                pointRadius: 0,
+                pointHoverRadius: 5,
                 pointBackgroundColor: color,
                 pointBorderColor: '#ffffff',
-                pointBorderWidth: 1,
+                pointBorderWidth: 2,
                 tension: 0.4,
-                fill: true
+                fill: true,
+                segment: {
+                    borderDash: (ctx) => [0, 0],
+                }
             }]
         },
         options: {
@@ -4205,6 +4223,11 @@ function renderMiniChartJS(elementId, labels, data, color) {
                 tooltip: {
                     mode: 'index',
                     intersect: false,
+                    backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
+                    titleColor: textColor,
+                    bodyColor: textColor,
+                    borderColor: color,
+                    borderWidth: 1,
                     callbacks: {
                         label: function(context) {
                             return `💰 ${context.parsed.y.toFixed(0)} тыс. ₽`;
@@ -4214,19 +4237,84 @@ function renderMiniChartJS(elementId, labels, data, color) {
             },
             scales: {
                 x: {
-                    ticks: { color: textColor, font: { size: 9 }, maxRotation: 30, minRotation: 30 },
-                    grid: { display: false }
+                    ticks: { 
+                        color: textColor, 
+                        font: { size: 9, weight: '500' },
+                        maxRotation: 0,
+                        autoSkip: true,
+                        maxTicksLimit: 7
+                    },
+                    grid: { display: false },
+                    border: { display: false }
                 },
                 y: {
-                    ticks: { color: textColor, font: { size: 9 }, callback: function(value) { return value + 'K'; } },
-                    grid: { color: gridColor, drawBorder: false }
+                    position: 'right',
+                    ticks: { 
+                        color: textColor, 
+                        font: { size: 9 },
+                        callback: function(value) { 
+                            if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
+                            return value;
+                        },
+                        stepSize: Math.ceil(Math.max(...data) / 4 / 100) * 100
+                    },
+                    grid: { 
+                        color: gridColor,
+                        drawBorder: false,
+                        lineWidth: 0.5
+                    },
+                    border: { display: false }
                 }
             },
-            elements: { point: { hoverRadius: 6, radius: 3 } },
-            layout: { padding: { top: 10, bottom: 5, left: 5, right: 5 } },
-            animation: { duration: 800, easing: 'easeInOutQuart' }
+            elements: {
+                line: { tension: 0.4 },
+                point: { hoverRadius: 6, radius: 0 }
+            },
+            layout: {
+                padding: { top: 15, bottom: 5, left: 5, right: 30 }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            },
+            hover: {
+                mode: 'nearest',
+                intersect: false
+            },
+            animation: {
+                duration: 0 // отключаем стандартную анимацию, сделаем свою
+            }
         }
     });
+    
+    // Плавная анимация появления данных слева направо
+    const duration = 1000; // 1 секунда
+    const startTime = performance.now();
+    
+    function animateData(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function для плавности
+        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+        
+        // Обновляем данные с анимацией
+        const newData = data.map((value, index) => {
+            // Каждая точка появляется с задержкой пропорционально индексу
+            const pointProgress = Math.max(0, Math.min(1, (progress - index * 0.05) / (1 - index * 0.05)));
+            return value * (pointProgress > 0 ? Math.min(1, pointProgress * 1.2) : 0);
+        });
+        
+        miniRevenueChart.data.datasets[0].data = newData;
+        miniRevenueChart.update('none'); // обновляем без анимации чтобы не конфликтовать
+        
+        if (progress < 1) {
+            requestAnimationFrame(animateData);
+        }
+    }
+    
+    requestAnimationFrame(animateData);
 }
 
 
@@ -4604,12 +4692,31 @@ console.log('costData:', costData);
     
     // Создаем мини-график для блока доходов
 const chartHtml = (!isExpense && monthlyDataMap) ? `
-    <div style="margin-bottom: 20px; padding: 16px; background: rgba(102,126,234,0.05); border-radius: 12px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-size: 12px; font-weight: 600; color: #667eea;">📈 ДИНАМИКА ВЫРУЧКИ ПО МЕСЯЦАМ</span>
-            <span style="font-size: 10px; opacity: 0.6;">тыс. ₽</span>
+    <div style="margin-bottom: 20px; padding: 12px 8px 8px 8px; background: ${document.body.classList.contains('dark') ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'}; border-radius: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 11px; font-weight: 600; color: #667eea;">📈 ДИНАМИКА ВЫРУЧКИ</span>
+                <span style="font-size: 10px; background: ${(() => {
+                    const trend = monthlyRevenues[monthlyRevenues.length-1] >= monthlyRevenues[0];
+                    return trend ? '#48bb7820' : '#f5656520';
+                })()}; padding: 2px 8px; border-radius: 20px; color: ${(() => {
+                    const trend = monthlyRevenues[monthlyRevenues.length-1] >= monthlyRevenues[0];
+                    return trend ? '#48bb78' : '#f56565';
+                })()};">
+                    ${(() => {
+                        const change = ((monthlyRevenues[monthlyRevenues.length-1] - monthlyRevenues[0]) / monthlyRevenues[0] * 100).toFixed(0);
+                        return change >= 0 ? `+${change}%` : `${change}%`;
+                    })()}
+                </span>
+            </div>
+            <span style="font-size: 10px; opacity: 0.5;">тыс. ₽</span>
         </div>
-        <canvas id="revenueMiniChartNew" style="height: 120px; width: 100%;"></canvas>
+        <canvas id="revenueMiniChartNew" style="height: 100px; width: 100%;"></canvas>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px; padding: 0 8px;">
+            ${labels.slice(0, 7).map((label, i) => `
+                <span style="font-size: 8px; opacity: 0.5; text-align: center; width: 30px;">${label.slice(0, 3)}</span>
+            `).join('')}
+        </div>
     </div>
 ` : '';
     
