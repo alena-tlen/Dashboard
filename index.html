@@ -820,10 +820,11 @@ body.dark .article-card:hover {
 .channels-main-container::-webkit-scrollbar-thumb {
     background: rgba(102,126,234,0.3);
     border-radius: 4px;
+    transition: background 0.2s;
 }
 
 .channels-main-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(102,126,234,0.5);
+    background: rgba(102,126,234,0.6);
 }
 
 /* Для Firefox */
@@ -846,6 +847,8 @@ body.dark .article-card:hover {
     height: 100px;
     opacity: 0.85;
     transition: opacity 0.3s ease;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .revenue-chart-wrapper:hover canvas {
@@ -4742,7 +4745,7 @@ console.log('costData:', costData);
             </div>
             
             <!-- Контейнер с каналами (скрыт по умолчанию с плавной анимацией) -->
-            <div class="channels-main-container" style="max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease; margin-bottom: 0px; padding-right: 5px;">
+            <div class="channels-main-container" style="max-height: 0; opacity: 0; overflow-y: auto; overflow-x: hidden; transition: max-height 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease; margin-bottom: 0px; padding-right: 5px;">
                 ${channelItemsHtml}
                 <!-- Кнопка раскрытия подканалов -->
                 <button class="toggle-all-channels-btn" style="margin-top: 16px; background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center; border-top: 1px solid rgba(102,126,234,0.1);">
