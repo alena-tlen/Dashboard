@@ -798,6 +798,32 @@ body.dark .article-card:hover {
     }
 }
 
+/* Стили для скрытия скролла (но оставляем возможность скроллить) */
+.channels-main-container::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+.channels-main-container::-webkit-scrollbar-track {
+    background: rgba(102,126,234,0.1);
+    border-radius: 4px;
+}
+
+.channels-main-container::-webkit-scrollbar-thumb {
+    background: rgba(102,126,234,0.3);
+    border-radius: 4px;
+}
+
+.channels-main-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(102,126,234,0.5);
+}
+
+/* Для Firefox */
+.channels-main-container {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(102,126,234,0.3) rgba(102,126,234,0.1);
+}
+
 </style>
 </head>
 <body>
@@ -4602,6 +4628,24 @@ console.log('costData:', costData);
             }
             
             function createCollapsibleBlock(title, icon, total, totalChange, channels, isExpense = false, monthlyDataMap = null, monthlyLabelsParam = null, monthlyRevenuesParam = null) {
+    // Вычисляем процент изменения для отображения
+    let changePercent = 0;
+    let changeColor = '#48bb78';
+    let changeBgColor = 'rgba(72,187,120,0.2)';
+    
+    if (monthlyRevenuesParam && monthlyRevenuesParam.length >= 2) {
+        const firstValue = monthlyRevenuesParam[0];
+        const lastValue = monthlyRevenuesParam[monthlyRevenuesParam.length - 1];
+        if (firstValue !== 0) {
+            changePercent = ((lastValue - firstValue) / firstValue) * 100;
+            if (changePercent < 0) {
+                changeColor = '#f56565';
+                changeBgColor = 'rgba(245,101,101,0.2)';
+            }
+        }
+    }
+    
+    // Генерация HTML для каналов (скрыто по умолчанию)
     const channelItemsHtml = channels.map((channel, channelIdx) => {
         const channelPercent = (channel.total / total) * 100;
         const sortedItems = [...channel.items].sort((a, b) => b.amount - a.amount);
@@ -4648,26 +4692,9 @@ console.log('costData:', costData);
         `;
     }).join('');
     
-    // Вычисляем процент изменения для отображения
-    let changePercent = 0;
-    let changeColor = '#48bb78';
-    let changeBgColor = 'rgba(72,187,120,0.2)';
-    
-    if (monthlyRevenuesParam && monthlyRevenuesParam.length >= 2) {
-        const firstValue = monthlyRevenuesParam[0];
-        const lastValue = monthlyRevenuesParam[monthlyRevenuesParam.length - 1];
-        if (firstValue !== 0) {
-            changePercent = ((lastValue - firstValue) / firstValue) * 100;
-            if (changePercent < 0) {
-                changeColor = '#f56565';
-                changeBgColor = 'rgba(245,101,101,0.2)';
-            }
-        }
-    }
-    
-    // ГРАФИК ТЕПЕРЬ ВНИЗУ БЛОКА (после всех каналов)
+    // График в самом низу, как фон блока (без отдельного окна)
     const chartHtml = (!isExpense && monthlyDataMap && monthlyLabelsParam && monthlyRevenuesParam && monthlyRevenuesParam.length > 0) ? `
-        <div style="margin-top: 20px; padding: 16px 12px 12px 12px; background: ${document.body.classList.contains('dark') ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}; border-radius: 12px; border-top: 1px solid rgba(102,126,234,0.15);">
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(102,126,234,0.1);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 11px; font-weight: 600; color: #667eea;">📈 ДИНАМИКА ВЫРУЧКИ</span>
@@ -4675,32 +4702,43 @@ console.log('costData:', costData);
                         ${changePercent >= 0 ? `+${changePercent.toFixed(0)}%` : `${changePercent.toFixed(0)}%`}
                     </span>
                 </div>
-                <span style="font-size: 10px; opacity: 0.5;">тыс. ₽</span>
             </div>
-            <canvas id="revenueMiniChartNew" style="height: 110px; width: 100%;"></canvas>
+            <canvas id="revenueMiniChartNew" style="height: 100px; width: 100%;"></canvas>
         </div>
     ` : '';
     
     return `
-        <div class="metric-card" style="overflow: hidden; padding: 20px; height: 100%; display: flex; flex-direction: column;">
-            <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                <span style="font-size: 20px;">${icon}</span>
-                <span style="font-size: 16px; font-weight: 700;">${title}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(102,126,234,0.2);">
-                <div>
-                    <div class="metric-value" id="${isExpense ? 'expensesTotal' : 'revenueTotal'}" style="font-size: 28px;">${formatCurrency(total)}</div>
-                    ${getChangeHtml(totalChange, isExpense)}
+        <div class="metric-card" style="overflow: hidden; padding: 20px; height: 100%; display: flex; flex-direction: column; background: ${document.body.classList.contains('dark') ? '#1a1a2a' : 'white'};">
+            <!-- Заголовок и сумма -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                <div class="metric-title" style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">${icon}</span>
+                    <span style="font-size: 16px; font-weight: 700;">${title}</span>
                 </div>
-                <div class="metric-sub">общая сумма</div>
+                <!-- Кнопка раскрытия каналов в правом верхнем углу -->
+                <button class="toggle-channels-main-btn" style="background: rgba(102,126,234,0.15); border: none; border-radius: 20px; padding: 4px 12px; font-size: 11px; color: #667eea; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                    <span class="toggle-icon-main">▶</span> Показать каналы
+                </button>
             </div>
-            <div class="channels-container" style="flex: 1; overflow-y: visible; padding-right: 5px; max-height: 400px; overflow-y: auto;">
+            
+            <!-- Общая сумма -->
+            <div style="margin-bottom: 20px;">
+                <div class="metric-value" id="${isExpense ? 'expensesTotal' : 'revenueTotal'}" style="font-size: 32px;">${formatCurrency(total)}</div>
+                ${getChangeHtml(totalChange, isExpense)}
+                <div class="metric-sub" style="margin-top: 4px;">общая сумма</div>
+            </div>
+            
+            <!-- Контейнер с каналами (скрыт по умолчанию) -->
+            <div class="channels-main-container" style="display: none; max-height: 400px; overflow-y: auto; margin-bottom: 20px; padding-right: 5px;">
                 ${channelItemsHtml}
+                <!-- Кнопка раскрытия подканалов -->
+                <button class="toggle-all-channels-btn" style="margin-top: 16px; background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center; border-top: 1px solid rgba(102,126,234,0.1);">
+                    <span>▶</span> Раскрыть подканалы
+                </button>
             </div>
+            
+            <!-- График всегда внизу -->
             ${chartHtml}
-            <button class="toggle-all-channels-btn" style="margin-top: 16px; background: none; border: none; color: #667eea; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; padding: 8px 0; width: 100%; justify-content: center; border-top: 1px solid rgba(102,126,234,0.1);">
-                <span>▶</span> Показать все подканалы
-            </button>
         </div>
     `;
 }
@@ -5031,6 +5069,69 @@ if (toggleCostBtn && costContainer) {
                         }
                     };
                 }
+
+// Обработчик для главной кнопки раскрытия каналов (Доходы)
+const toggleChannelsMainBtn = document.querySelector('.toggle-channels-main-btn');
+const channelsMainContainer = document.querySelector('.channels-main-container');
+if (toggleChannelsMainBtn && channelsMainContainer) {
+    toggleChannelsMainBtn.onclick = () => {
+        const isVisible = channelsMainContainer.style.display === 'block';
+        if (isVisible) {
+            channelsMainContainer.style.display = 'none';
+            toggleChannelsMainBtn.innerHTML = '<span class="toggle-icon-main">▶</span> Показать каналы';
+        } else {
+            channelsMainContainer.style.display = 'block';
+            toggleChannelsMainBtn.innerHTML = '<span class="toggle-icon-main">▼</span> Скрыть каналы';
+            // Анимация появления элементов
+            const items = channelsMainContainer.querySelectorAll('.channel-item');
+            items.forEach((item, idx) => {
+                setTimeout(() => { 
+                    item.style.opacity = '1'; 
+                    item.style.transform = 'translateX(0)'; 
+                }, idx * 50);
+            });
+        }
+    };
+}
+
+// Обработчик для кнопки "Раскрыть подканалы" внутри контейнера каналов
+const toggleAllSubChannelsBtn = document.querySelector('.toggle-all-channels-btn');
+if (toggleAllSubChannelsBtn && channelsMainContainer) {
+    toggleAllSubChannelsBtn.onclick = (e) => {
+        e.stopPropagation();
+        const allChannelItems = channelsMainContainer.querySelectorAll('.channel-item');
+        const allDetailsDivs = channelsMainContainer.querySelectorAll('.channel-details');
+        const allExpandIcons = channelsMainContainer.querySelectorAll('.expand-icon');
+        
+        const allOpen = Array.from(allDetailsDivs).every(details => details.style.maxHeight && details.style.maxHeight !== '0px');
+        
+        if (allOpen) {
+            allDetailsDivs.forEach(details => details.style.maxHeight = '0');
+            allExpandIcons.forEach(icon => icon.style.transform = 'rotate(0deg)');
+            toggleAllSubChannelsBtn.innerHTML = '<span>▶</span> Раскрыть подканалы';
+            allChannelItems.forEach(item => { 
+                if (window._openChannels) window._openChannels[item.dataset.channelName] = false; 
+            });
+        } else {
+            allDetailsDivs.forEach(details => { details.style.maxHeight = details.scrollHeight + 'px'; });
+            allExpandIcons.forEach(icon => icon.style.transform = 'rotate(90deg)');
+            toggleAllSubChannelsBtn.innerHTML = '<span>▼</span> Скрыть подканалы';
+            allDetailsDivs.forEach((details, idx) => {
+                const items = details.querySelectorAll('.sub-item');
+                items.forEach((item, itemIdx) => {
+                    setTimeout(() => { 
+                        item.style.opacity = '1'; 
+                        item.style.transform = 'translateX(0)'; 
+                    }, idx * 50 + itemIdx * 30);
+                });
+            });
+            allChannelItems.forEach(item => { 
+                if (window._openChannels) window._openChannels[item.dataset.channelName] = true; 
+            });
+        }
+    };
+}
+
             }, 200);
             
             const monthlyRevenue = {};
