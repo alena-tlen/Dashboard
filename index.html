@@ -4292,9 +4292,14 @@ function renderMiniChartJS(elementId, labels, data, color) {
                     borderColor: lineColor,
                     borderWidth: 1,
                     callbacks: {
-                        title: function() { return ''; },
+                        title: function(context) {
+                            return context[0].label;
+                        },
                         label: function(context) {
-                            return `💰 ${context.parsed.y.toFixed(0)} тыс. ₽`;
+                            return `${context.parsed.y.toFixed(0)} тыс. ₽`;
+                        },
+                        labelColor: function() {
+                            return { borderColor: 'transparent', backgroundColor: 'transparent' };
                         }
                     }
                 }
