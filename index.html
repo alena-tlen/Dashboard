@@ -5228,6 +5228,15 @@ setTimeout(() => {
     renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
 }, 150);
 
+// ДОБАВЬТЕ ЭТОТ БЛОК:
+setTimeout(() => {
+    renderProfitMiniChart();
+}, 100);
+
+setTimeout(() => {
+    renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
+}, 150);
+
 // Отрисовка основного графика - передаем данные как параметры
 setTimeout(() => {
     renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
@@ -5614,30 +5623,34 @@ console.log('costData:', costData);
     </div>
 </div>
                     <div class="metric-card">
-                        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 18px;">📈</span>
-                                <span>Маржинальная прибыль</span>
-                            </div>
-                            <button class="toggle-channels-profit-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-                                <span>▶</span> Показать по каналам
-                            </button>
-                        </div>
-                        <div>
-                            <div class="metric-value ${f.profit >= 0 ? 'positive' : 'negative'}" id="mainProfitValue">${formatCurrency(f.profit)}</div>
-                            ${profitChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(profitChange)}</span>` : ''}
-                        </div>
-                        <div class="metric-sub" style="margin-top: 4px;">
-                            Рентабельность: <span id="mainProfitabilityValue">${f.profitability.toFixed(1)}</span>%
-                            ${profitabilityChange ? `<span style="font-size: 11px; margin-left: 8px;">${getChangeHtml(profitabilityChange)}</span>` : ''}
-                        </div>
-                        <div class="mini-chart" id="miniProfitChart" style="margin-top: 12px;"></div>
-                        <div class="profit-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
-                            <div style="padding-top: 16px;">${generateProfitByChannels(f, revenueChannelsList, expenseChannelsList, calculateNetRevenueByChannel(currentData))}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="metrics-grid" style="margin-top: 24px;">
+    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📈</span>
+            <span>Маржинальная прибыль</span>
+        </div>
+        <button class="toggle-channels-profit-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
+            <span>▶</span> Показать по каналам
+        </button>
+    </div>
+    <div>
+        <div class="metric-value ${f.profit >= 0 ? 'positive' : 'negative'}" id="mainProfitValue">${formatCurrency(f.profit)}</div>
+        ${profitChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(profitChange)}</span>` : ''}
+    </div>
+    <div class="metric-sub" style="margin-top: 4px;">
+        Рентабельность: <span id="mainProfitabilityValue">${f.profitability.toFixed(1)}</span>%
+        ${profitabilityChange ? `<span style="font-size: 11px; margin-left: 8px;">${getChangeHtml(profitabilityChange)}</span>` : ''}
+    </div>
+    
+    <!-- ГРАФИК для маржинальной прибыли -->
+    <div class="revenue-chart-wrapper" style="margin-top: 16px;">
+        <div class="chart-gradient-overlay"></div>
+        <canvas id="profitMiniChart" style="height: 100px; width: 100%; display: block; margin: 0; padding: 0;"></canvas>
+    </div>
+    
+    <div class="profit-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+        <div style="padding-top: 16px;">${generateProfitByChannels(f, revenueChannelsList, expenseChannelsList, calculateNetRevenueByChannel(currentData))}</div>
+    </div>
+</div>
                     <div class="metric-card">
                         <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                             <div style="display: flex; align-items: center; gap: 8px;">
@@ -6403,6 +6416,149 @@ function renderNetRevenueMiniChart() {
     });
 }
     
+// Добавьте после функции renderNetRevenueMiniChart()
+let profitMiniChart = null;
+
+function renderProfitMiniChart() {
+    const canvas = document.getElementById('profitMiniChart');
+    if (!canvas) return;
+    
+    // Собираем данные по месяцам для прибыли
+    const monthlyProfit = {};
+    currentData.forEach(d => {
+        if (d.месяц && d.год) {
+            const monthIndex = monthsOrder.indexOf(d.месяц);
+            if (monthIndex === -1) return;
+            const key = `${d.год}-${monthIndex}`;
+            if (!monthlyProfit[key]) {
+                monthlyProfit[key] = { 
+                    revenue: 0, 
+                    ndsOut: 0, 
+                    expenses: 0, 
+                    year: d.год, 
+                    month: d.месяц, 
+                    monthIndex: monthIndex 
+                };
+            }
+            if (d.тип === 'Доход') {
+                monthlyProfit[key].revenue += d.сумма;
+            } else if (d.статья === 'НДС' && d.подканал === 'НДС исходящий') {
+                monthlyProfit[key].ndsOut += d.сумма;
+            } else if (d.тип === 'Расход') {
+                monthlyProfit[key].expenses += Math.abs(d.сумма);
+            }
+        }
+    });
+    
+    // Сортируем по дате
+    const sortedMonths = Object.keys(monthlyProfit).sort();
+    const labels = sortedMonths.map(key => {
+        const data = monthlyProfit[key];
+        return `${data.month} ${data.year}`;
+    });
+    const profitData = sortedMonths.map(key => {
+        const data = monthlyProfit[key];
+        const netRevenue = data.revenue - data.ndsOut;
+        const profit = netRevenue - data.expenses;
+        return profit / 1000; // в тысячах
+    });
+    
+    if (labels.length === 0 || profitData.length === 0) return;
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    const areaColor = isDarkMode ? 'rgba(72,187,120,0.08)' : 'rgba(72,187,120,0.05)';
+    const lineColor = profitData[profitData.length - 1] >= profitData[0] ? '#48bb78' : '#f56565';
+    
+    if (profitMiniChart) {
+        profitMiniChart.destroy();
+        profitMiniChart = null;
+    }
+    
+    profitMiniChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '',
+                data: profitData,
+                borderColor: lineColor,
+                backgroundColor: areaColor,
+                borderWidth: 2,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointBackgroundColor: lineColor,
+                pointBorderColor: 'transparent',
+                pointBorderWidth: 0,
+                tension: 0.4,
+                fill: true,
+                cubicInterpolationMode: 'monotone'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
+                    titleColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    bodyColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    borderColor: lineColor,
+                    borderWidth: 1,
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].label;
+                        },
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            const color = value >= 0 ? '#48bb78' : '#f56565';
+                            return `${value >= 0 ? '+' : ''}${value.toFixed(0)} тыс. ₽`;
+                        },
+                        labelColor: function(context) {
+                            const value = context.parsed.y;
+                            return { 
+                                borderColor: value >= 0 ? '#48bb78' : '#f56565',
+                                backgroundColor: value >= 0 ? '#48bb78' : '#f56565'
+                            };
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { 
+                    display: false,
+                    grid: { display: false },
+                    ticks: { display: false }
+                },
+                y: { 
+                    display: false,
+                    grid: { display: false },
+                    ticks: { display: false }
+                }
+            },
+            elements: {
+                line: { tension: 0.4 },
+                point: { hoverRadius: 6, radius: 0 }
+            },
+            layout: {
+                padding: { top: 5, bottom: 5, left: 5, right: 5 }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+}
+
     // Добавьте этот код в консоль браузера после загрузки файла
 function diagnoseSberbank() {
     console.log('=== ДИАГНОСТИКА СБЕРБАНКА ===');
@@ -6619,6 +6775,7 @@ diagnoseSberbank();
             renderDashboard();
             renderCashBlock();
             renderNetRevenueMiniChart();
+            renderProfitMiniChart();
             if (currentChannel) renderChannelPage(currentChannel);
         };
         
@@ -6739,6 +6896,15 @@ diagnoseSberbank();
                 body.classList.add('dark');
                 themeToggle.classList.add('active');
             }
+            setTimeout(() => {
+        if (typeof renderNetRevenueMiniChart === 'function') renderNetRevenueMiniChart();
+        if (typeof renderProfitMiniChart === 'function') renderProfitMiniChart();
+        if (typeof renderMiniChartJS === 'function' && monthlyLabels && monthlyRevenues) {
+            renderMiniChartJS('revenueMiniChartNew', monthlyLabels, monthlyRevenues, '#48bb78');
+            renderExpenseMiniChartJS('expenseMiniChartNew', monthlyLabels, monthlyRevenues, '#f56565');
+        }
+    }, 100);
+};
         };
         body.classList.add('dark');
     }
