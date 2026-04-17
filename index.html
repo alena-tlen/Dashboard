@@ -1976,33 +1976,20 @@ function renderAnimatedMiniChart(elementId, data, color) {
 let cashData = {};
 let accountsVisible = false;
 
-// ========== ИСПРАВЛЕННЫЙ РАСЧЕТ ДЕНЕЖНЫХ СРЕДСТВ ==========
-
-// ========== ИСПРАВЛЕННЫЙ РАСЧЕТ ДЕНЕЖНЫХ СРЕДСТВ ==========
-
-// ========== ИСПРАВЛЕННЫЙ РАСЧЕТ ДЕНЕЖНЫХ СРЕДСТВ ==========
-
 function calculateCashData() {
-    // Собираем начальные остатки по счетам
     const initialBalances = {};
     const allAccounts = new Set();
     
     const selectedYear = currentFilters.year ? String(currentFilters.year) : '';
     const selectedMonths = currentFilters.month || [];
-    
-    // Если фильтры не выбраны - используем все данные
     const isNoFilters = !selectedYear && selectedMonths.length === 0;
     
-    // Находим индекс самого позднего выбранного месяца
     let latestMonthIndex = -1;
     for (const month of selectedMonths) {
         const idx = monthsOrder.indexOf(month);
-        if (idx !== -1 && idx > latestMonthIndex) {
-            latestMonthIndex = idx;
-        }
+        if (idx !== -1 && idx > latestMonthIndex) latestMonthIndex = idx;
     }
     
-    // Функция: проверяет, должна ли операция учитываться в балансе
     function shouldIncludeInBalance(year, month) {
         if (isNoFilters) return true;
         if (!year || !month || year === '' || month === '') return false;
@@ -2026,7 +2013,6 @@ function calculateCashData() {
         return false;
     }
     
-    // Функция: проверяет, попадает ли операция ТОЛЬКО в выбранный период (для детализации)
     function shouldShowInDetails(year, month) {
         if (isNoFilters) return true;
         if (!year || !month || year === '' || month === '') return false;
@@ -2045,16 +2031,9 @@ function calculateCashData() {
         return false;
     }
     
-    // Используем ВСЕ исходные данные (originalData) для расчета баланса
     const allData = originalData.length > 0 ? originalData : currentData;
     
-    console.log('=== calculateCashData ===');
-    console.log('selectedYear:', selectedYear);
-    console.log('selectedMonths:', selectedMonths);
-    console.log('latestMonthIndex:', latestMonthIndex);
-    console.log('Всего записей:', allData.length);
-    
-    // 1. Собираем начальные остатки (всегда учитываем)
+    // Собираем начальные остатки
     allData.forEach(row => {
         const article = row.статья || '';
         const amount = parseFloat(row.сумма) || 0;
@@ -2063,21 +2042,17 @@ function calculateCashData() {
         if (!account) return;
         
         if (article === 'Начальный остаток') {
-            if (!initialBalances[account]) {
-                initialBalances[account] = 0;
-            }
+            if (!initialBalances[account]) initialBalances[account] = 0;
             initialBalances[account] += amount;
             allAccounts.add(account);
-            console.log(`Начальный остаток: ${account.substring(0, 40)}... = ${amount.toFixed(2)}`);
         }
     });
     
-    // Структуры для накопления
     const cumulativeIncome = {};
     const cumulativeExpense = {};
     const allTransactions = {};
     
-    // 2. Собираем все операции по счетам
+    // Собираем операции
     allData.forEach(row => {
         const article = row.статья || '';
         const amount = parseFloat(row.сумма) || 0;
@@ -2092,34 +2067,26 @@ function calculateCashData() {
         if (year !== undefined && year !== null) year = String(year);
         if (month !== undefined && month !== null) month = String(month);
         
-        // Определяем тип операции
+        // ОПРЕДЕЛЕНИЕ ТИПА ОПЕРАЦИИ
         let isIncome = false;
         let isExpense = false;
         let absAmount = Math.abs(amount);
         
-        if (amount > 0) {
+        // Если это списание с расчетного счета - всегда расход
+        if (article === 'Списание с расчетного счета') {
+            isExpense = true;
+            isIncome = false;
+        }
+        // Если это поступление - всегда доход
+        else if (article === 'Поступление на расчетный счет') {
+            isIncome = true;
+            isExpense = false;
+        }
+        // Для остальных: по знаку суммы
+        else if (amount > 0) {
             isIncome = true;
         } else if (amount < 0) {
             isExpense = true;
-        }
-        
-        // Дополнительная проверка для статей-расходов с положительной суммой
-        if (amount > 0 && (
-            article.includes('Списание') || 
-            article.includes('Оплата поставщику') || 
-            article.includes('Перечисление') ||
-            article.includes('Уплата') ||
-            article.includes('Комиссия')
-        )) {
-            isIncome = false;
-            isExpense = true;
-        }
-        
-        // Возвраты (отрицательная сумма) - это доход
-        if (amount < 0 && (article.includes('Возврат') || article.includes('возврат'))) {
-            isIncome = true;
-            isExpense = false;
-            absAmount = Math.abs(amount);
         }
         
         const includeInBalance = shouldIncludeInBalance(year, month);
@@ -2157,7 +2124,7 @@ function calculateCashData() {
         }
     });
     
-    // 3. Рассчитываем итоговые балансы
+    // Рассчитываем балансы
     const accountBalances = [];
     let totalBalance = 0;
     
@@ -2166,6 +2133,15 @@ function calculateCashData() {
         const income = cumulativeIncome[account] || 0;
         const expense = cumulativeExpense[account] || 0;
         const balance = initial + income - expense;
+        
+        // Логирование для Сбербанка
+        if (account.includes('СБЕРБАНК') || account.includes('Сбербанк')) {
+            console.log(`=== СБЕРБАНК ===`);
+            console.log(`Начальный остаток: ${initial.toFixed(2)}`);
+            console.log(`Доходы: ${income.toFixed(2)}`);
+            console.log(`Расходы: ${expense.toFixed(2)}`);
+            console.log(`Баланс: ${balance.toFixed(2)}`);
+        }
         
         let shortName = account;
         if (account.includes('ООО "ОЗОН Банк"')) shortName = 'Озон Банк';
@@ -2211,14 +2187,6 @@ function calculateCashData() {
     } else {
         periodText = `на текущую дату (все данные)`;
     }
-    
-    console.log('Итоговые балансы:', accountBalances.map(a => ({ 
-        name: a.name, 
-        balance: a.balance, 
-        income: a.income, 
-        expense: a.expense, 
-        initial: a.initial 
-    })));
     
     return { accountBalances, totalBalance, periodText };
 }
@@ -6323,6 +6291,59 @@ const costData = currentData
         document.getElementById(`channel${channelKey.charAt(0).toUpperCase() + channelKey.slice(1)}Metrics`).innerHTML = content;
     }
     
+    // Добавьте этот код в консоль браузера после загрузки файла
+function diagnoseSberbank() {
+    console.log('=== ДИАГНОСТИКА СБЕРБАНКА ===');
+    
+    // Находим все операции по Сбербанку
+    const sberbankOps = originalData.filter(row => {
+        const account = row.Счет || '';
+        return account.includes('СБЕРБАНК') || account.includes('Сбербанк');
+    });
+    
+    console.log('Всего операций по Сбербанку:', sberbankOps.length);
+    
+    // Начальные остатки
+    const initialOps = sberbankOps.filter(r => r.статья === 'Начальный остаток');
+    console.log('Начальные остатки:', initialOps.length);
+    initialOps.forEach(r => {
+        console.log(`  Сумма: ${r.сумма}, год: ${r.год}, месяц: ${r.месяц}`);
+    });
+    
+    // Поступления
+    const incomeOps = sberbankOps.filter(r => r.сумма > 0 && r.статья !== 'Начальный остаток');
+    console.log('Поступления:', incomeOps.length);
+    incomeOps.forEach(r => {
+        console.log(`  ${r.год} ${r.месяц}: ${r.статья}, сумма: ${r.сумма}`);
+    });
+    
+    // Списания
+    const expenseOps = sberbankOps.filter(r => r.сумма < 0 || (r.статья === 'Списание с расчетного счета' && r.сумма > 0));
+    console.log('Списания:', expenseOps.length);
+    expenseOps.forEach(r => {
+        console.log(`  ${r.год} ${r.месяц}: ${r.статья}, сумма: ${r.сумма}`);
+    });
+    
+    // Группировка по месяцам
+    const byMonth = {};
+    sberbankOps.forEach(r => {
+        if (r.статья === 'Начальный остаток') return;
+        const key = `${r.год}-${r.месяц}`;
+        if (!byMonth[key]) byMonth[key] = { income: 0, expense: 0, count: 0 };
+        byMonth[key].count++;
+        if (r.сумма > 0) byMonth[key].income += r.сумма;
+        else byMonth[key].expense += Math.abs(r.сумма);
+    });
+    
+    console.log('Операции по месяцам:');
+    Object.keys(byMonth).sort().forEach(key => {
+        const d = byMonth[key];
+        console.log(`  ${key}: ${d.count} опер., доход: ${d.income.toFixed(2)}, расход: ${d.expense.toFixed(2)}`);
+    });
+}
+
+diagnoseSberbank();
+
     function initApp() {
         if (typeof Plotly === 'undefined') {
             setTimeout(initApp, 200);
@@ -6366,8 +6387,73 @@ const costData = currentData
             renderDashboard();
             renderCashBlock();
             uploadArea.style.display = 'none';
+
         }
         
+        // Скопируйте и вставьте это в консоль после загрузки файла
+function diagnoseSberbank() {
+    console.log('=== ДИАГНОСТИКА СБЕРБАНКА ===');
+    
+    // Находим все операции по Сбербанку
+    const sberbankOps = originalData.filter(row => {
+        const account = row.Счет || '';
+        return account.includes('СБЕРБАНК') || account.includes('Сбербанк');
+    });
+    
+    console.log('Всего операций по Сбербанку:', sberbankOps.length);
+    
+    // Начальные остатки
+    const initialOps = sberbankOps.filter(r => r.статья === 'Начальный остаток');
+    console.log('Начальные остатки:', initialOps.length);
+    initialOps.forEach(r => {
+        console.log(`  Сумма: ${r.сумма}, год: ${r.год}, месяц: ${r.месяц}`);
+    });
+    
+    // Поступления (положительная сумма)
+    const incomeOps = sberbankOps.filter(r => r.сумма > 0 && r.статья !== 'Начальный остаток');
+    console.log('Поступления:', incomeOps.length);
+    let totalIncome = 0;
+    incomeOps.forEach(r => {
+        totalIncome += r.сумма;
+        console.log(`  ${r.год} ${r.месяц}: ${r.статья}, сумма: ${r.сумма}`);
+    });
+    console.log(`ИТОГО ПОСТУПЛЕНИЙ: ${totalIncome.toFixed(2)}`);
+    
+    // Списания (отрицательная сумма)
+    const expenseOps = sberbankOps.filter(r => r.сумма < 0 && r.статья !== 'Начальный остаток');
+    console.log('Списания:', expenseOps.length);
+    let totalExpense = 0;
+    expenseOps.forEach(r => {
+        totalExpense += Math.abs(r.сумма);
+        console.log(`  ${r.год} ${r.месяц}: ${r.статья}, сумма: ${r.сумма}`);
+    });
+    console.log(`ИТОГО СПИСАНИЙ: ${totalExpense.toFixed(2)}`);
+    
+    // Начальный остаток
+    const initialTotal = initialOps.reduce((sum, r) => sum + r.сумма, 0);
+    console.log(`Начальный остаток: ${initialTotal.toFixed(2)}`);
+    console.log(`Расчетный баланс: ${initialTotal + totalIncome - totalExpense}`);
+    
+    // Группировка по месяцам
+    const byMonth = {};
+    sberbankOps.forEach(r => {
+        if (r.статья === 'Начальный остаток') return;
+        const key = `${r.год}-${r.месяц}`;
+        if (!byMonth[key]) byMonth[key] = { income: 0, expense: 0, count: 0 };
+        byMonth[key].count++;
+        if (r.сумма > 0) byMonth[key].income += r.сумма;
+        else byMonth[key].expense += Math.abs(r.сумма);
+    });
+    
+    console.log('Операции по месяцам:');
+    Object.keys(byMonth).sort().forEach(key => {
+        const d = byMonth[key];
+        console.log(`  ${key}: ${d.count} опер., доход: ${d.income.toFixed(2)}, расход: ${d.expense.toFixed(2)}`);
+    });
+}
+
+diagnoseSberbank();
+
         async function loadFile(file) {
             try {
                 const data = await readExcelFile(file);
