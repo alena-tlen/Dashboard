@@ -1709,8 +1709,10 @@ if (document.readyState === 'loading') {
     const f = filters || currentFilters;
     if (!f) return data;
     return data.filter(row => {
-        // Начальные остатки и операции по счетам всегда показываем, независимо от фильтров
+        // Начальные остатки всегда показываем, независимо от фильтров
         if (row.статья === 'Начальный остаток') return true;
+        
+        // Операции по счетам показываем всегда (фильтрация происходит в calculateCashData)
         if (row.isCashOperation === true) return true;
         
         if (f.company && row.компания !== f.company) return false;
@@ -1971,61 +1973,169 @@ let accountsVisible = false;
 function calculateCashData() {
     // Собираем начальные остатки по счетам
     const initialBalances = {};
-    const transactions = {};
     const allAccounts = new Set();
     
-    // Проходим по всем данным
+    // Определяем выбранные месяцы и год для фильтрации
+    const selectedYear = currentFilters.year;
+    const selectedMonths = currentFilters.month || [];
+    
+    // Функция для проверки, попадает ли дата в выбранный период
+    function isDateInSelectedPeriod(year, month) {
+        if (!selectedYear && selectedMonths.length === 0) return true; // Все данные
+        if (!year || !month) return true; // Для начальных остатков и операций без даты
+        
+        const monthIndex = monthsOrder.indexOf(month);
+        if (monthIndex === -1) return true;
+        
+        // Если выбран год, но не выбраны месяцы - показываем все месяцы выбранного года
+        if (selectedYear && selectedMonths.length === 0) {
+            return year == selectedYear;
+        }
+        
+        // Если выбран год и конкретные месяцы
+        if (selectedYear && selectedMonths.length > 0) {
+            // Показываем только выбранные месяцы выбранного года
+            return year == selectedYear && selectedMonths.includes(month);
+        }
+        
+        return true;
+    }
+    
+    // Функция для проверки, попадает ли операция в период "до выбранного месяца"
+    // Для расчета накопленного баланса
+    function isDateBeforeSelectedPeriod(year, month) {
+        if (!selectedYear && selectedMonths.length === 0) return true;
+        if (!year || !month) return false;
+        
+        const monthIndex = monthsOrder.indexOf(month);
+        if (monthIndex === -1) return false;
+        
+        // Если выбран год, но не выбраны месяцы - показываем все месяцы до конца года
+        if (selectedYear && selectedMonths.length === 0) {
+            return year <= selectedYear;
+        }
+        
+        // Если выбран год и конкретные месяцы
+        if (selectedYear && selectedMonths.length > 0) {
+            // Находим самый ранний выбранный месяц
+            const selectedMonthIndices = selectedMonths.map(m => monthsOrder.indexOf(m)).filter(i => i !== -1);
+            const earliestMonthIndex = Math.min(...selectedMonthIndices);
+            
+            // Показываем все месяцы до самого раннего выбранного месяца в выбранном году
+            if (year < selectedYear) return true;
+            if (year == selectedYear && monthIndex <= earliestMonthIndex) return true;
+            return false;
+        }
+        
+        return false;
+    }
+    
+    // Проходим по всем данным для сбора начальных остатков
     currentData.forEach(row => {
         const article = row.статья || '';
         const amount = parseFloat(row.сумма) || 0;
         const account = row.Счет || row.счет || row['Счет'] || '';
+        const year = row.год;
+        const month = row.месяц;
         
         if (!account) return;
         
-        // Определяем тип операции
+        // Начальные остатки - всегда учитываем, независимо от фильтра
         if (article === 'Начальный остаток') {
             if (!initialBalances[account]) {
                 initialBalances[account] = 0;
             }
             initialBalances[account] += amount;
             allAccounts.add(account);
-        } 
-        // Поступления (положительные суммы)
-        else if (amount > 0 && (article.includes('Поступление') || article.includes('возврат') || article.includes('Оплата от покупателя') || article.includes('Перевод с другого счета') || article.includes('Получение займа'))) {
-            if (!transactions[account]) {
-                transactions[account] = { income: 0, expense: 0, incomeItems: [], expenseItems: [] };
-            }
-            transactions[account].income += amount;
-            transactions[account].incomeItems.push({ amount: amount, description: article });
-            allAccounts.add(account);
         }
-        // Списания (отрицательные суммы)
-        else if (amount < 0 || (article.includes('Списание') || article.includes('Оплата поставщику') || article.includes('Перевод на другой счет') || article.includes('Возврат покупателю') || article.includes('Уплата налога') || article.includes('Комиссия банка'))) {
-            const absAmount = Math.abs(amount);
-            if (!transactions[account]) {
-                transactions[account] = { income: 0, expense: 0, incomeItems: [], expenseItems: [] };
-            }
-            transactions[account].expense += absAmount;
-            transactions[account].expenseItems.push({ amount: absAmount, description: article });
-            allAccounts.add(account);
+    });
+    
+    // Структура для хранения накопленных доходов и расходов по счетам
+    const cumulativeIncome = {};
+    const cumulativeExpense = {};
+    const allTransactions = {}; // Для хранения всех транзакций для детализации
+    
+    // Сначала собираем ВСЕ операции по счетам (без фильтрации по дате)
+    // для расчета накопленного баланса
+    currentData.forEach(row => {
+        const article = row.статья || '';
+        const amount = parseFloat(row.сумма) || 0;
+        const account = row.Счет || row.счет || row['Счет'] || '';
+        const year = row.год;
+        const month = row.месяц;
+        
+        if (!account) return;
+        if (article === 'Начальный остаток') return;
+        
+        // Определяем тип операции
+        let isIncome = false;
+        let isExpense = false;
+        let absAmount = Math.abs(amount);
+        
+        // Поступления
+        if (amount > 0 && (article.includes('Поступление') || 
+            article.includes('возврат') || 
+            article.includes('Оплата от покупателя') || 
+            article.includes('Перевод с другого счета') || 
+            article.includes('Получение займа') ||
+            article === 'Поступление на расчетный счет')) {
+            isIncome = true;
         }
-        // Дополнительная проверка по типу статьи
-        else if (article === 'Поступление на расчетный счет' || article === 'Поступление на расчетный счет (возврат)') {
-            if (!transactions[account]) {
-                transactions[account] = { income: 0, expense: 0, incomeItems: [], expenseItems: [] };
-            }
-            transactions[account].income += amount;
-            transactions[account].incomeItems.push({ amount: amount, description: article });
-            allAccounts.add(account);
+        // Списания
+        else if (amount < 0 || (article.includes('Списание') || 
+            article.includes('Оплата поставщику') || 
+            article.includes('Перевод на другой счет') || 
+            article.includes('Возврат покупателю') || 
+            article.includes('Уплата налога') || 
+            article.includes('Комиссия банка') ||
+            article === 'Списание с расчетного счета')) {
+            isExpense = true;
+            absAmount = Math.abs(amount);
         }
-        else if (article === 'Списание с расчетного счета') {
-            const absAmount = Math.abs(amount);
-            if (!transactions[account]) {
-                transactions[account] = { income: 0, expense: 0, incomeItems: [], expenseItems: [] };
+        
+        // Сохраняем все транзакции для детализации (с учетом фильтра по дате)
+        if (!allTransactions[account]) {
+            allTransactions[account] = { incomeItems: [], expenseItems: [] };
+        }
+        
+        // Для детализации используем фильтр по выбранным месяцам
+        if (isDateInSelectedPeriod(year, month)) {
+            if (isIncome) {
+                allTransactions[account].incomeItems.push({ 
+                    amount: absAmount, 
+                    description: article,
+                    year: year,
+                    month: month
+                });
+            } else if (isExpense) {
+                allTransactions[account].expenseItems.push({ 
+                    amount: absAmount, 
+                    description: article,
+                    year: year,
+                    month: month
+                });
             }
-            transactions[account].expense += absAmount;
-            transactions[account].expenseItems.push({ amount: absAmount, description: article });
-            allAccounts.add(account);
+        }
+        
+        // Для расчета накопленного баланса используем все операции до выбранного периода
+        if (isDateBeforeSelectedPeriod(year, month)) {
+            if (isIncome) {
+                if (!cumulativeIncome[account]) cumulativeIncome[account] = 0;
+                cumulativeIncome[account] += absAmount;
+            } else if (isExpense) {
+                if (!cumulativeExpense[account]) cumulativeExpense[account] = 0;
+                cumulativeExpense[account] += absAmount;
+            }
+        }
+        // Также добавляем операции за выбранный период
+        else if (isDateInSelectedPeriod(year, month)) {
+            if (isIncome) {
+                if (!cumulativeIncome[account]) cumulativeIncome[account] = 0;
+                cumulativeIncome[account] += absAmount;
+            } else if (isExpense) {
+                if (!cumulativeExpense[account]) cumulativeExpense[account] = 0;
+                cumulativeExpense[account] += absAmount;
+            }
         }
     });
     
@@ -2035,8 +2145,8 @@ function calculateCashData() {
     
     for (const account of allAccounts) {
         const initial = initialBalances[account] || 0;
-        const income = transactions[account]?.income || 0;
-        const expense = transactions[account]?.expense || 0;
+        const income = cumulativeIncome[account] || 0;
+        const expense = cumulativeExpense[account] || 0;
         const balance = initial + income - expense;
         
         // Сокращаем название счета для отображения
@@ -2053,6 +2163,8 @@ function calculateCashData() {
         else if (account.includes('USD')) currency = 'USD';
         else if (account.includes('EUR')) currency = 'EUR';
         
+        const trans = allTransactions[account] || { incomeItems: [], expenseItems: [] };
+        
         accountBalances.push({
             fullName: account,
             name: shortName,
@@ -2061,8 +2173,8 @@ function calculateCashData() {
             expense: expense,
             initial: initial,
             currency: currency,
-            incomeItems: transactions[account]?.incomeItems || [],
-            expenseItems: transactions[account]?.expenseItems || []
+            incomeItems: trans.incomeItems,
+            expenseItems: trans.expenseItems
         });
         if (currency === 'RUB') totalBalance += balance;
     }
@@ -2071,7 +2183,8 @@ function calculateCashData() {
     accountBalances.sort((a, b) => b.balance - a.balance);
     
     console.log('Найдено счетов:', accountBalances.length);
-    console.log('Балансы:', accountBalances.map(a => ({ name: a.name, balance: a.balance, income: a.income, expense: a.expense })));
+    console.log('Фильтр:', { year: selectedYear, months: selectedMonths });
+    console.log('Балансы:', accountBalances.map(a => ({ name: a.name, balance: a.balance, income: a.income, expense: a.expense, initial: a.initial })));
     
     return { accountBalances, totalBalance };
 }
