@@ -1978,57 +1978,65 @@ function calculateCashData() {
     // Определяем выбранные месяцы и год для фильтрации
     const selectedYear = currentFilters.year;
     const selectedMonths = currentFilters.month || [];
+
+    console.log('=== ОТЛАДКА ФИЛЬТРА ===');
+    console.log('selectedYear:', selectedYear);
+    console.log('selectedMonths:', selectedMonths);
     
-    // Функция для проверки, попадает ли дата в выбранный период
-    function isDateInSelectedPeriod(year, month) {
-        if (!selectedYear && selectedMonths.length === 0) return true; // Все данные
-        if (!year || !month) return true; // Для начальных остатков и операций без даты
-        
-        const monthIndex = monthsOrder.indexOf(month);
-        if (monthIndex === -1) return true;
-        
-        // Если выбран год, но не выбраны месяцы - показываем все месяцы выбранного года
-        if (selectedYear && selectedMonths.length === 0) {
-            return year == selectedYear;
-        }
-        
-        // Если выбран год и конкретные месяцы
-        if (selectedYear && selectedMonths.length > 0) {
-            // Показываем только выбранные месяцы выбранного года
-            return year == selectedYear && selectedMonths.includes(month);
-        }
-        
-        return true;
+    // Функция для проверки, попадает ли дата в выбранный период (для детализации)
+function isDateInSelectedPeriod(year, month) {
+    if (!selectedYear && selectedMonths.length === 0) return true; // Все данные
+    
+    // Если год или месяц не указаны (начальные остатки, операции без даты)
+    if (!year || !month || year === 'cash' || month === 'cash') return true;
+    
+    const monthIndex = monthsOrder.indexOf(month);
+    if (monthIndex === -1) return true;
+    
+    // Если выбран год, но не выбраны месяцы - показываем все месяцы выбранного года
+    if (selectedYear && selectedMonths.length === 0) {
+        return year == selectedYear;
     }
     
-    // Функция для проверки, попадает ли операция в период "до выбранного месяца"
-    // Для расчета накопленного баланса
-    function isDateBeforeSelectedPeriod(year, month) {
-        if (!selectedYear && selectedMonths.length === 0) return true;
-        if (!year || !month) return false;
+    // Если выбран год и конкретные месяцы
+    if (selectedYear && selectedMonths.length > 0) {
+        // Показываем только выбранные месяцы выбранного года
+        return year == selectedYear && selectedMonths.includes(month);
+    }
+    
+    return true;
+}
+
+// Функция для проверки, попадает ли операция в период "до выбранного месяца"
+// Для расчета накопленного баланса
+function isDateBeforeSelectedPeriod(year, month) {
+    if (!selectedYear && selectedMonths.length === 0) return true; // Все данные
+    
+    // Если год или месяц не указаны - не учитываем в накоплении
+    if (!year || !month || year === 'cash' || month === 'cash') return false;
+    
+    const monthIndex = monthsOrder.indexOf(month);
+    if (monthIndex === -1) return false;
+    
+    // Если выбран год, но не выбраны месяцы - показываем все месяцы до конца года
+    if (selectedYear && selectedMonths.length === 0) {
+        return year < selectedYear;
+    }
+    
+    // Если выбран год и конкретные месяцы
+    if (selectedYear && selectedMonths.length > 0) {
+        // Находим самый ранний выбранный месяц
+        const selectedMonthIndices = selectedMonths.map(m => monthsOrder.indexOf(m)).filter(i => i !== -1);
+        const earliestMonthIndex = Math.min(...selectedMonthIndices);
         
-        const monthIndex = monthsOrder.indexOf(month);
-        if (monthIndex === -1) return false;
-        
-        // Если выбран год, но не выбраны месяцы - показываем все месяцы до конца года
-        if (selectedYear && selectedMonths.length === 0) {
-            return year <= selectedYear;
-        }
-        
-        // Если выбран год и конкретные месяцы
-        if (selectedYear && selectedMonths.length > 0) {
-            // Находим самый ранний выбранный месяц
-            const selectedMonthIndices = selectedMonths.map(m => monthsOrder.indexOf(m)).filter(i => i !== -1);
-            const earliestMonthIndex = Math.min(...selectedMonthIndices);
-            
-            // Показываем все месяцы до самого раннего выбранного месяца в выбранном году
-            if (year < selectedYear) return true;
-            if (year == selectedYear && monthIndex <= earliestMonthIndex) return true;
-            return false;
-        }
-        
+        // Показываем все месяцы ДО самого раннего выбранного месяца в выбранном году
+        if (year < selectedYear) return true;
+        if (year == selectedYear && monthIndex < earliestMonthIndex) return true;
         return false;
     }
+    
+    return false;
+}
     
     // Проходим по всем данным для сбора начальных остатков
     currentData.forEach(row => {
@@ -2093,13 +2101,20 @@ function calculateCashData() {
             absAmount = Math.abs(amount);
         }
         
-        // Сохраняем все транзакции для детализации (с учетом фильтра по дате)
+                // Сохраняем все транзакции для детализации (с учетом фильтра по дате)
         if (!allTransactions[account]) {
             allTransactions[account] = { incomeItems: [], expenseItems: [] };
         }
         
         // Для детализации используем фильтр по выбранным месяцам
-        if (isDateInSelectedPeriod(year, month)) {
+        const inSelected = isDateInSelectedPeriod(year, month);
+        
+        // Отладка для марта 2026
+        if (year === '2026' && month === 'март') {
+            console.log(`Операция за март: статья="${article}", сумма=${amount}, счет="${account}", inSelected=${inSelected}, year=${year}, month=${month}, isIncome=${isIncome}, isExpense=${isExpense}`);
+        }
+        
+        if (inSelected) {
             if (isIncome) {
                 allTransactions[account].incomeItems.push({ 
                     amount: absAmount, 
