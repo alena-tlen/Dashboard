@@ -5219,6 +5219,15 @@ setTimeout(() => {
     }
 }, 100);
 
+// ДОБАВЬТЕ ЭТОТ БЛОК:
+setTimeout(() => {
+    renderNetRevenueMiniChart();
+}, 100);
+
+setTimeout(() => {
+    renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
+}, 150);
+
 // Отрисовка основного графика - передаем данные как параметры
 setTimeout(() => {
     renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
@@ -5621,25 +5630,33 @@ console.log('costData:', costData);
                             <div style="padding-top: 16px;">${generateProfitByChannels(f, revenueChannelsList, expenseChannelsList, calculateNetRevenueByChannel(currentData))}</div>
                         </div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 18px;">📊</span>
-                                <span>Эффективность</span>
-                            </div>
-                            <button class="toggle-efficiency-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-                                <span>▶</span> Показать по каналам
-                            </button>
-                        </div>
-                        <div>
-                            <div class="metric-value" id="mainEfficiencyValue">${(f.profit / (f.totalExpenses || 1)).toFixed(2)} ₽</div>
-                            ${efficiencyChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(efficiencyChange)}</span>` : ''}
-                        </div>
-                        <div class="metric-sub">прибыли на 1 рубль расходов</div>
-                        <div class="efficiency-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
-                            <div style="padding-top: 16px;">${generateEfficiencyBreakdown(currentData)}</div>
-                        </div>
-                    </div>
+                    // Найдите в коде блок "Выручка чистая" (примерно строка 10500-10530) и замените его на:
+
+<div class="metric-card">
+    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📊</span>
+            <span>Выручка чистая</span>
+        </div>
+        <button class="toggle-breakdown-btn" data-type="netRevenue" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
+            <span>▶</span> Показать по каналам
+        </button>
+    </div>
+    <div>
+        <div class="metric-value" id="mainNetRevenueValue">${formatCurrency(f.netRevenue)}</div>
+        ${netRevenueChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(netRevenueChange)}</span>` : ''}
+    </div>
+    
+    <!-- ГРАФИК как в блоке расходов -->
+    <div class="revenue-chart-wrapper" style="margin-top: 16px;">
+        <div class="chart-gradient-overlay"></div>
+        <canvas id="netRevenueMiniChart" style="height: 100px; width: 100%; display: block; margin: 0; padding: 0;"></canvas>
+    </div>
+    
+    <div class="netrevenue-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+        <div style="padding-top: 16px;">${generateChannelBreakdown('ВЫРУЧКА ЧИСТАЯ ПО КАНАЛАМ', 'value', calculateNetRevenueByChannel(currentData), true, '')}</div>
+    </div>
+</div>
                 </div>
                 <div class="metrics-grid" style="margin-top: 24px;">
                     <div class="metric-card">
@@ -6283,6 +6300,129 @@ const costData = currentData
         `;
         document.getElementById(`channel${channelKey.charAt(0).toUpperCase() + channelKey.slice(1)}Metrics`).innerHTML = content;
     }
+
+// Добавьте эту функцию после других render функций
+let netRevenueMiniChart = null;
+
+function renderNetRevenueMiniChart() {
+    const canvas = document.getElementById('netRevenueMiniChart');
+    if (!canvas) return;
+    
+    // Собираем данные по месяцам для чистой выручки
+    const monthlyNetRevenue = {};
+    currentData.forEach(d => {
+        if (d.месяц && d.год) {
+            const monthIndex = monthsOrder.indexOf(d.месяц);
+            if (monthIndex === -1) return;
+            const key = `${d.год}-${monthIndex}`;
+            if (!monthlyNetRevenue[key]) {
+                monthlyNetRevenue[key] = { revenue: 0, ndsOut: 0, year: d.год, month: d.месяц, monthIndex: monthIndex };
+            }
+            if (d.тип === 'Доход') {
+                monthlyNetRevenue[key].revenue += d.сумма;
+            } else if (d.статья === 'НДС' && d.подканал === 'НДС исходящий') {
+                monthlyNetRevenue[key].ndsOut += d.сумма;
+            }
+        }
+    });
+    
+    // Сортируем по дате
+    const sortedMonths = Object.keys(monthlyNetRevenue).sort();
+    const labels = sortedMonths.map(key => {
+        const data = monthlyNetRevenue[key];
+        return `${data.month} ${data.year}`;
+    });
+    const netRevenueData = sortedMonths.map(key => {
+        const data = monthlyNetRevenue[key];
+        return (data.revenue - data.ndsOut) / 1000; // в тысячах
+    });
+    
+    if (labels.length === 0 || netRevenueData.length === 0) return;
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    const areaColor = isDarkMode ? 'rgba(102,126,234,0.08)' : 'rgba(102,126,234,0.05)';
+    const lineColor = '#667eea';
+    
+    if (netRevenueMiniChart) {
+        netRevenueMiniChart.destroy();
+        netRevenueMiniChart = null;
+    }
+    
+    netRevenueMiniChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '',
+                data: netRevenueData,
+                borderColor: lineColor,
+                backgroundColor: areaColor,
+                borderWidth: 2,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointBackgroundColor: lineColor,
+                pointBorderColor: 'transparent',
+                pointBorderWidth: 0,
+                tension: 0.4,
+                fill: true,
+                cubicInterpolationMode: 'monotone'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
+                    titleColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    bodyColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    borderColor: lineColor,
+                    borderWidth: 1,
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].label;
+                        },
+                        label: function(context) {
+                            return `${context.parsed.y.toFixed(0)} тыс. ₽`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { 
+                    display: false,
+                    grid: { display: false },
+                    ticks: { display: false }
+                },
+                y: { 
+                    display: false,
+                    grid: { display: false },
+                    ticks: { display: false }
+                }
+            },
+            elements: {
+                line: { tension: 0.4 },
+                point: { hoverRadius: 6, radius: 0 }
+            },
+            layout: {
+                padding: { top: 5, bottom: 5, left: 5, right: 5 }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+}
     
     // Добавьте этот код в консоль браузера после загрузки файла
 function diagnoseSberbank() {
@@ -6499,6 +6639,7 @@ diagnoseSberbank();
             });
             renderDashboard();
             renderCashBlock();
+            renderNetRevenueMiniChart();
             if (currentChannel) renderChannelPage(currentChannel);
         };
         
