@@ -1935,8 +1935,6 @@ let accountsVisible = false;
 
 // ========== ИСПРАВЛЕННЫЙ РАСЧЕТ ДЕНЕЖНЫХ СРЕДСТВ ==========
 
-// ========== ИСПРАВЛЕННЫЙ РАСЧЕТ ДЕНЕЖНЫХ СРЕДСТВ ==========
-
 function calculateCashData() {
     // Собираем начальные остатки по счетам
     const initialBalances = {};
@@ -1948,24 +1946,22 @@ function calculateCashData() {
     // Если фильтры не выбраны - используем все данные
     const isNoFilters = !selectedYear && selectedMonths.length === 0;
     
-    // Находим самый поздний выбранный месяц (для отображения остатка на конец периода)
+    // Находим индекс самого позднего выбранного месяца
     let latestMonthIndex = -1;
-    let latestMonth = '';
     for (const month of selectedMonths) {
         const idx = monthsOrder.indexOf(month);
         if (idx !== -1 && idx > latestMonthIndex) {
             latestMonthIndex = idx;
-            latestMonth = month;
         }
     }
     
-    // Функция: попадает ли операция в период "до или включая выбранный"
-    // (для расчета накопленного баланса на конец выбранного периода)
-    function isDateOnOrBeforeSelected(year, month) {
-        // Если фильтры не выбраны - показываем все данные
+    // Функция: проверяет, должна ли операция учитываться в балансе
+    // (операции ДО или В ТЕЧЕНИЕ выбранного периода)
+    function shouldIncludeInBalance(year, month) {
+        // Если фильтры не выбраны - включаем все
         if (isNoFilters) return true;
         
-        // Если год или месяц не указаны - не учитываем
+        // Если год или месяц не указаны - не включаем (это данные без даты)
         if (!year || !month || year === '' || month === '') return false;
         
         const yearNum = parseInt(year);
@@ -1975,14 +1971,14 @@ function calculateCashData() {
         const monthIndex = monthsOrder.indexOf(month);
         if (monthIndex === -1) return false;
         
-        // Если выбран год, но не выбраны месяцы - показываем все месяцы ДО конца выбранного года
+        // Если выбран год, но не выбраны месяцы - включаем все месяцы выбранного года
         if (selectedYear && selectedMonths.length === 0) {
             return yearNum <= selectedYearNum;
         }
         
         // Если выбран год и конкретные месяцы
         if (selectedYear && selectedMonths.length > 0) {
-            // Показываем все операции ДО самого позднего выбранного месяца ВКЛЮЧИТЕЛЬНО
+            // Включаем все операции ДО самого позднего выбранного месяца ВКЛЮЧИТЕЛЬНО
             if (yearNum < selectedYearNum) return true;
             if (yearNum == selectedYearNum && monthIndex <= latestMonthIndex) return true;
             return false;
@@ -1991,8 +1987,8 @@ function calculateCashData() {
         return false;
     }
     
-    // Функция: попадает ли операция ТОЛЬКО в выбранный период (для детализации)
-    function isDateExactlyInSelected(year, month) {
+    // Функция: проверяет, попадает ли операция ТОЛЬКО в выбранный период (для детализации)
+    function shouldShowInDetails(year, month) {
         if (isNoFilters) return true;
         if (!year || !month || year === '' || month === '') return false;
         
@@ -2011,15 +2007,16 @@ function calculateCashData() {
         return false;
     }
     
-    // Используем ВСЕ исходные данные (originalData), а не отфильтрованные
+    // Используем ВСЕ исходные данные (originalData) для расчета баланса
     const allData = originalData.length > 0 ? originalData : currentData;
     
     console.log('=== calculateCashData ===');
     console.log('selectedYear:', selectedYear);
     console.log('selectedMonths:', selectedMonths);
+    console.log('latestMonthIndex:', latestMonthIndex);
     console.log('Всего записей:', allData.length);
     
-    // Собираем начальные остатки (всегда учитываем, независимо от фильтра)
+    // 1. Собираем начальные остатки (всегда учитываем)
     allData.forEach(row => {
         const article = row.статья || '';
         const amount = parseFloat(row.сумма) || 0;
@@ -2033,7 +2030,7 @@ function calculateCashData() {
             }
             initialBalances[account] += amount;
             allAccounts.add(account);
-            console.log(`Начальный остаток: ${account.substring(0, 30)}... = ${amount.toFixed(2)}`);
+            console.log(`Начальный остаток: ${account.substring(0, 40)}... = ${amount.toFixed(2)}`);
         }
     });
     
@@ -2042,7 +2039,7 @@ function calculateCashData() {
     const cumulativeExpense = {};
     const allTransactions = {};
     
-    // Собираем операции
+    // 2. Собираем все операции по счетам
     allData.forEach(row => {
         const article = row.статья || '';
         const amount = parseFloat(row.сумма) || 0;
@@ -2054,29 +2051,29 @@ function calculateCashData() {
         if (article === 'Начальный остаток') return;
         if (amount === 0) return;
         
-        // Преобразуем год и месяц в строки
+        // Преобразуем в строки для сравнения
         if (year !== undefined && year !== null) year = String(year);
         if (month !== undefined && month !== null) month = String(month);
         
-        // Определяем тип операции
+        // Определяем тип операции (поступление или списание)
         let isIncome = false;
         let isExpense = false;
         let absAmount = Math.abs(amount);
         
-        // Поступления (положительные суммы)
         if (amount > 0) {
             isIncome = true;
-        }
-        // Списания (отрицательные суммы)
-        else if (amount < 0) {
+        } else if (amount < 0) {
             isExpense = true;
+        } else {
+            return;
         }
         
-        const onOrBefore = isDateOnOrBeforeSelected(year, month);
-        const exactlyIn = isDateExactlyInSelected(year, month);
+        // Проверяем, нужно ли учитывать в балансе
+        const includeInBalance = shouldIncludeInBalance(year, month);
+        const includeInDetails = shouldShowInDetails(year, month);
         
-        // Для баланса: учитываем ВСЕ операции до и включая выбранный период
-        if (onOrBefore) {
+        // Для баланса: учитываем все операции ДО и ВКЛЮЧАЯ выбранный период
+        if (includeInBalance) {
             if (isIncome) {
                 if (!cumulativeIncome[account]) cumulativeIncome[account] = 0;
                 cumulativeIncome[account] += absAmount;
@@ -2086,8 +2083,8 @@ function calculateCashData() {
             }
         }
         
-        // Для детализации: только выбранный период
-        if (exactlyIn) {
+        // Для детализации: только операции ЗА выбранный период
+        if (includeInDetails) {
             if (!allTransactions[account]) {
                 allTransactions[account] = { incomeItems: [], expenseItems: [] };
             }
@@ -2109,7 +2106,7 @@ function calculateCashData() {
         }
     });
     
-    // Рассчитываем итоговые балансы
+    // 3. Рассчитываем итоговые балансы
     const accountBalances = [];
     let totalBalance = 0;
     
@@ -2119,7 +2116,7 @@ function calculateCashData() {
         const expense = cumulativeExpense[account] || 0;
         const balance = initial + income - expense;
         
-        // Сокращаем название счета
+        // Сокращаем название счета для отображения
         let shortName = account;
         if (account.includes('ООО "ОЗОН Банк"')) shortName = 'Озон Банк';
         else if (account.includes('АЛЬФА-БАНК')) shortName = 'Альфа-Банк';
