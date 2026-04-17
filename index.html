@@ -1797,9 +1797,8 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 const workbook = XLSX.read(data, { type: 'array', cellFormula: false, cellText: false });
                 
                 const allProcessed = [];
-                const seenRows = new Set(); // для отслеживания дубликатов
+                const seenRows = new Set();
                 
-                // Читаем все листы
                 for (const sheetName of workbook.SheetNames) {
                     const sheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: true, blankrows: false });
@@ -1808,13 +1807,14 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         let company = row['компания'] || row['Компания'] || '';
                         let year = row['год'] || row['Год'] || '';
                         let month = row['месяц'] || row['Месяц'] || '';
+                        let day = row['число'] || row['Число'] || '';
                         let type = row['Статья'] || row['статья'] || '';
                         let channel = row['канал'] || row['Канал'] || '';
                         let subCategory = row['подканал'] || row['Подканал'] || '';
                         let amount = parseFloat(row['сумма'] || row['Сумма'] || 0);
                         let account = row['Счет'] || row['счет'] || '';
                         
-                        // Нормализуем компанию (убираем пробелы и приводим к единому регистру)
+                        // Нормализация
                         company = String(company).trim().toUpperCase();
                         year = String(year).trim();
                         month = String(month).trim().toLowerCase();
@@ -1848,10 +1848,10 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         else if (type === 'Получение займа от контрагента') mappedType = 'Справочная';
                         else if (type === 'Приобретение иностранной валюты') mappedType = 'Справочная';
                         
-                        // Если тип не определился, пропускаем
                         if (!mappedType) continue;
                         
-                        // Для начальных остатков - очищаем год/месяц, чтобы они всегда показывались
+                        // ВАЖНО: Для начальных остатков очищаем год/месяц
+                        // Для всех остальных операций ОСТАВЛЯЕМ год и месяц как есть
                         if (type === 'Начальный остаток') {
                             year = '';
                             month = '';
@@ -1912,16 +1912,15 @@ function renderAnimatedMiniChart(elementId, data, color) {
                     reject(new Error('Не найдено данных для анализа'));
                 } else {
                     console.log(`Загружено ${allProcessed.length} записей`);
-                    console.log('Уникальные компании:', [...new Set(allProcessed.map(r => r.компания))]);
-                    console.log('Годы:', [...new Set(allProcessed.map(r => r.год))].filter(y => y));
-                    console.log('Месяцы:', [...new Set(allProcessed.map(r => r.месяц))].filter(m => m));
                     
-                    // Проверка операций по счетам
+                    // Диагностика: выводим операции по счетам с датами
                     const cashOps = allProcessed.filter(r => r.Счет && r.статья !== 'Начальный остаток');
                     console.log('Операции по счетам с датами:');
                     cashOps.forEach(r => {
                         if (r.год && r.месяц) {
-                            console.log(`  ${r.год} ${r.месяц}: ${r.статья}, сумма: ${r.сумма}, счет: ${r.Счет?.substring(0, 30)}`);
+                            console.log(`  ${r.год} ${r.месяц}: ${r.статья}, сумма: ${r.сумма}`);
+                        } else {
+                            console.log(`  [БЕЗ ДАТЫ] ${r.статья}, сумма: ${r.сумма}`);
                         }
                     });
                     
