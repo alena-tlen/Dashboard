@@ -1637,6 +1637,8 @@ if (document.readyState === 'loading') {
         const f = filters || currentFilters;
         if (!f) return data;
         return data.filter(row => {
+            if (row.статья === 'Начальный остаток') return true;
+
             if (f.company && row.компания !== f.company) return false;
             if (f.year && row.год !== f.year) return false;
             if (f.month && f.month.length > 0 && !f.month.includes(row.месяц)) return false;
@@ -1835,8 +1837,13 @@ function calculateCashData() {
     currentData.forEach(row => {
         const article = row.статья || '';
         const amount = parseFloat(row.сумма) || 0;
-        const account = row.Счет || row.счет || '';
+        const account = row.Счет || row.счет || row['Счет'] || '';
         
+        // Отладка: показываем первые 5 строк с операциями по счетам
+        if (idx < 10 && (article === 'Начальный остаток' || article === 'Поступление на расчетный счет' || article === 'Списание с расчетного счета')) {
+            console.log(`Строка ${idx}: статья="${article}", сумма=${amount}, счет="${account}"`);
+        }
+
         if (!account) return;
         
         // Определяем тип операции
