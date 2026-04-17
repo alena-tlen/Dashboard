@@ -945,6 +945,27 @@ body.dark .sub-item {
     overflow-y: auto;
 }
 
+/* Фиксируем высоту карточек, чтобы они не зависели друг от друга */
+.metric-card {
+    height: auto !important;
+    min-height: 0 !important;
+    align-self: start !important; /* Важно: выравнивание по верхнему краю */
+}
+
+/* Контейнеры с каналами получают фиксированную максимальную высоту и прокрутку */
+.channels-revenue-container,
+.channels-expense-container {
+    max-height: 400px !important;
+    overflow-y: auto !important;
+    transition: max-height 0.3s ease-out !important;
+}
+
+.channels-revenue-container[style*="max-height: 0"],
+.channels-expense-container[style*="max-height: 0"] {
+    max-height: 0 !important;
+    overflow: hidden !important;
+}
+
 </style>
 </head>
 <body>
