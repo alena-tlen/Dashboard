@@ -1797,6 +1797,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 const workbook = XLSX.read(data, { type: 'array', cellFormula: false, cellText: false });
                 
                 const allProcessed = [];
+                const seenRows = new Set(); // для отслеживания дубликатов
                 
                 // Читаем все листы
                 for (const sheetName of workbook.SheetNames) {
@@ -1813,9 +1814,10 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         let amount = parseFloat(row['сумма'] || row['Сумма'] || 0);
                         let account = row['Счет'] || row['счет'] || '';
                         
-                        company = String(company).trim(); 
-                        year = String(year).trim(); 
-                        month = String(month).trim();
+                        // Нормализуем компанию (убираем пробелы и приводим к единому регистру)
+                        company = String(company).trim().toUpperCase();
+                        year = String(year).trim();
+                        month = String(month).trim().toLowerCase();
                         type = String(type).trim();
                         channel = String(channel).trim();
                         subCategory = String(subCategory).trim();
@@ -1823,6 +1825,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         
                         // Пропускаем пустые строки
                         if (!type && !account) continue;
+                        if (amount === 0 && type !== 'Начальный остаток') continue;
                         
                         // Определяем тип записи
                         let mappedType = '';
@@ -1837,15 +1840,30 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         else if (type === 'Уплата налога') mappedType = 'Справочная';
                         else if (type === 'Перечисление подотчетному лицу') mappedType = 'Справочная';
                         else if (type === 'Комиссия банка') mappedType = 'Справочная';
+                        else if (type === 'Оплата поставщику') mappedType = 'Справочная';
+                        else if (type === 'Оплата от покупателя') mappedType = 'Справочная';
+                        else if (type === 'Возврат покупателю') mappedType = 'Справочная';
+                        else if (type === 'Перевод с другого счета') mappedType = 'Справочная';
+                        else if (type === 'Перевод на другой счет организации') mappedType = 'Справочная';
+                        else if (type === 'Получение займа от контрагента') mappedType = 'Справочная';
+                        else if (type === 'Приобретение иностранной валюты') mappedType = 'Справочная';
                         
-                        // Для строк без года/месяца (начальные остатки) оставляем пустыми
-                        if (!year && type === 'Начальный остаток') {
+                        // Если тип не определился, пропускаем
+                        if (!mappedType) continue;
+                        
+                        // Для начальных остатков - очищаем год/месяц, чтобы они всегда показывались
+                        if (type === 'Начальный остаток') {
                             year = '';
                             month = '';
                         }
                         
-                        // Если тип не определился, пропускаем
-                        if (!mappedType && !type) continue;
+                        // Создаем уникальный ключ для проверки дубликатов
+                        const uniqueKey = `${company}|${year}|${month}|${type}|${channel}|${subCategory}|${amount}|${account}`;
+                        if (seenRows.has(uniqueKey)) {
+                            console.log('Пропущен дубликат:', uniqueKey);
+                            continue;
+                        }
+                        seenRows.add(uniqueKey);
                         
                         allProcessed.push({ 
                             компания: company || 'A', 
@@ -1861,7 +1879,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                     }
                 }
                 
-                // Обработка НДС (только для данных с типом НДС)
+                // Обработка НДС
                 const ndsPairs = new Map();
                 for (const row of allProcessed) {
                     if (row.статья === 'НДС' && (row.подканал === 'НДС исходящий' || row.подканал === 'НДС входящий')) {
@@ -1877,8 +1895,15 @@ function renderAnimatedMiniChart(elementId, data, color) {
                     if (calculatedNds !== 0) {
                         const [company, year, month, channel] = key.split('|');
                         allProcessed.push({
-                            компания: company, год: year, месяц: month, статья: 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ',
-                            канал: channel, подканал: 'НДС', тип: 'НДС', сумма: calculatedNds
+                            компания: company, 
+                            год: year, 
+                            месяц: month, 
+                            статья: 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ',
+                            канал: channel, 
+                            подканал: 'НДС', 
+                            тип: 'НДС', 
+                            сумма: calculatedNds,
+                            Счет: ''
                         });
                     }
                 }
@@ -1886,12 +1911,31 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 if (allProcessed.length === 0) {
                     reject(new Error('Не найдено данных для анализа'));
                 } else {
-                    console.log(`Загружено ${allProcessed.length} записей из листов: ${workbook.SheetNames.join(', ')}`);
+                    console.log(`Загружено ${allProcessed.length} записей`);
+                    console.log('Уникальные компании:', [...new Set(allProcessed.map(r => r.компания))]);
+                    console.log('Годы:', [...new Set(allProcessed.map(r => r.год))].filter(y => y));
+                    console.log('Месяцы:', [...new Set(allProcessed.map(r => r.месяц))].filter(m => m));
+                    
+                    // Проверка операций по счетам
+                    const cashOps = allProcessed.filter(r => r.Счет && r.статья !== 'Начальный остаток');
+                    console.log('Операции по счетам с датами:');
+                    cashOps.forEach(r => {
+                        if (r.год && r.месяц) {
+                            console.log(`  ${r.год} ${r.месяц}: ${r.статья}, сумма: ${r.сумма}, счет: ${r.Счет?.substring(0, 30)}`);
+                        }
+                    });
+                    
                     resolve(allProcessed);
                 }
-            } catch (error) { reject(error); }
+            } catch (error) { 
+                console.error('Ошибка при чтении файла:', error);
+                reject(error); 
+            }
         };
-        reader.onerror = (error) => { reject(error); };
+        reader.onerror = (error) => { 
+            console.error('Ошибка FileReader:', error);
+            reject(error); 
+        };
         reader.readAsArrayBuffer(file);
     });
 }
@@ -1935,6 +1979,10 @@ let accountsVisible = false;
 
 // ========== ИСПРАВЛЕННЫЙ РАСЧЕТ ДЕНЕЖНЫХ СРЕДСТВ ==========
 
+// ========== ИСПРАВЛЕННЫЙ РАСЧЕТ ДЕНЕЖНЫХ СРЕДСТВ ==========
+
+// ========== ИСПРАВЛЕННЫЙ РАСЧЕТ ДЕНЕЖНЫХ СРЕДСТВ ==========
+
 function calculateCashData() {
     // Собираем начальные остатки по счетам
     const initialBalances = {};
@@ -1956,12 +2004,8 @@ function calculateCashData() {
     }
     
     // Функция: проверяет, должна ли операция учитываться в балансе
-    // (операции ДО или В ТЕЧЕНИЕ выбранного периода)
     function shouldIncludeInBalance(year, month) {
-        // Если фильтры не выбраны - включаем все
         if (isNoFilters) return true;
-        
-        // Если год или месяц не указаны - не включаем (это данные без даты)
         if (!year || !month || year === '' || month === '') return false;
         
         const yearNum = parseInt(year);
@@ -1971,19 +2015,15 @@ function calculateCashData() {
         const monthIndex = monthsOrder.indexOf(month);
         if (monthIndex === -1) return false;
         
-        // Если выбран год, но не выбраны месяцы - включаем все месяцы выбранного года
         if (selectedYear && selectedMonths.length === 0) {
             return yearNum <= selectedYearNum;
         }
         
-        // Если выбран год и конкретные месяцы
         if (selectedYear && selectedMonths.length > 0) {
-            // Включаем все операции ДО самого позднего выбранного месяца ВКЛЮЧИТЕЛЬНО
             if (yearNum < selectedYearNum) return true;
             if (yearNum == selectedYearNum && monthIndex <= latestMonthIndex) return true;
             return false;
         }
-        
         return false;
     }
     
@@ -2003,7 +2043,6 @@ function calculateCashData() {
         if (selectedYear && selectedMonths.length > 0) {
             return yearNum == selectedYearNum && selectedMonths.includes(month);
         }
-        
         return false;
     }
     
@@ -2051,11 +2090,10 @@ function calculateCashData() {
         if (article === 'Начальный остаток') return;
         if (amount === 0) return;
         
-        // Преобразуем в строки для сравнения
         if (year !== undefined && year !== null) year = String(year);
         if (month !== undefined && month !== null) month = String(month);
         
-        // Определяем тип операции (поступление или списание)
+        // Определяем тип операции
         let isIncome = false;
         let isExpense = false;
         let absAmount = Math.abs(amount);
@@ -2064,15 +2102,30 @@ function calculateCashData() {
             isIncome = true;
         } else if (amount < 0) {
             isExpense = true;
-        } else {
-            return;
         }
         
-        // Проверяем, нужно ли учитывать в балансе
+        // Дополнительная проверка для статей-расходов с положительной суммой
+        if (amount > 0 && (
+            article.includes('Списание') || 
+            article.includes('Оплата поставщику') || 
+            article.includes('Перечисление') ||
+            article.includes('Уплата') ||
+            article.includes('Комиссия')
+        )) {
+            isIncome = false;
+            isExpense = true;
+        }
+        
+        // Возвраты (отрицательная сумма) - это доход
+        if (amount < 0 && (article.includes('Возврат') || article.includes('возврат'))) {
+            isIncome = true;
+            isExpense = false;
+            absAmount = Math.abs(amount);
+        }
+        
         const includeInBalance = shouldIncludeInBalance(year, month);
         const includeInDetails = shouldShowInDetails(year, month);
         
-        // Для баланса: учитываем все операции ДО и ВКЛЮЧАЯ выбранный период
         if (includeInBalance) {
             if (isIncome) {
                 if (!cumulativeIncome[account]) cumulativeIncome[account] = 0;
@@ -2083,7 +2136,6 @@ function calculateCashData() {
             }
         }
         
-        // Для детализации: только операции ЗА выбранный период
         if (includeInDetails) {
             if (!allTransactions[account]) {
                 allTransactions[account] = { incomeItems: [], expenseItems: [] };
@@ -2116,7 +2168,6 @@ function calculateCashData() {
         const expense = cumulativeExpense[account] || 0;
         const balance = initial + income - expense;
         
-        // Сокращаем название счета для отображения
         let shortName = account;
         if (account.includes('ООО "ОЗОН Банк"')) shortName = 'Озон Банк';
         else if (account.includes('АЛЬФА-БАНК')) shortName = 'Альфа-Банк';
@@ -2128,7 +2179,6 @@ function calculateCashData() {
             if (account.length > 35) shortName += '...';
         }
         
-        // Определяем валюту
         let currency = 'RUB';
         if (account.includes('CNY')) currency = 'CNY';
         else if (account.includes('USD')) currency = 'USD';
@@ -2136,7 +2186,6 @@ function calculateCashData() {
         
         const trans = allTransactions[account] || { incomeItems: [], expenseItems: [] };
         
-        // Добавляем счет, если есть баланс или операции
         if (balance !== 0 || trans.incomeItems.length > 0 || trans.expenseItems.length > 0) {
             accountBalances.push({
                 fullName: account,
@@ -2153,10 +2202,8 @@ function calculateCashData() {
         if (currency === 'RUB') totalBalance += balance;
     }
     
-    // Сортируем по убыванию баланса
     accountBalances.sort((a, b) => b.balance - a.balance);
     
-    // Формируем текстовое описание периода
     let periodText = '';
     if (selectedYear && selectedMonths.length > 0) {
         periodText = `на конец ${selectedMonths.join(', ')} ${selectedYear} г.`;
@@ -2189,7 +2236,7 @@ function renderCashBlock() {
         return;
     }
     
-    const { accountBalances, totalBalance } = calculateCashData();
+    const { accountBalances, totalBalance, periodText } = calculateCashData();
     
     if (accountBalances.length === 0) {
         cashTotalCard.innerHTML = '<div class="cash-loading">💰 Нет данных по счетам</div>';
@@ -2197,7 +2244,6 @@ function renderCashBlock() {
         return;
     }
     
-    // Форматируем сумму с валютой
     function formatCash(value, currency = 'RUB') {
         const formatter = new Intl.NumberFormat('ru-RU', { 
             minimumFractionDigits: value % 1 !== 0 ? 2 : 0,
@@ -2207,23 +2253,19 @@ function renderCashBlock() {
         return `${formatter.format(Math.abs(value))} ${symbol}`;
     }
     
-    // Определяем цвет баланса
     function getBalanceColor(value) {
         if (value > 0) return '#48bb78';
         if (value < 0) return '#f56565';
         return '#a0aec0';
     }
     
-    // Находим максимальный баланс для прогресс-бара
     const maxBalance = Math.max(...accountBalances.map(a => Math.abs(a.balance)), 1);
     
-    // Генерируем HTML для каждого счета
     const accountsHtml = accountBalances.map((account, idx) => {
         const percent = (Math.abs(account.balance) / maxBalance) * 100;
         const balanceColor = getBalanceColor(account.balance);
         const balanceFormatted = formatCash(account.balance, account.currency);
         
-        // Генерируем детали поступлений и списаний
         const incomeItemsHtml = account.incomeItems.map(item => `
             <div class="cash-detail-row">
                 <span>📈 ${item.description}</span>
@@ -2254,21 +2296,26 @@ function renderCashBlock() {
                 </div>
                 <div class="cash-account-details">
                     <div style="margin-bottom: 8px; font-size: 11px; font-weight: 600; color: #667eea;">Детали операций:</div>
-                    ${incomeItemsHtml}
-                    ${expenseItemsHtml}
+                    ${incomeItemsHtml || '<div class="cash-detail-row"><span>—</span><span>нет поступлений</span></div>'}
+                    ${expenseItemsHtml || '<div class="cash-detail-row"><span>—</span><span>нет списаний</span></div>'}
+                    <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(102,126,234,0.1); font-size: 10px; opacity: 0.6;">
+                        Начальный остаток: ${formatCash(account.initial, account.currency)}<br>
+                        Доходы: +${formatCash(account.income, account.currency)}<br>
+                        Расходы: -${formatCash(account.expense, account.currency)}
+                    </div>
                 </div>
             </div>
         `;
     }).join('');
     
-    // Общая сумма (только RUB счета)
     const totalFormatted = formatCash(totalBalance, 'RUB');
     const totalColor = getBalanceColor(totalBalance);
     
     const totalHtml = `
-        <div style="font-size: 11px; opacity: 0.7; margin-bottom: 4px;">Общий остаток (RUB)</div>
+        <div style="font-size: 11px; opacity: 0.7; margin-bottom: 4px;">💰 Общий остаток (RUB)</div>
         <div class="cash-total-value" id="cashTotalValue" style="color: ${totalColor};">${totalFormatted}</div>
         <div style="font-size: 10px; opacity: 0.5; margin-top: 6px;">${accountBalances.length} ${declension(accountBalances.length, 'счет', 'счета', 'счетов')}</div>
+        <div style="font-size: 10px; opacity: 0.4; margin-top: 8px;">📅 ${periodText}</div>
     `;
     
     cashTotalCard.innerHTML = totalHtml;
@@ -2284,7 +2331,7 @@ function renderCashBlock() {
         });
     }, 100);
     
-    // Добавляем обработчики кликов для раскрытия деталей счетов (по клику на счет)
+    // Обработчики кликов для раскрытия деталей счетов
     setTimeout(() => {
         document.querySelectorAll('.cash-account-item').forEach(item => {
             const details = item.querySelector('.cash-account-details');
@@ -2295,7 +2342,6 @@ function renderCashBlock() {
                     if (details.classList.contains('show')) {
                         details.classList.remove('show');
                     } else {
-                        // Закрываем все другие открытые детали
                         document.querySelectorAll('.cash-account-details.show').forEach(d => {
                             d.classList.remove('show');
                         });
@@ -2323,7 +2369,6 @@ function toggleAccountsVisibility() {
             if (toggleIcon) toggleIcon.classList.add('rotated');
             if (toggleBtn) toggleBtn.innerHTML = '<span class="toggle-icon-cash">▼</span> Скрыть все счета';
             
-            // Анимация появления элементов
             const items = accountsList.querySelectorAll('.cash-account-item');
             items.forEach((item, i) => {
                 setTimeout(() => {
@@ -6346,15 +6391,19 @@ const costData = currentData
         };
         
         function updateFilters() {
-            const companies = [...new Set(originalData.map(d => d.компания))];
-            const years = [...new Set(originalData.map(d => d.год))].sort();
-            const months = [...new Set(originalData.map(d => d.месяц))].sort((a, b) => monthsOrder.indexOf(a) - monthsOrder.indexOf(b));
-            companyFilter.innerHTML = '<option value="">Все компании</option>' + companies.map(c => `<option value="${c}">${c}</option>`).join('');
-            yearFilter.innerHTML = '<option value="">Все годы</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
-            monthFilter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
-            monthFilter.setAttribute('multiple', 'multiple');
-            monthFilter.size = 4;
-        }
+    // Приводим все компании к единому виду
+    const companies = [...new Set(originalData.map(d => d.компания))].filter(c => c);
+    const years = [...new Set(originalData.map(d => d.год))].filter(y => y && y !== '').sort();
+    const months = [...new Set(originalData.map(d => d.месяц))].filter(m => m && m !== '').sort((a, b) => monthsOrder.indexOf(a) - monthsOrder.indexOf(b));
+    
+    companyFilter.innerHTML = '<option value="">Все компании</option>' + companies.map(c => `<option value="${c}">${c}</option>`).join('');
+    yearFilter.innerHTML = '<option value="">Все годы</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+    monthFilter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+    monthFilter.setAttribute('multiple', 'multiple');
+    monthFilter.size = 4;
+    
+    console.log('Фильтры обновлены:', { companies, years, months });
+}
         
         const debouncedApply = () => {
             currentFilters.company = companyFilter.value;
