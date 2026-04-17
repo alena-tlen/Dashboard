@@ -1706,17 +1706,19 @@ if (document.readyState === 'loading') {
     }
     
     function applyFilters(data, filters = null) {
-        const f = filters || currentFilters;
-        if (!f) return data;
-        return data.filter(row => {
-            if (row.статья === 'Начальный остаток') return true;
-
-            if (f.company && row.компания !== f.company) return false;
-            if (f.year && row.год !== f.year) return false;
-            if (f.month && f.month.length > 0 && !f.month.includes(row.месяц)) return false;
-            return true;
-        });
-    }
+    const f = filters || currentFilters;
+    if (!f) return data;
+    return data.filter(row => {
+        // Начальные остатки и операции по счетам всегда показываем, независимо от фильтров
+        if (row.статья === 'Начальный остаток') return true;
+        if (row.isCashOperation === true) return true;
+        
+        if (f.company && row.компания !== f.company) return false;
+        if (f.year && row.год !== f.year) return false;
+        if (f.month && f.month.length > 0 && !f.month.includes(row.месяц)) return false;
+        return true;
+    });
+}
     
     function renderMiniChart(elementId, data, color) {
         if (!data || data.length === 0) return;
@@ -1824,28 +1826,59 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         // Пропускаем пустые строки
                         if (!type && !account) continue;
                         
-                        // Определяем тип записи
+                        // Для строк с типом "Начальный остаток" - заполняем служебные поля
                         let mappedType = '';
+                        let isCashOperation = false;
+                        
                         if (type === 'Доход') mappedType = 'Доход';
                         else if (type === 'Расход') mappedType = 'Расход';
                         else if (type === 'НДС') mappedType = 'НДС';
                         else if (type === 'Справочно') mappedType = 'Справочная';
-                        else if (type === 'Начальный остаток') mappedType = 'Справочная';
-                        else if (type === 'Поступление на расчетный счет') mappedType = 'Справочная';
-                        else if (type === 'Списание с расчетного счета') mappedType = 'Справочная';
-                        else if (type === 'Перечисление заработной платы по ведомостям') mappedType = 'Справочная';
-                        else if (type === 'Уплата налога') mappedType = 'Справочная';
-                        else if (type === 'Перечисление подотчетному лицу') mappedType = 'Справочная';
-                        else if (type === 'Комиссия банка') mappedType = 'Справочная';
-                        
-                        // Для строк без года/месяца (начальные остатки) оставляем пустыми
-                        if (!year && type === 'Начальный остаток') {
+                        else if (type === 'Начальный остаток') {
+                            mappedType = 'Справочная';
+                            isCashOperation = true;
+                            // Для начальных остатков не применяем фильтры по году/месяцу
                             year = '';
                             month = '';
                         }
+                        else if (type === 'Поступление на расчетный счет' || type === 'Поступление на расчетный счет (возврат)') {
+                            mappedType = 'Справочная';
+                            isCashOperation = true;
+                        }
+                        else if (type === 'Списание с расчетного счета') {
+                            mappedType = 'Справочная';
+                            isCashOperation = true;
+                        }
+                        else if (type === 'Перечисление заработной платы по ведомостям') {
+                            mappedType = 'Справочная';
+                            isCashOperation = true;
+                        }
+                        else if (type === 'Уплата налога') {
+                            mappedType = 'Справочная';
+                            isCashOperation = true;
+                        }
+                        else if (type === 'Перечисление подотчетному лицу') {
+                            mappedType = 'Справочная';
+                            isCashOperation = true;
+                        }
+                        else if (type === 'Комиссия банка') {
+                            mappedType = 'Справочная';
+                            isCashOperation = true;
+                        }
+                        else if (type === 'Оплата поставщику' || type === 'Оплата от покупателя') {
+                            mappedType = 'Справочная';
+                            isCashOperation = true;
+                        }
                         
                         // Если тип не определился, пропускаем
-                        if (!mappedType && !type) continue;
+                        if (!mappedType) continue;
+                        
+                        // Для операций по счетам, у которых нет года/месяца, ставим специальные значения
+                        // чтобы они не отфильтровывались
+                        if (isCashOperation && !year) {
+                            year = 'cash';
+                            month = 'cash';
+                        }
                         
                         allProcessed.push({ 
                             компания: company || 'A', 
@@ -1856,7 +1889,8 @@ function renderAnimatedMiniChart(elementId, data, color) {
                             подканал: subCategory, 
                             тип: mappedType, 
                             сумма: amount,
-                            Счет: account
+                            Счет: account,
+                            isCashOperation: isCashOperation
                         });
                     }
                 }
@@ -1887,6 +1921,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                     reject(new Error('Не найдено данных для анализа'));
                 } else {
                     console.log(`Загружено ${allProcessed.length} записей из листов: ${workbook.SheetNames.join(', ')}`);
+                    console.log('Операции по счетам:', allProcessed.filter(r => r.isCashOperation).length);
                     resolve(allProcessed);
                 }
             } catch (error) { reject(error); }
@@ -1954,19 +1989,42 @@ function calculateCashData() {
             }
             initialBalances[account] += amount;
             allAccounts.add(account);
-        } else if (article === 'Поступление на расчетный счет' || article === 'Поступление на расчетный счет (возврат)') {
+        } 
+        // Поступления (положительные суммы)
+        else if (amount > 0 && (article.includes('Поступление') || article.includes('возврат') || article.includes('Оплата от покупателя') || article.includes('Перевод с другого счета') || article.includes('Получение займа'))) {
             if (!transactions[account]) {
                 transactions[account] = { income: 0, expense: 0, incomeItems: [], expenseItems: [] };
             }
             transactions[account].income += amount;
             transactions[account].incomeItems.push({ amount: amount, description: article });
             allAccounts.add(account);
-        } else if (article === 'Списание с расчетного счета') {
+        }
+        // Списания (отрицательные суммы)
+        else if (amount < 0 || (article.includes('Списание') || article.includes('Оплата поставщику') || article.includes('Перевод на другой счет') || article.includes('Возврат покупателю') || article.includes('Уплата налога') || article.includes('Комиссия банка'))) {
+            const absAmount = Math.abs(amount);
             if (!transactions[account]) {
                 transactions[account] = { income: 0, expense: 0, incomeItems: [], expenseItems: [] };
             }
-            transactions[account].expense += Math.abs(amount);
-            transactions[account].expenseItems.push({ amount: Math.abs(amount), description: article });
+            transactions[account].expense += absAmount;
+            transactions[account].expenseItems.push({ amount: absAmount, description: article });
+            allAccounts.add(account);
+        }
+        // Дополнительная проверка по типу статьи
+        else if (article === 'Поступление на расчетный счет' || article === 'Поступление на расчетный счет (возврат)') {
+            if (!transactions[account]) {
+                transactions[account] = { income: 0, expense: 0, incomeItems: [], expenseItems: [] };
+            }
+            transactions[account].income += amount;
+            transactions[account].incomeItems.push({ amount: amount, description: article });
+            allAccounts.add(account);
+        }
+        else if (article === 'Списание с расчетного счета') {
+            const absAmount = Math.abs(amount);
+            if (!transactions[account]) {
+                transactions[account] = { income: 0, expense: 0, incomeItems: [], expenseItems: [] };
+            }
+            transactions[account].expense += absAmount;
+            transactions[account].expenseItems.push({ amount: absAmount, description: article });
             allAccounts.add(account);
         }
     });
@@ -2011,6 +2069,9 @@ function calculateCashData() {
     
     // Сортируем по убыванию баланса
     accountBalances.sort((a, b) => b.balance - a.balance);
+    
+    console.log('Найдено счетов:', accountBalances.length);
+    console.log('Балансы:', accountBalances.map(a => ({ name: a.name, balance: a.balance, income: a.income, expense: a.expense })));
     
     return { accountBalances, totalBalance };
 }
