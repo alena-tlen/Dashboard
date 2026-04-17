@@ -1966,7 +1966,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
         return { totalRevenue, netRevenue, totalNDS, totalExpenses, profit, profitability };
     }
     
-    // ========== РАСЧЕТ ДЕНЕЖНЫХ СРЕДСТВ НА СЧЕТАХ ==========
+    // ========== ИСПРАВЛЕННЫЙ РАСЧЕТ ДЕНЕЖНЫХ СРЕДСТВ НА СЧЕТАХ ==========
 let cashData = {};
 let accountsVisible = false;
 
@@ -1978,73 +1978,40 @@ function calculateCashData() {
     // Определяем выбранные месяцы и год для фильтрации
     const selectedYear = currentFilters.year;
     const selectedMonths = currentFilters.month || [];
-
-    console.log('=== ОТЛАДКА ФИЛЬТРА ===');
-    console.log('selectedYear:', selectedYear);
-    console.log('selectedMonths:', selectedMonths);
     
-    // Функция для проверки, попадает ли дата в выбранный период (для детализации)
-function isDateInSelectedPeriod(year, month) {
-    if (!selectedYear && selectedMonths.length === 0) return true; // Все данные
-    
-    // Если год или месяц не указаны (начальные остатки, операции без даты)
-    if (!year || !month || year === 'cash' || month === 'cash') return true;
-    
-    const monthIndex = monthsOrder.indexOf(month);
-    if (monthIndex === -1) return true;
-    
-    // Если выбран год, но не выбраны месяцы - показываем все месяцы выбранного года
-    if (selectedYear && selectedMonths.length === 0) {
-        return year == selectedYear;
-    }
-    
-    // Если выбран год и конкретные месяцы
-    if (selectedYear && selectedMonths.length > 0) {
-        // Показываем только выбранные месяцы выбранного года
-        return year == selectedYear && selectedMonths.includes(month);
-    }
-    
-    return true;
-}
-
-// Функция для проверки, попадает ли операция в период "до выбранного месяца"
-// Для расчета накопленного баланса
-function isDateBeforeSelectedPeriod(year, month) {
-    if (!selectedYear && selectedMonths.length === 0) return true; // Все данные
-    
-    // Если год или месяц не указаны - не учитываем в накоплении
-    if (!year || !month || year === 'cash' || month === 'cash') return false;
-    
-    const monthIndex = monthsOrder.indexOf(month);
-    if (monthIndex === -1) return false;
-    
-    // Если выбран год, но не выбраны месяцы - показываем все месяцы до конца года
-    if (selectedYear && selectedMonths.length === 0) {
-        return year < selectedYear;
-    }
-    
-    // Если выбран год и конкретные месяцы
-    if (selectedYear && selectedMonths.length > 0) {
-        // Находим самый ранний выбранный месяц
-        const selectedMonthIndices = selectedMonths.map(m => monthsOrder.indexOf(m)).filter(i => i !== -1);
-        const earliestMonthIndex = Math.min(...selectedMonthIndices);
+    // Функция для проверки, попадает ли операция в выбранный период
+    function isDateInSelectedPeriod(year, month) {
+        // Начальные остатки всегда показываем
+        if (!year || !month || year === 'cash' || month === 'cash') return true;
         
-        // Показываем все месяцы ДО самого раннего выбранного месяца в выбранном году
-        if (year < selectedYear) return true;
-        if (year == selectedYear && monthIndex < earliestMonthIndex) return true;
-        return false;
+        // Если фильтры не выбраны - показываем всё
+        if (!selectedYear && selectedMonths.length === 0) return true;
+        
+        const monthIndex = monthsOrder.indexOf(month);
+        if (monthIndex === -1) return true;
+        
+        // Если выбран год, но не выбраны месяцы - показываем все месяцы выбранного года
+        if (selectedYear && selectedMonths.length === 0) {
+            return year == selectedYear;
+        }
+        
+        // Если выбран год и конкретные месяцы
+        if (selectedYear && selectedMonths.length > 0) {
+            return year == selectedYear && selectedMonths.includes(month);
+        }
+        
+        return true;
     }
     
-    return false;
-}
+    // Проходим по ВСЕМ исходным данным (originalData) для сбора начальных остатков
+    // и операций по счетам (не фильтруем их, чтобы баланс был правильным)
+    const allData = originalData.length > 0 ? originalData : currentData;
     
-    // Проходим по всем данным для сбора начальных остатков
-    currentData.forEach(row => {
+    // Сначала собираем начальные остатки (они не зависят от фильтров)
+    allData.forEach(row => {
         const article = row.статья || '';
         const amount = parseFloat(row.сумма) || 0;
         const account = row.Счет || row.счет || row['Счет'] || '';
-        const year = row.год;
-        const month = row.месяц;
         
         if (!account) return;
         
@@ -2063,9 +2030,8 @@ function isDateBeforeSelectedPeriod(year, month) {
     const cumulativeExpense = {};
     const allTransactions = {}; // Для хранения всех транзакций для детализации
     
-    // Сначала собираем ВСЕ операции по счетам (без фильтрации по дате)
-    // для расчета накопленного баланса
-    currentData.forEach(row => {
+    // Собираем ВСЕ операции по счетам (из originalData) для расчета накопленного баланса
+    allData.forEach(row => {
         const article = row.статья || '';
         const amount = parseFloat(row.сумма) || 0;
         const account = row.Счет || row.счет || row['Счет'] || '';
@@ -2080,7 +2046,7 @@ function isDateBeforeSelectedPeriod(year, month) {
         let isExpense = false;
         let absAmount = Math.abs(amount);
         
-        // Поступления
+        // Поступления (положительные суммы или поступления)
         if (amount > 0 && (article.includes('Поступление') || 
             article.includes('возврат') || 
             article.includes('Оплата от покупателя') || 
@@ -2089,7 +2055,7 @@ function isDateBeforeSelectedPeriod(year, month) {
             article === 'Поступление на расчетный счет')) {
             isIncome = true;
         }
-        // Списания
+        // Списания (отрицательные суммы или списания)
         else if (amount < 0 || (article.includes('Списание') || 
             article.includes('Оплата поставщику') || 
             article.includes('Перевод на другой счет') || 
@@ -2101,20 +2067,23 @@ function isDateBeforeSelectedPeriod(year, month) {
             absAmount = Math.abs(amount);
         }
         
-                // Сохраняем все транзакции для детализации (с учетом фильтра по дате)
-        if (!allTransactions[account]) {
-            allTransactions[account] = { incomeItems: [], expenseItems: [] };
+        // Для расчета баланса используем ВСЕ операции (без фильтрации)
+        if (isIncome) {
+            if (!cumulativeIncome[account]) cumulativeIncome[account] = 0;
+            cumulativeIncome[account] += absAmount;
+        } else if (isExpense) {
+            if (!cumulativeExpense[account]) cumulativeExpense[account] = 0;
+            cumulativeExpense[account] += absAmount;
         }
         
         // Для детализации используем фильтр по выбранным месяцам
-        const inSelected = isDateInSelectedPeriod(year, month);
+        const inSelectedPeriod = isDateInSelectedPeriod(year, month);
         
-        // Отладка для марта 2026
-        if (year === '2026' && month === 'март') {
-            console.log(`Операция за март: статья="${article}", сумма=${amount}, счет="${account}", inSelected=${inSelected}, year=${year}, month=${month}, isIncome=${isIncome}, isExpense=${isExpense}`);
-        }
-        
-        if (inSelected) {
+        if (inSelectedPeriod) {
+            if (!allTransactions[account]) {
+                allTransactions[account] = { incomeItems: [], expenseItems: [] };
+            }
+            
             if (isIncome) {
                 allTransactions[account].incomeItems.push({ 
                     amount: absAmount, 
@@ -2129,27 +2098,6 @@ function isDateBeforeSelectedPeriod(year, month) {
                     year: year,
                     month: month
                 });
-            }
-        }
-        
-        // Для расчета накопленного баланса используем все операции до выбранного периода
-        if (isDateBeforeSelectedPeriod(year, month)) {
-            if (isIncome) {
-                if (!cumulativeIncome[account]) cumulativeIncome[account] = 0;
-                cumulativeIncome[account] += absAmount;
-            } else if (isExpense) {
-                if (!cumulativeExpense[account]) cumulativeExpense[account] = 0;
-                cumulativeExpense[account] += absAmount;
-            }
-        }
-        // Также добавляем операции за выбранный период
-        else if (isDateInSelectedPeriod(year, month)) {
-            if (isIncome) {
-                if (!cumulativeIncome[account]) cumulativeIncome[account] = 0;
-                cumulativeIncome[account] += absAmount;
-            } else if (isExpense) {
-                if (!cumulativeExpense[account]) cumulativeExpense[account] = 0;
-                cumulativeExpense[account] += absAmount;
             }
         }
     });
@@ -2168,9 +2116,14 @@ function isDateBeforeSelectedPeriod(year, month) {
         let shortName = account;
         if (account.includes('ООО "ОЗОН Банк"')) shortName = 'Озон Банк';
         else if (account.includes('АЛЬФА-БАНК')) shortName = 'Альфа-Банк';
-        else if (account.includes('СБЕРБАНК')) shortName = 'Сбербанк';
+        else if (account.includes('СБЕРБАНК') || account.includes('Сбербанк')) shortName = 'Сбербанк';
         else if (account.includes('ВТБ')) shortName = 'ВТБ';
         else if (account.includes('CNY')) shortName = 'ВТБ (CNY)';
+        else {
+            // Обрезаем длинные названия
+            shortName = account.substring(0, 30);
+            if (account.length > 30) shortName += '...';
+        }
         
         // Определяем валюту
         let currency = 'RUB';
@@ -2180,26 +2133,25 @@ function isDateBeforeSelectedPeriod(year, month) {
         
         const trans = allTransactions[account] || { incomeItems: [], expenseItems: [] };
         
-        accountBalances.push({
-            fullName: account,
-            name: shortName,
-            balance: balance,
-            income: income,
-            expense: expense,
-            initial: initial,
-            currency: currency,
-            incomeItems: trans.incomeItems,
-            expenseItems: trans.expenseItems
-        });
+        // Добавляем только счета с ненулевым балансом или имеющие операции
+        if (balance !== 0 || trans.incomeItems.length > 0 || trans.expenseItems.length > 0) {
+            accountBalances.push({
+                fullName: account,
+                name: shortName,
+                balance: balance,
+                income: income,
+                expense: expense,
+                initial: initial,
+                currency: currency,
+                incomeItems: trans.incomeItems,
+                expenseItems: trans.expenseItems
+            });
+        }
         if (currency === 'RUB') totalBalance += balance;
     }
     
     // Сортируем по убыванию баланса
     accountBalances.sort((a, b) => b.balance - a.balance);
-    
-    console.log('Найдено счетов:', accountBalances.length);
-    console.log('Фильтр:', { year: selectedYear, months: selectedMonths });
-    console.log('Балансы:', accountBalances.map(a => ({ name: a.name, balance: a.balance, income: a.income, expense: a.expense, initial: a.initial })));
     
     return { accountBalances, totalBalance };
 }
@@ -2210,7 +2162,7 @@ function renderCashBlock() {
     
     if (!cashTotalCard) return;
     
-    if (!currentData || currentData.length === 0) {
+    if (!originalData || originalData.length === 0) {
         cashTotalCard.innerHTML = '<div class="cash-loading">📊 Загрузите данные для отображения</div>';
         cashAccountsList.innerHTML = '';
         return;
@@ -2269,7 +2221,7 @@ function renderCashBlock() {
             <div class="cash-account-item" data-account-index="${idx}" style="opacity: 0; transform: translateY(10px); transition: all 0.3s ease; transition-delay: ${idx * 0.05}s;">
                 <div class="cash-account-name">
                     <span>🏦</span>
-                    <span>${account.name}</span>
+                    <span>${escapeHtml(account.name)}</span>
                     ${account.currency !== 'RUB' ? `<span style="font-size: 10px; background: rgba(102,126,234,0.15); padding: 2px 6px; border-radius: 10px;">${account.currency}</span>` : ''}
                 </div>
                 <div class="cash-account-balance">
@@ -2280,9 +2232,14 @@ function renderCashBlock() {
                     <div class="cash-progress-bar" style="width: 0%; background: linear-gradient(90deg, ${balanceColor}, ${balanceColor === '#48bb78' ? '#667eea' : '#f56565'});"></div>
                 </div>
                 <div class="cash-account-details">
-                    <div style="margin-bottom: 8px; font-size: 11px; font-weight: 600; color: #667eea;">Детали операций:</div>
-                    ${incomeItemsHtml}
-                    ${expenseItemsHtml}
+                    <div style="margin-bottom: 8px; font-size: 11px; font-weight: 600; color: #667eea;">📋 Детали операций за период:</div>
+                    ${incomeItemsHtml || '<div class="cash-detail-row"><span>—</span><span>нет поступлений</span></div>'}
+                    ${expenseItemsHtml || '<div class="cash-detail-row"><span>—</span><span>нет списаний</span></div>'}
+                    <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(102,126,234,0.1); font-size: 10px; opacity: 0.6;">
+                        Начальный остаток: ${formatCash(account.initial, account.currency)} | 
+                        Доходы: +${formatCash(account.income, account.currency)} | 
+                        Расходы: -${formatCash(account.expense, account.currency)}
+                    </div>
                 </div>
             </div>
         `;
@@ -2293,9 +2250,10 @@ function renderCashBlock() {
     const totalColor = getBalanceColor(totalBalance);
     
     const totalHtml = `
-        <div style="font-size: 11px; opacity: 0.7; margin-bottom: 4px;">Общий остаток (RUB)</div>
-        <div class="cash-total-value" id="cashTotalValue" style="color: ${totalColor};">${totalFormatted}</div>
+        <div style="font-size: 11px; opacity: 0.7; margin-bottom: 4px;">💰 Общий остаток (RUB)</div>
+        <div class="cash-total-value" id="cashTotalValue" style="color: ${totalColor}; font-size: 28px; font-weight: 700;">${totalFormatted}</div>
         <div style="font-size: 10px; opacity: 0.5; margin-top: 6px;">${accountBalances.length} ${declension(accountBalances.length, 'счет', 'счета', 'счетов')}</div>
+        <div style="font-size: 10px; opacity: 0.4; margin-top: 8px;">📅 Данные за ${currentFilters.year || 'весь период'} ${currentFilters.month?.length ? currentFilters.month.join(', ') : ''}</div>
     `;
     
     cashTotalCard.innerHTML = totalHtml;
@@ -2311,7 +2269,7 @@ function renderCashBlock() {
         });
     }, 100);
     
-    // Добавляем обработчики кликов для раскрытия деталей счетов (по клику на счет)
+    // Добавляем обработчики кликов для раскрытия деталей счетов
     setTimeout(() => {
         document.querySelectorAll('.cash-account-item').forEach(item => {
             const details = item.querySelector('.cash-account-details');
@@ -2332,6 +2290,14 @@ function renderCashBlock() {
             }
         });
     }, 200);
+}
+
+// Вспомогательная функция для экранирования HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Функция для показа/скрытия всех счетов
