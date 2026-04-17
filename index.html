@@ -1840,9 +1840,9 @@ function calculateCashData() {
         const account = row.Счет || row.счет || row['Счет'] || '';
         
         // Отладка: показываем первые 5 строк с операциями по счетам
-        if (idx < 10 && (article === 'Начальный остаток' || article === 'Поступление на расчетный счет' || article === 'Списание с расчетного счета')) {
-            console.log(`Строка ${idx}: статья="${article}", сумма=${amount}, счет="${account}"`);
-        }
+        if ((article === 'Начальный остаток' || article === 'Поступление на расчетный счет' || article === 'Списание с расчетного счета')) {
+    console.log(`Статья: "${article}", сумма: ${amount}, счет: "${account}"`);
+}
 
         if (!account) return;
         
