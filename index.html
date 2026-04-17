@@ -966,6 +966,102 @@ body.dark .sub-item {
     overflow: hidden !important;
 }
 
+/* Блок денежных средств */
+.cash-sidebar {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+body.light .cash-sidebar {
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+body.dark .cash-sidebar {
+    background: #1a1a2a;
+    border: 1px solid #2d2d3a;
+}
+
+.cash-total-card {
+    background: linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.cash-total-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #48bb78;
+}
+
+.cash-account-item {
+    background: rgba(102,126,234,0.05);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.cash-account-item:hover {
+    background: rgba(102,126,234,0.12);
+    transform: translateX(4px);
+}
+
+.cash-account-name {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    word-break: break-word;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.cash-account-balance {
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.cash-account-currency {
+    font-size: 11px;
+    opacity: 0.6;
+    font-weight: normal;
+}
+
+.cash-progress {
+    height: 4px;
+    background: rgba(102,126,234,0.2);
+    border-radius: 4px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.cash-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #48bb78, #667eea);
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.8s ease-out;
+}
+
+.cash-loading {
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
 </style>
 </head>
 <body>
@@ -1102,6 +1198,15 @@ body.dark .sub-item {
             </div>
 <!-- Правая боковая панель со статьями -->
 <div class="right-sidebar">
+    <div class="cash-sidebar" style="margin-bottom: 20px;">
+        <div class="cash-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(102,126,234,0.3);">
+            <span style="font-size: 18px;">💰</span>
+            <span style="font-weight: 600; font-size: 13px; color: #667eea;">ДЕНЕЖНЫЕ СРЕДСТВА</span>
+        </div>
+        <div id="cashContainer" class="cash-container">
+            <!-- Данные будут загружены динамически -->
+        </div>
+    </div>
     <div class="articles-sidebar">
         <div class="articles-header">
             <span>📚</span>
@@ -1717,6 +1822,228 @@ function renderAnimatedMiniChart(elementId, data, color) {
         return { totalRevenue, netRevenue, totalNDS, totalExpenses, profit, profitability };
     }
     
+    // ========== РАСЧЕТ ДЕНЕЖНЫХ СРЕДСТВ НА СЧЕТАХ ==========
+let cashData = {};
+
+function calculateCashData() {
+    // Собираем начальные остатки по счетам
+    const initialBalances = {};
+    const transactions = {};
+    const allAccounts = new Set();
+    
+    // Проходим по всем данным
+    currentData.forEach(row => {
+        const article = row.статья || '';
+        const amount = parseFloat(row.сумма) || 0;
+        const account = row.Счет || row.счет || '';
+        
+        if (!account) return;
+        
+        // Определяем тип операции
+        if (article === 'Начальный остаток') {
+            if (!initialBalances[account]) {
+                initialBalances[account] = 0;
+            }
+            initialBalances[account] += amount;
+            allAccounts.add(account);
+        } else if (article === 'Поступление на расчетный счет' || article === 'Поступление на расчетный счет (возврат)') {
+            if (!transactions[account]) {
+                transactions[account] = { income: 0, expense: 0 };
+            }
+            transactions[account].income += amount;
+            allAccounts.add(account);
+        } else if (article === 'Списание с расчетного счета') {
+            if (!transactions[account]) {
+                transactions[account] = { income: 0, expense: 0 };
+            }
+            transactions[account].expense += Math.abs(amount);
+            allAccounts.add(account);
+        }
+    });
+    
+    // Рассчитываем итоговые балансы
+    const accountBalances = [];
+    let totalBalance = 0;
+    
+    for (const account of allAccounts) {
+        const initial = initialBalances[account] || 0;
+        const income = transactions[account]?.income || 0;
+        const expense = transactions[account]?.expense || 0;
+        const balance = initial + income - expense;
+        
+        if (balance !== 0 || initial !== 0 || income !== 0 || expense !== 0) {
+            // Сокращаем название счета для отображения
+            let shortName = account;
+            if (account.includes('ООО "ОЗОН Банк"')) shortName = 'Озон Банк';
+            else if (account.includes('АЛЬФА-БАНК')) shortName = 'Альфа-Банк';
+            else if (account.includes('СБЕРБАНК')) shortName = 'Сбербанк';
+            else if (account.includes('ВТБ')) shortName = 'ВТБ';
+            else if (account.includes('CNY')) shortName = 'ВТБ (CNY)';
+            
+            // Определяем валюту
+            let currency = 'RUB';
+            if (account.includes('CNY')) currency = 'CNY';
+            else if (account.includes('USD')) currency = 'USD';
+            else if (account.includes('EUR')) currency = 'EUR';
+            
+            accountBalances.push({
+                fullName: account,
+                name: shortName,
+                balance: balance,
+                income: income,
+                expense: expense,
+                initial: initial,
+                currency: currency
+            });
+            totalBalance += currency === 'RUB' ? balance : 0;
+        }
+    }
+    
+    // Сортируем по убыванию баланса
+    accountBalances.sort((a, b) => b.balance - a.balance);
+    
+    return { accountBalances, totalBalance };
+}
+
+function renderCashBlock() {
+    const cashContainer = document.getElementById('cashContainer');
+    if (!cashContainer) return;
+    
+    if (!currentData || currentData.length === 0) {
+        cashContainer.innerHTML = '<div class="cash-loading">📊 Загрузите данные для отображения</div>';
+        return;
+    }
+    
+    const { accountBalances, totalBalance } = calculateCashData();
+    
+    if (accountBalances.length === 0) {
+        cashContainer.innerHTML = '<div class="cash-loading">💰 Нет данных по счетам</div>';
+        return;
+    }
+    
+    // Форматируем сумму с валютой
+    function formatCash(value, currency = 'RUB') {
+        const formatter = new Intl.NumberFormat('ru-RU', { 
+            minimumFractionDigits: value % 1 !== 0 ? 2 : 0,
+            maximumFractionDigits: 2
+        });
+        const symbol = currency === 'RUB' ? '₽' : currency === 'CNY' ? '¥' : currency === 'USD' ? '$' : '€';
+        return `${formatter.format(Math.abs(value))} ${symbol}`;
+    }
+    
+    // Определяем цвет баланса
+    function getBalanceColor(value) {
+        if (value > 0) return '#48bb78';
+        if (value < 0) return '#f56565';
+        return '#a0aec0';
+    }
+    
+    // Находим максимальный баланс для прогресс-бара
+    const maxBalance = Math.max(...accountBalances.map(a => Math.abs(a.balance)), 1);
+    
+    // Генерируем HTML для каждого счета
+    const accountsHtml = accountBalances.map((account, idx) => {
+        const percent = (Math.abs(account.balance) / maxBalance) * 100;
+        const balanceColor = getBalanceColor(account.balance);
+        const balanceFormatted = formatCash(account.balance, account.currency);
+        
+        return `
+            <div class="cash-account-item" data-account-index="${idx}" style="opacity: 0; transform: translateY(10px); transition: all 0.3s ease; transition-delay: ${idx * 0.05}s;">
+                <div class="cash-account-name">
+                    <span>🏦</span>
+                    <span>${account.name}</span>
+                    ${account.currency !== 'RUB' ? `<span style="font-size: 10px; background: rgba(102,126,234,0.15); padding: 2px 6px; border-radius: 10px;">${account.currency}</span>` : ''}
+                </div>
+                <div class="cash-account-balance">
+                    <span style="color: ${balanceColor}; font-size: 18px; font-weight: 700;">${balanceFormatted}</span>
+                    <span class="cash-account-currency">${account.balance >= 0 ? '↑' : '↓'} ${formatCash(Math.abs(account.balance), account.currency)}</span>
+                </div>
+                <div class="cash-progress">
+                    <div class="cash-progress-bar" style="width: 0%; background: linear-gradient(90deg, ${balanceColor}, ${balanceColor === '#48bb78' ? '#667eea' : '#f56565'});"></div>
+                </div>
+                <div style="display: none;" class="cash-details">
+                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(102,126,234,0.1); font-size: 11px;">
+                        <div>📈 Поступления: ${formatCash(account.income, account.currency)}</div>
+                        <div>📉 Списания: ${formatCash(account.expense, account.currency)}</div>
+                        <div>💰 Начальный остаток: ${formatCash(account.initial, account.currency)}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Общая сумма (только RUB счета)
+    const totalFormatted = formatCash(totalBalance, 'RUB');
+    const totalColor = getBalanceColor(totalBalance);
+    
+    const html = `
+        <div class="cash-total-card">
+            <div style="font-size: 11px; opacity: 0.7; margin-bottom: 4px;">Общий остаток (RUB)</div>
+            <div class="cash-total-value" id="cashTotalValue" style="color: ${totalColor};">${totalFormatted}</div>
+            <div style="font-size: 10px; opacity: 0.5; margin-top: 6px;">${accountBalances.length} ${declension(accountBalances.length, 'счет', 'счета', 'счетов')}</div>
+        </div>
+        <div class="cash-accounts-list">
+            ${accountsHtml}
+        </div>
+    `;
+    
+    cashContainer.innerHTML = html;
+    
+    // Анимация появления элементов
+    setTimeout(() => {
+        document.querySelectorAll('.cash-account-item').forEach((item, i) => {
+            setTimeout(() => {
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
+            }, i * 50);
+        });
+        
+        // Анимация прогресс-баров
+        document.querySelectorAll('.cash-progress-bar').forEach((bar, i) => {
+            const targetWidth = accountBalances[i] ? (Math.abs(accountBalances[i].balance) / maxBalance) * 100 : 0;
+            setTimeout(() => {
+                bar.style.width = targetWidth + '%';
+            }, 300 + i * 50);
+        });
+    }, 100);
+    
+    // Добавляем обработчики кликов для раскрытия деталей
+    setTimeout(() => {
+        document.querySelectorAll('.cash-account-item').forEach(item => {
+            const details = item.querySelector('.cash-details');
+            if (details) {
+                item.style.cursor = 'pointer';
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (details.style.display === 'none' || !details.style.display) {
+                        details.style.display = 'block';
+                        details.style.maxHeight = '0';
+                        setTimeout(() => {
+                            details.style.maxHeight = details.scrollHeight + 'px';
+                        }, 10);
+                    } else {
+                        details.style.maxHeight = '0';
+                        setTimeout(() => {
+                            details.style.display = 'none';
+                        }, 300);
+                    }
+                });
+            }
+        });
+    }, 200);
+}
+
+// Функция склонения
+function declension(number, one, two, five) {
+    const n = Math.abs(number) % 100;
+    if (n >= 11 && n <= 19) return five;
+    const lastDigit = n % 10;
+    if (lastDigit === 1) return one;
+    if (lastDigit >= 2 && lastDigit <= 4) return two;
+    return five;
+}
+
+
     function calculateNetRevenueByChannel(data) {
         const netRevenueByChannel = {};
         const allChannels = ['Wildberries', 'Ozon', 'Детский мир', 'Lamoda', 'Оптовики', 'Фулфилмент'];
@@ -5601,6 +5928,11 @@ setTimeout(() => {
     startArticleCarouselNew();
 }, 100);
 
+// Рендер блока денежных средств
+setTimeout(() => {
+    renderCashBlock();
+}, 150);
+
         } finally {
             isRendering = false;
         }
@@ -5680,6 +6012,7 @@ const costData = currentData
             document.getElementById('dataSourceInfo').style.display = 'block';
             updateFilters();
             renderDashboard();
+            renderCashBlock();
             uploadArea.style.display = 'none';
         }
         
@@ -5726,6 +6059,7 @@ const costData = currentData
                 return true;
             });
             renderDashboard();
+            renderCashBlock();
             if (currentChannel) renderChannelPage(currentChannel);
         };
         
