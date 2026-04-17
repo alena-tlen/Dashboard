@@ -1713,19 +1713,24 @@ function renderAnimatedMiniChart(elementId, data, color) {
 }
     
     function readExcelFile(file) {
-        return new Promise((resolve, reject) => {
-            if (typeof XLSX === 'undefined') {
-                reject(new Error('XLSX библиотека не загружена'));
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array', cellFormula: false, cellText: false });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "", raw: true, blankrows: false });
-                    const processed = [];
+    return new Promise((resolve, reject) => {
+        if (typeof XLSX === 'undefined') {
+            reject(new Error('XLSX библиотека не загружена'));
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellFormula: false, cellText: false });
+                
+                const allProcessed = [];
+                
+                // Читаем все листы
+                for (const sheetName of workbook.SheetNames) {
+                    const sheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: true, blankrows: false });
+                    
                     for (const row of jsonData) {
                         let company = row['компания'] || row['Компания'] || '';
                         let year = row['год'] || row['Год'] || '';
@@ -1734,6 +1739,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         let channel = row['канал'] || row['Канал'] || '';
                         let subCategory = row['подканал'] || row['Подканал'] || '';
                         let amount = parseFloat(row['сумма'] || row['Сумма'] || 0);
+                        let account = row['Счет'] || row['счет'] || '';
                         
                         company = String(company).trim(); 
                         year = String(year).trim(); 
@@ -1741,55 +1747,82 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         type = String(type).trim();
                         channel = String(channel).trim();
                         subCategory = String(subCategory).trim();
+                        account = String(account).trim();
                         
-                        if (!type || !year || !month) continue;
-                        if (isNaN(amount) || amount === 0) continue;
+                        // Пропускаем пустые строки
+                        if (!type && !account) continue;
                         
+                        // Определяем тип записи
                         let mappedType = '';
                         if (type === 'Доход') mappedType = 'Доход';
                         else if (type === 'Расход') mappedType = 'Расход';
                         else if (type === 'НДС') mappedType = 'НДС';
                         else if (type === 'Справочно') mappedType = 'Справочная';
-                        else continue;
+                        else if (type === 'Начальный остаток') mappedType = 'Справочная';
+                        else if (type === 'Поступление на расчетный счет') mappedType = 'Справочная';
+                        else if (type === 'Списание с расчетного счета') mappedType = 'Справочная';
+                        else if (type === 'Перечисление заработной платы по ведомостям') mappedType = 'Справочная';
+                        else if (type === 'Уплата налога') mappedType = 'Справочная';
+                        else if (type === 'Перечисление подотчетному лицу') mappedType = 'Справочная';
+                        else if (type === 'Комиссия банка') mappedType = 'Справочная';
                         
-                        processed.push({ 
-                            компания: company || 'A', год: year, месяц: month, статья: type,
-                            канал: channel, подканал: subCategory, тип: mappedType, сумма: amount 
+                        // Для строк без года/месяца (начальные остатки) оставляем пустыми
+                        if (!year && type === 'Начальный остаток') {
+                            year = '';
+                            month = '';
+                        }
+                        
+                        // Если тип не определился, пропускаем
+                        if (!mappedType && !type) continue;
+                        
+                        allProcessed.push({ 
+                            компания: company || 'A', 
+                            год: year, 
+                            месяц: month, 
+                            статья: type,
+                            канал: channel, 
+                            подканал: subCategory, 
+                            тип: mappedType, 
+                            сумма: amount,
+                            Счет: account
                         });
                     }
-                    
-                    const ndsPairs = new Map();
-                    for (const row of processed) {
-                        if (row.статья === 'НДС' && (row.подканал === 'НДС исходящий' || row.подканал === 'НДС входящий')) {
-                            const key = `${row.компания}|${row.год}|${row.месяц}|${row.канал}`;
-                            if (!ndsPairs.has(key)) ndsPairs.set(key, { исходящий: 0, входящий: 0 });
-                            const ndsData = ndsPairs.get(key);
-                            if (row.подканал === 'НДС исходящий') ndsData.исходящий += row.сумма;
-                            if (row.подканал === 'НДС входящий') ndsData.входящий += row.сумма;
-                        }
+                }
+                
+                // Обработка НДС (только для данных с типом НДС)
+                const ndsPairs = new Map();
+                for (const row of allProcessed) {
+                    if (row.статья === 'НДС' && (row.подканал === 'НДС исходящий' || row.подканал === 'НДС входящий')) {
+                        const key = `${row.компания}|${row.год}|${row.месяц}|${row.канал}`;
+                        if (!ndsPairs.has(key)) ndsPairs.set(key, { исходящий: 0, входящий: 0 });
+                        const ndsData = ndsPairs.get(key);
+                        if (row.подканал === 'НДС исходящий') ndsData.исходящий += row.сумма;
+                        if (row.подканал === 'НДС входящий') ndsData.входящий += row.сумма;
                     }
-                    for (const [key, ndsData] of ndsPairs.entries()) {
-                        const calculatedNds = ndsData.исходящий - ndsData.входящий;
-                        if (calculatedNds !== 0) {
-                            const [company, year, month, channel] = key.split('|');
-                            processed.push({
-                                компания: company, год: year, месяц: month, статья: 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ',
-                                канал: channel, подканал: 'НДС', тип: 'НДС', сумма: calculatedNds
-                            });
-                        }
+                }
+                for (const [key, ndsData] of ndsPairs.entries()) {
+                    const calculatedNds = ndsData.исходящий - ndsData.входящий;
+                    if (calculatedNds !== 0) {
+                        const [company, year, month, channel] = key.split('|');
+                        allProcessed.push({
+                            компания: company, год: year, месяц: month, статья: 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ',
+                            канал: channel, подканал: 'НДС', тип: 'НДС', сумма: calculatedNds
+                        });
                     }
-                    
-                    if (processed.length === 0) {
-                        reject(new Error('Не найдено данных для анализа'));
-                    } else {
-                        resolve(processed);
-                    }
-                } catch (error) { reject(error); }
-            };
-            reader.onerror = (error) => { reject(error); };
-            reader.readAsArrayBuffer(file);
-        });
-    }
+                }
+                
+                if (allProcessed.length === 0) {
+                    reject(new Error('Не найдено данных для анализа'));
+                } else {
+                    console.log(`Загружено ${allProcessed.length} записей из листов: ${workbook.SheetNames.join(', ')}`);
+                    resolve(allProcessed);
+                }
+            } catch (error) { reject(error); }
+        };
+        reader.onerror = (error) => { reject(error); };
+        reader.readAsArrayBuffer(file);
+    });
+}
     
     function calculateFinancials(data, channelKey = null) {
         let filtered = applyFilters(data);
