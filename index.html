@@ -2135,7 +2135,7 @@ function calculateCashData() {
         const balance = initial + income - expense;
         
         // Логирование для Сбербанка
-        if (account.includes('СБЕРБАНК') || account.includes('Сбербанк')) {
+        if (account.includes('ПАО СБЕРБАНК') || account.includes('Сбербанк')) {
             console.log(`=== СБЕРБАНК ===`);
             console.log(`Начальный остаток: ${initial.toFixed(2)}`);
             console.log(`Доходы: ${income.toFixed(2)}`);
@@ -2146,7 +2146,8 @@ function calculateCashData() {
         let shortName = account;
         if (account.includes('ООО "ОЗОН Банк"')) shortName = 'Озон Банк';
         else if (account.includes('АЛЬФА-БАНК')) shortName = 'Альфа-Банк';
-        else if (account.includes('СБЕРБАНК') || account.includes('Сбербанк')) shortName = 'Сбербанк';
+        else if (account.includes('ООО "Вайлдберриз Банк"')) shortName = 'Вайлдберриз Банк';
+        else if (account.includes('ПАО СБЕРБАНК') || account.includes('Сбербанк')) shortName = 'Сбербанк';
         else if (account.includes('ВТБ')) shortName = 'ВТБ';
         else if (account.includes('CNY')) shortName = 'ВТБ (CNY)';
         else {
@@ -6394,10 +6395,15 @@ diagnoseSberbank();
 function diagnoseSberbank() {
     console.log('=== ДИАГНОСТИКА СБЕРБАНКА ===');
     
-    // Находим все операции по Сбербанку
+    if (!originalData || originalData.length === 0) {
+        console.log('❌ Данные не загружены! Сначала загрузите Excel файл.');
+        return;
+    }
+    
+    // Ищем Сбербанк по точному названию
     const sberbankOps = originalData.filter(row => {
         const account = row.Счет || '';
-        return account.includes('СБЕРБАНК') || account.includes('Сбербанк');
+        return account === 'ПАО СБЕРБАНК';
     });
     
     console.log('Всего операций по Сбербанку:', sberbankOps.length);
@@ -6432,15 +6438,14 @@ function diagnoseSberbank() {
     // Начальный остаток
     const initialTotal = initialOps.reduce((sum, r) => sum + r.сумма, 0);
     console.log(`Начальный остаток: ${initialTotal.toFixed(2)}`);
-    console.log(`Расчетный баланс: ${initialTotal + totalIncome - totalExpense}`);
+    console.log(`РАСЧЕТНЫЙ БАЛАНС: ${(initialTotal + totalIncome - totalExpense).toFixed(2)}`);
     
     // Группировка по месяцам
     const byMonth = {};
     sberbankOps.forEach(r => {
         if (r.статья === 'Начальный остаток') return;
         const key = `${r.год}-${r.месяц}`;
-        if (!byMonth[key]) byMonth[key] = { income: 0, expense: 0, count: 0 };
-        byMonth[key].count++;
+        if (!byMonth[key]) byMonth[key] = { income: 0, expense: 0 };
         if (r.сумма > 0) byMonth[key].income += r.сумма;
         else byMonth[key].expense += Math.abs(r.сумма);
     });
@@ -6448,7 +6453,7 @@ function diagnoseSberbank() {
     console.log('Операции по месяцам:');
     Object.keys(byMonth).sort().forEach(key => {
         const d = byMonth[key];
-        console.log(`  ${key}: ${d.count} опер., доход: ${d.income.toFixed(2)}, расход: ${d.expense.toFixed(2)}`);
+        console.log(`  ${key}: доход: ${d.income.toFixed(2)}, расход: ${d.expense.toFixed(2)}`);
     });
 }
 
