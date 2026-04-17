@@ -5589,49 +5589,6 @@ console.log('costData:', costData);
                         </div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 18px;">📊</span>
-                                <span>Выручка чистая</span>
-                            </div>
-                            <button class="toggle-breakdown-btn" data-type="netRevenue" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-                                <span>▶</span> Показать по каналам
-                            </button>
-                        </div>
-                        <div>
-                            <div class="metric-value" id="mainNetRevenueValue">${formatCurrency(f.netRevenue)}</div>
-                            ${netRevenueChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(netRevenueChange)}</span>` : ''}
-                        </div>
-                        <div class="mini-chart" id="miniNetRevenueChart"></div>
-                        <div class="netrevenue-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
-                            <div style="padding-top: 16px;">${generateChannelBreakdown('ВЫРУЧКА ЧИСТАЯ ПО КАНАЛАМ', 'value', calculateNetRevenueByChannel(currentData), true, '')}</div>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 18px;">📈</span>
-                                <span>Маржинальная прибыль</span>
-                            </div>
-                            <button class="toggle-channels-profit-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-                                <span>▶</span> Показать по каналам
-                            </button>
-                        </div>
-                        <div>
-                            <div class="metric-value ${f.profit >= 0 ? 'positive' : 'negative'}" id="mainProfitValue">${formatCurrency(f.profit)}</div>
-                            ${profitChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(profitChange)}</span>` : ''}
-                        </div>
-                        <div class="metric-sub" style="margin-top: 4px;">
-                            Рентабельность: <span id="mainProfitabilityValue">${f.profitability.toFixed(1)}</span>%
-                            ${profitabilityChange ? `<span style="font-size: 11px; margin-left: 8px;">${getChangeHtml(profitabilityChange)}</span>` : ''}
-                        </div>
-                        <div class="mini-chart" id="miniProfitChart" style="margin-top: 12px;"></div>
-                        <div class="profit-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
-                            <div style="padding-top: 16px;">${generateProfitByChannels(f, revenueChannelsList, expenseChannelsList, calculateNetRevenueByChannel(currentData))}</div>
-                        </div>
-                    </div>
-
-<div class="metric-card">
     <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 18px;">📊</span>
@@ -5656,6 +5613,29 @@ console.log('costData:', costData);
         <div style="padding-top: 16px;">${generateChannelBreakdown('ВЫРУЧКА ЧИСТАЯ ПО КАНАЛАМ', 'value', calculateNetRevenueByChannel(currentData), true, '')}</div>
     </div>
 </div>
+                    <div class="metric-card">
+                        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 18px;">📈</span>
+                                <span>Маржинальная прибыль</span>
+                            </div>
+                            <button class="toggle-channels-profit-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
+                                <span>▶</span> Показать по каналам
+                            </button>
+                        </div>
+                        <div>
+                            <div class="metric-value ${f.profit >= 0 ? 'positive' : 'negative'}" id="mainProfitValue">${formatCurrency(f.profit)}</div>
+                            ${profitChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(profitChange)}</span>` : ''}
+                        </div>
+                        <div class="metric-sub" style="margin-top: 4px;">
+                            Рентабельность: <span id="mainProfitabilityValue">${f.profitability.toFixed(1)}</span>%
+                            ${profitabilityChange ? `<span style="font-size: 11px; margin-left: 8px;">${getChangeHtml(profitabilityChange)}</span>` : ''}
+                        </div>
+                        <div class="mini-chart" id="miniProfitChart" style="margin-top: 12px;"></div>
+                        <div class="profit-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+                            <div style="padding-top: 16px;">${generateProfitByChannels(f, revenueChannelsList, expenseChannelsList, calculateNetRevenueByChannel(currentData))}</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="metrics-grid" style="margin-top: 24px;">
                     <div class="metric-card">
