@@ -1797,7 +1797,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 const workbook = XLSX.read(data, { type: 'array', cellFormula: false, cellText: false });
                 
                 const allProcessed = [];
-                const seenRows = new Set();
+                // Убираем проверку дубликатов - она некорректна
                 
                 for (const sheetName of workbook.SheetNames) {
                     const sheet = workbook.Sheets[sheetName];
@@ -1850,21 +1850,13 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         
                         if (!mappedType) continue;
                         
-                        // ВАЖНО: Для начальных остатков очищаем год/месяц
-                        // Для всех остальных операций ОСТАВЛЯЕМ год и месяц как есть
+                        // Для начальных остатков очищаем год/месяц
                         if (type === 'Начальный остаток') {
                             year = '';
                             month = '';
                         }
                         
-                        // Создаем уникальный ключ для проверки дубликатов
-                        const uniqueKey = `${company}|${year}|${month}|${type}|${channel}|${subCategory}|${amount}|${account}`;
-                        if (seenRows.has(uniqueKey)) {
-                            console.log('Пропущен дубликат:', uniqueKey);
-                            continue;
-                        }
-                        seenRows.add(uniqueKey);
-                        
+                        // Убираем проверку дубликатов - добавляем все строки
                         allProcessed.push({ 
                             компания: company || 'A', 
                             год: year, 
