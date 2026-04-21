@@ -5687,7 +5687,7 @@ console.log('costData:', costData);
                             <div class="metric-value" id="mainSalesValue">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
                             ${salesChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(salesChange)}</span>` : ''}
                         </div>
-                        <canvas id="salesChart" style="height: 120px; width: 100%; margin-top: 12px;"></canvas>
+                        <canvas id="salesChart" style="height: 100px; width: 100%; margin-top: 8px; cursor: pointer;"></canvas>
                         <div class="metric-sub">всего за период</div>
                         <div class="sales-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
                             <div style="padding-top: 16px;">${generateSalesBreakdown(currentData)}</div>
@@ -6581,69 +6581,109 @@ function renderProfitMiniChart() {
 
 function renderSalesChart(labels, salesData) {
     const canvas = document.getElementById('salesChart');
-    if (!canvas || !labels || labels.length === 0) return;
+    if (!canvas || !labels || labels.length === 0 || !salesData || salesData.length === 0) return;
     
     const ctx = canvas.getContext('2d');
     const isDarkMode = document.body.classList.contains('dark');
     
-    // Уничтожаем старый график, если есть и если это объект Chart
+    // Уничтожаем старый график, если есть
     if (window.salesChart && typeof window.salesChart.destroy === 'function') {
         window.salesChart.destroy();
     }
     
+    // Находим максимальное значение для масштабирования
+    const maxSales = Math.max(...salesData);
+    
+    // Цвета для столбцов (лучший месяц - зеленый, худший - красный, остальные - синие оттенки)
+    const barColors = salesData.map((value, index) => {
+        if (value === maxSales && maxSales > 0) return '#48bb78'; // лучший месяц - зеленый
+        if (value === Math.min(...salesData) && salesData.length > 1) return '#f56565'; // худший месяц - красный
+        return '#4299e1'; // обычные - синий
+    });
+    
     window.salesChart = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: 'Продажи (шт)',
                 data: salesData,
-                borderColor: '#4299e1',
-                backgroundColor: 'rgba(66, 153, 225, 0.1)',
-                borderWidth: 3,
-                pointRadius: 5,
-                pointHoverRadius: 8,
-                pointBackgroundColor: '#4299e1',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2,
-                tension: 0.3,
-                fill: true
+                backgroundColor: barColors,
+                borderColor: barColors.map(color => color),
+                borderWidth: 0,
+                borderRadius: 8,
+                barPercentage: 0.65,
+                categoryPercentage: 0.8,
+                hoverBackgroundColor: barColors.map(color => color + 'cc'),
+                hoverBorderWidth: 0
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
+                legend: { display: false },
                 tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
+                    titleColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    bodyColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    borderColor: '#4299e1',
+                    borderWidth: 1,
                     callbacks: {
+                        title: function(context) {
+                            return context[0].label;
+                        },
                         label: function(context) {
-                            return `📦 ${context.parsed.y.toFixed(0)} шт`;
+                            return `📦 Продажи: ${context.parsed.y.toFixed(0)} шт`;
+                        },
+                        afterBody: function(context) {
+                            const value = context[0].parsed.y;
+                            if (value === maxSales && maxSales > 0) {
+                                return '🏆 Лучший месяц!';
+                            }
+                            if (value === Math.min(...salesData) && salesData.length > 1) {
+                                return '⚠️ Худший месяц';
+                            }
+                            return '';
                         }
                     }
                 }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Количество (шт)',
-                        color: isDarkMode ? '#e2e8f0' : '#4a5568'
-                    },
-                    grid: {
-                        color: isDarkMode ? '#2d3748' : '#e2e8f0'
-                    }
-                },
                 x: {
-                    title: {
-                        display: true,
-                        text: 'Месяц',
-                        color: isDarkMode ? '#e2e8f0' : '#4a5568'
-                    },
-                    grid: {
-                        display: false
-                    }
+                    display: false, // скрываем ось X
+                    grid: { display: false }
+                },
+                y: {
+                    display: false, // скрываем ось Y
+                    grid: { display: false },
+                    beginAtZero: true
                 }
+            },
+            elements: {
+                bar: {
+                    borderWidth: 0,
+                    borderRadius: 8
+                }
+            },
+            layout: {
+                padding: { top: 15, bottom: 5, left: 5, right: 5 }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            },
+            hover: {
+                mode: 'nearest',
+                intersect: false,
+                animationDuration: 200
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutBounce'
             }
         }
     });
