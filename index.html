@@ -5211,8 +5211,9 @@ monthsOrder.forEach(month => { monthlySales[month] = 0; });
 
 currentData.forEach(d => {
     if (d.месяц && monthsOrder.includes(d.месяц)) {
-        const article = d.статья?.toLowerCase() || '';
-        if (article.includes('продажи') && (article.includes('шт') || article.includes('штук'))) {
+        // Ищем в подканале, а не в статье!
+        const subCategory = d.подканал?.toLowerCase() || '';
+        if (subCategory.includes('продажи') && (subCategory.includes('шт') || subCategory.includes('штук'))) {
             monthlySales[d.месяц] += Math.abs(d.сумма || 0);
         }
     }
