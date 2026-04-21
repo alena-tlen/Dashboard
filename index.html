@@ -5226,11 +5226,6 @@ setTimeout(() => {
     renderSalesChart(salesLabels, salesData);
 }, 150);
 
-// Отрисовка графика продаж
-setTimeout(() => {
-    renderSalesChart(salesLabels, salesData);
-}, 150);
-
 // Отрисовка мини-графика для блока доходов через Chart.js
 setTimeout(() => {
     if (monthlyLabels.length > 0 && monthlyRevenues.length > 0) {
@@ -6130,16 +6125,15 @@ toggleAllSubChannelsBtns.forEach(btn => {
             }
             
             const monthlyCost = {};
-            currentData.forEach(d => {
-                if (d.месяц && d.год) {
-                    const monthIndex = monthsOrder.indexOf(d.месяц);
-                    if (monthIndex === -1) return;
-                    const key = `${d.год}-${monthIndex}`;
-                    if (d.статья === 'Продажи шт.') monthlySales[key] = (monthlySales[key] || 0) + (d.сумма || 0);
-                    if (d.статья === 'Себестоимость сырья') monthlyCost[key] = (monthlyCost[key] || 0) + Math.abs(d.сумма || 0);
-                }
-            });
-            renderMiniChart('dashboardCostChart', Object.values(monthlyCost), '#f56565');
+currentData.forEach(d => {
+    if (d.месяц && d.год) {
+        const monthIndex = monthsOrder.indexOf(d.месяц);
+        if (monthIndex === -1) return;
+        const key = `${d.год}-${monthIndex}`;
+        if (d.статья === 'Себестоимость сырья') monthlyCost[key] = (monthlyCost[key] || 0) + Math.abs(d.сумма || 0);
+    }
+});
+renderMiniChart('dashboardCostChart', Object.values(monthlyCost), '#f56565');
             
             const aiInsightsDiv = document.getElementById('aiInsights');
             if (aiInsightsDiv) {
