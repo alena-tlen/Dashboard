@@ -6586,8 +6586,10 @@ function renderSalesChart(labels, salesData) {
     const ctx = canvas.getContext('2d');
     const isDarkMode = document.body.classList.contains('dark');
     
-    // Уничтожаем старый график, если есть
-    if (window.salesChart) window.salesChart.destroy();
+    // Уничтожаем старый график, если есть и если это объект Chart
+    if (window.salesChart && typeof window.salesChart.destroy === 'function') {
+        window.salesChart.destroy();
+    }
     
     window.salesChart = new Chart(ctx, {
         type: 'line',
