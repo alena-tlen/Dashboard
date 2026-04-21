@@ -5205,6 +5205,27 @@ const monthlyLabels = monthsOrder.filter(m => monthlyDataMap.get(m).revenue > 0 
 const monthlyRevenues = monthlyLabels.map(m => monthlyDataMap.get(m).revenue / 1000);
 const monthlyProfits = monthlyLabels.map(m => monthlyDataMap.get(m).profit / 1000);
 
+// Сбор данных по продажам по месяцам
+const monthlySales = {};
+monthsOrder.forEach(month => { monthlySales[month] = 0; });
+
+currentData.forEach(d => {
+    if (d.месяц && monthsOrder.includes(d.месяц)) {
+        const article = d.статья?.toLowerCase() || '';
+        if (article.includes('продажи') && (article.includes('шт') || article.includes('штук'))) {
+            monthlySales[d.месяц] += Math.abs(d.сумма || 0);
+        }
+    }
+});
+
+const salesLabels = monthsOrder.filter(m => monthlySales[m] > 0);
+const salesData = salesLabels.map(m => monthlySales[m]);
+
+// Отрисовка графика продаж
+setTimeout(() => {
+    renderSalesChart(salesLabels, salesData);
+}, 150);
+
 // Отрисовка мини-графика для блока доходов через Chart.js
 setTimeout(() => {
     if (monthlyLabels.length > 0 && monthlyRevenues.length > 0) {
@@ -5665,7 +5686,7 @@ console.log('costData:', costData);
                             <div class="metric-value" id="mainSalesValue">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
                             ${salesChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(salesChange)}</span>` : ''}
                         </div>
-                        <div class="mini-chart" id="dashboardSalesChart"></div>
+                        <canvas id="salesChart" style="height: 120px; width: 100%; margin-top: 12px;"></canvas>
                         <div class="metric-sub">всего за период</div>
                         <div class="sales-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
                             <div style="padding-top: 16px;">${generateSalesBreakdown(currentData)}</div>
@@ -6554,6 +6575,74 @@ function renderProfitMiniChart() {
             animation: {
                 duration: 1000,
                 easing: 'easeInOutQuart'
+            }
+        }
+    });
+}
+
+function renderSalesChart(labels, salesData) {
+    const canvas = document.getElementById('salesChart');
+    if (!canvas || !labels || labels.length === 0) return;
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    
+    // Уничтожаем старый график, если есть
+    if (window.salesChart) window.salesChart.destroy();
+    
+    window.salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Продажи (шт)',
+                data: salesData,
+                borderColor: '#4299e1',
+                backgroundColor: 'rgba(66, 153, 225, 0.1)',
+                borderWidth: 3,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#4299e1',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `📦 ${context.parsed.y.toFixed(0)} шт`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Количество (шт)',
+                        color: isDarkMode ? '#e2e8f0' : '#4a5568'
+                    },
+                    grid: {
+                        color: isDarkMode ? '#2d3748' : '#e2e8f0'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Месяц',
+                        color: isDarkMode ? '#e2e8f0' : '#4a5568'
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
             }
         }
     });
