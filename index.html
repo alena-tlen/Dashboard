@@ -5221,6 +5221,11 @@ currentData.forEach(d => {
 const salesLabels = monthsOrder.filter(m => monthlySales[m] > 0);
 const salesData = salesLabels.map(m => monthlySales[m]);
 
+console.log('Попытка отрисовать график продаж, данные:', {salesLabels, salesData});
+setTimeout(() => {
+    renderSalesChart(salesLabels, salesData);
+}, 150);
+
 // Отрисовка графика продаж
 setTimeout(() => {
     renderSalesChart(salesLabels, salesData);
