@@ -1222,7 +1222,7 @@ body.dark .cash-sidebar {
                 </div>
                 <div class="theme-toggle">
                     <span class="theme-toggle-label">🌙 Темная тема</span>
-                    <div class="toggle-switch active" id="themeToggle"><div class="slider"></div></div>
+                    <div class="toggle-switch" id="themeToggle"><div class="slider"></div></div>
                 </div>
             </div>
             <div class="main-content">
@@ -6755,6 +6755,11 @@ diagnoseSberbank();
     
     companyFilter.innerHTML = '<option value="">Все компании</option>' + companies.map(c => `<option value="${c}">${c}</option>`).join('');
     yearFilter.innerHTML = '<option value="">Все годы</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+    
+    // Автоматически выбираем самый ранний год
+    if (years.length > 0) {
+        yearFilter.value = years[0];  // самый ранний год
+    }
     monthFilter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
     monthFilter.setAttribute('multiple', 'multiple');
     monthFilter.size = 4;
@@ -6893,7 +6898,7 @@ diagnoseSberbank();
                 themeToggle.classList.remove('active');
             } else {
                 body.classList.remove('light');
-                body.classList.add('dark');
+                body.classList.add('light');
                 themeToggle.classList.add('active');
             }
         };
