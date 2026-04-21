@@ -1128,6 +1128,24 @@ body.dark .cash-sidebar {
     border-bottom: none;
 }
 
+/* Стили для графика продаж */
+#salesChart {
+    transition: all 0.3s ease;
+}
+
+#salesChart:hover {
+    opacity: 0.95;
+}
+
+/* Анимация для столбцов */
+.sales-bar {
+    transition: transform 0.3s ease;
+}
+
+.sales-bar:hover {
+    transform: scaleY(1.05);
+}
+
 </style>
 </head>
 <body>
@@ -5687,7 +5705,7 @@ console.log('costData:', costData);
                             <div class="metric-value" id="mainSalesValue">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
                             ${salesChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(salesChange)}</span>` : ''}
                         </div>
-                        <canvas id="salesChart" style="height: 100px; width: 100%; margin-top: 8px; cursor: pointer;"></canvas>
+                        <canvas id="salesChart" style="height: 100px; width: 100%; margin-top: 8px; border-radius: 8px; cursor: pointer;"></canvas>
                         <div class="metric-sub">всего за период</div>
                         <div class="sales-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
                             <div style="padding-top: 16px;">${generateSalesBreakdown(currentData)}</div>
@@ -6591,14 +6609,34 @@ function renderSalesChart(labels, salesData) {
         window.salesChart.destroy();
     }
     
-    // Находим максимальное значение для масштабирования
+    // Находим максимальное значение
     const maxSales = Math.max(...salesData);
     
-    // Цвета для столбцов (лучший месяц - зеленый, худший - красный, остальные - синие оттенки)
-    const barColors = salesData.map((value, index) => {
-        if (value === maxSales && maxSales > 0) return '#48bb78'; // лучший месяц - зеленый
-        if (value === Math.min(...salesData) && salesData.length > 1) return '#f56565'; // худший месяц - красный
-        return '#4299e1'; // обычные - синий
+    // Создаем градиенты для каждого столбца
+    const gradients = salesData.map((value, index) => {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        
+        // Лучший месяц - золотой/зеленый градиент
+        if (value === maxSales && maxSales > 0) {
+            gradient.addColorStop(0, '#fbbf24');  // золотой
+            gradient.addColorStop(0.5, '#f59e0b');
+            gradient.addColorStop(1, '#d97706');
+            return gradient;
+        }
+        // Худший месяц - красный/оранжевый градиент
+        else if (value === Math.min(...salesData) && salesData.length > 1) {
+            gradient.addColorStop(0, '#f56565');  // красный
+            gradient.addColorStop(0.5, '#ed8936');
+            gradient.addColorStop(1, '#dd6b20');
+            return gradient;
+        }
+        // Обычные месяцы - синий/фиолетовый градиент (как в доходах)
+        else {
+            gradient.addColorStop(0, '#60a5fa');  // голубой
+            gradient.addColorStop(0.5, '#8b5cf6'); // фиолетовый
+            gradient.addColorStop(1, '#6366f1');   // синий
+            return gradient;
+        }
     });
     
     window.salesChart = new Chart(ctx, {
@@ -6608,13 +6646,15 @@ function renderSalesChart(labels, salesData) {
             datasets: [{
                 label: 'Продажи (шт)',
                 data: salesData,
-                backgroundColor: barColors,
-                borderColor: barColors.map(color => color),
+                backgroundColor: gradients,
                 borderWidth: 0,
-                borderRadius: 8,
-                barPercentage: 0.65,
-                categoryPercentage: 0.8,
-                hoverBackgroundColor: barColors.map(color => color + 'cc'),
+                borderRadius: 12,
+                barPercentage: 0.7,
+                categoryPercentage: 0.85,
+                hoverBackgroundColor: gradients.map(g => {
+                    // Добавляем эффект при наведении
+                    return g;
+                }),
                 hoverBorderWidth: 0
             }]
         },
@@ -6629,22 +6669,24 @@ function renderSalesChart(labels, salesData) {
                     backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
                     titleColor: isDarkMode ? '#e2e8f0' : '#4a5568',
                     bodyColor: isDarkMode ? '#e2e8f0' : '#4a5568',
-                    borderColor: '#4299e1',
+                    borderColor: '#667eea',
                     borderWidth: 1,
+                    padding: 10,
                     callbacks: {
                         title: function(context) {
                             return context[0].label;
                         },
                         label: function(context) {
-                            return `📦 Продажи: ${context.parsed.y.toFixed(0)} шт`;
+                            const value = context.parsed.y;
+                            return `📦 Продажи: ${value.toFixed(0)} шт`;
                         },
                         afterBody: function(context) {
                             const value = context[0].parsed.y;
                             if (value === maxSales && maxSales > 0) {
-                                return '🏆 Лучший месяц!';
+                                return '🏆 Лучший месяц! 🎉';
                             }
                             if (value === Math.min(...salesData) && salesData.length > 1) {
-                                return '⚠️ Худший месяц';
+                                return '⚠️ Худший месяц. Нужен анализ!';
                             }
                             return '';
                         }
@@ -6653,11 +6695,11 @@ function renderSalesChart(labels, salesData) {
             },
             scales: {
                 x: {
-                    display: false, // скрываем ось X
+                    display: false,
                     grid: { display: false }
                 },
                 y: {
-                    display: false, // скрываем ось Y
+                    display: false,
                     grid: { display: false },
                     beginAtZero: true
                 }
@@ -6665,7 +6707,7 @@ function renderSalesChart(labels, salesData) {
             elements: {
                 bar: {
                     borderWidth: 0,
-                    borderRadius: 8
+                    borderRadius: 12
                 }
             },
             layout: {
@@ -6682,8 +6724,8 @@ function renderSalesChart(labels, salesData) {
                 animationDuration: 200
             },
             animation: {
-                duration: 1000,
-                easing: 'easeOutBounce'
+                duration: 1200,
+                easing: 'easeOutElastic'
             }
         }
     });
