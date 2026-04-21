@@ -6124,7 +6124,7 @@ toggleAllSubChannelsBtns.forEach(btn => {
                 renderMiniChart('miniNetRevenueChart', netRevenueData, '#4299e1');
             }
             
-            const monthlySales = {}, monthlyCost = {};
+            const monthlyCost = {};
             currentData.forEach(d => {
                 if (d.месяц && d.год) {
                     const monthIndex = monthsOrder.indexOf(d.месяц);
