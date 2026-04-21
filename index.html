@@ -6609,32 +6609,33 @@ function renderSalesChart(labels, salesData) {
         window.salesChart.destroy();
     }
     
-    // Находим максимальное значение
+    // Находим максимальное и минимальное значение
     const maxSales = Math.max(...salesData);
+    const minSales = Math.min(...salesData);
     
     // Создаем градиенты для каждого столбца
-    const gradients = salesData.map((value, index) => {
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    const gradients = salesData.map((value) => {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
         
-        // Лучший месяц - золотой/зеленый градиент
+        // Лучший месяц - зеленый градиент (как в доходах)
         if (value === maxSales && maxSales > 0) {
-            gradient.addColorStop(0, '#fbbf24');  // золотой
-            gradient.addColorStop(0.5, '#f59e0b');
-            gradient.addColorStop(1, '#d97706');
+            gradient.addColorStop(0, '#48bb78');   // ярко-зеленый
+            gradient.addColorStop(0.5, '#38a169');  // темно-зеленый
+            gradient.addColorStop(1, '#2f855a');    // насыщенный зеленый
             return gradient;
         }
-        // Худший месяц - красный/оранжевый градиент
-        else if (value === Math.min(...salesData) && salesData.length > 1) {
-            gradient.addColorStop(0, '#f56565');  // красный
-            gradient.addColorStop(0.5, '#ed8936');
-            gradient.addColorStop(1, '#dd6b20');
+        // Худший месяц - красный градиент (как в расходах)
+        else if (value === minSales && salesData.length > 1 && minSales !== maxSales) {
+            gradient.addColorStop(0, '#f56565');   // ярко-красный
+            gradient.addColorStop(0.5, '#e53e3e');  // темно-красный
+            gradient.addColorStop(1, '#c53030');    // насыщенный красный
             return gradient;
         }
-        // Обычные месяцы - синий/фиолетовый градиент (как в доходах)
+        // Обычные месяцы - сине-голубой градиент
         else {
-            gradient.addColorStop(0, '#60a5fa');  // голубой
-            gradient.addColorStop(0.5, '#8b5cf6'); // фиолетовый
-            gradient.addColorStop(1, '#6366f1');   // синий
+            gradient.addColorStop(0, '#60a5fa');   // голубой
+            gradient.addColorStop(0.5, '#3b82f6');  // синий
+            gradient.addColorStop(1, '#2563eb');    // темно-синий
             return gradient;
         }
     });
@@ -6648,13 +6649,10 @@ function renderSalesChart(labels, salesData) {
                 data: salesData,
                 backgroundColor: gradients,
                 borderWidth: 0,
-                borderRadius: 12,
+                borderRadius: 10,
                 barPercentage: 0.7,
                 categoryPercentage: 0.85,
-                hoverBackgroundColor: gradients.map(g => {
-                    // Добавляем эффект при наведении
-                    return g;
-                }),
+                hoverBackgroundColor: gradients,
                 hoverBorderWidth: 0
             }]
         },
@@ -6685,8 +6683,8 @@ function renderSalesChart(labels, salesData) {
                             if (value === maxSales && maxSales > 0) {
                                 return '🏆 Лучший месяц! 🎉';
                             }
-                            if (value === Math.min(...salesData) && salesData.length > 1) {
-                                return '⚠️ Худший месяц. Нужен анализ!';
+                            if (value === minSales && salesData.length > 1 && minSales !== maxSales) {
+                                return '⚠️ Худший месяц. Требуется анализ.';
                             }
                             return '';
                         }
@@ -6707,7 +6705,7 @@ function renderSalesChart(labels, salesData) {
             elements: {
                 bar: {
                     borderWidth: 0,
-                    borderRadius: 12
+                    borderRadius: 10
                 }
             },
             layout: {
@@ -6724,8 +6722,8 @@ function renderSalesChart(labels, salesData) {
                 animationDuration: 200
             },
             animation: {
-                duration: 1200,
-                easing: 'easeOutElastic'
+                duration: 1000,
+                easing: 'easeOutQuart'
             }
         }
     });
