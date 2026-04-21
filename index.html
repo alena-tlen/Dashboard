@@ -6134,7 +6134,6 @@ toggleAllSubChannelsBtns.forEach(btn => {
                     if (d.статья === 'Себестоимость сырья') monthlyCost[key] = (monthlyCost[key] || 0) + Math.abs(d.сумма || 0);
                 }
             });
-            renderMiniChart('dashboardSalesChart', Object.values(monthlySales), '#48bb78');
             renderMiniChart('dashboardCostChart', Object.values(monthlyCost), '#f56565');
             
             const aiInsightsDiv = document.getElementById('aiInsights');
