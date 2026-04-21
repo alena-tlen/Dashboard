@@ -6613,30 +6613,28 @@ function renderSalesChart(labels, salesData) {
     const maxSales = Math.max(...salesData);
     const minSales = Math.min(...salesData);
     
-    // Создаем градиенты для каждого столбца
-    const gradients = salesData.map((value) => {
+    // СОЗДАЕМ ГРАДИЕНТЫ ДЛЯ КАЖДОГО СТОЛБЦА (через цветовые схемы)
+    const createGradient = (colorStart, colorEnd, colorMiddle = null) => {
         const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        
-        // Лучший месяц - зеленый градиент (как в доходах)
+        gradient.addColorStop(0, colorStart);
+        if (colorMiddle) gradient.addColorStop(0.5, colorMiddle);
+        gradient.addColorStop(1, colorEnd);
+        return gradient;
+    };
+    
+    // Создаем массив градиентов для каждого столбца
+    const gradients = salesData.map((value) => {
+        // Лучший месяц - зеленый градиент
         if (value === maxSales && maxSales > 0) {
-            gradient.addColorStop(0, '#48bb78');   // ярко-зеленый
-            gradient.addColorStop(0.5, '#38a169');  // темно-зеленый
-            gradient.addColorStop(1, '#2f855a');    // насыщенный зеленый
-            return gradient;
+            return createGradient('#6ee7b7', '#48bb78', '#38a169');
         }
-        // Худший месяц - красный градиент (как в расходах)
+        // Худший месяц - красный градиент
         else if (value === minSales && salesData.length > 1 && minSales !== maxSales) {
-            gradient.addColorStop(0, '#f56565');   // ярко-красный
-            gradient.addColorStop(0.5, '#e53e3e');  // темно-красный
-            gradient.addColorStop(1, '#c53030');    // насыщенный красный
-            return gradient;
+            return createGradient('#fc8181', '#f56565', '#e53e3e');
         }
-        // Обычные месяцы - сине-голубой градиент
+        // Обычные месяцы - синий градиент
         else {
-            gradient.addColorStop(0, '#60a5fa');   // голубой
-            gradient.addColorStop(0.5, '#3b82f6');  // синий
-            gradient.addColorStop(1, '#2563eb');    // темно-синий
-            return gradient;
+            return createGradient('#93c5fd', '#60a5fa', '#3b82f6');
         }
     });
     
