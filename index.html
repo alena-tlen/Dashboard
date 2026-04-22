@@ -1213,8 +1213,9 @@ body.dark .cash-sidebar {
 .sidebar-nav {
     width: 80px;
     min-width: 80px;
-    transition: width 0.2s ease;
-    overflow: visible;
+    max-width: 80px;
+    transition: all 0.2s ease;
+    overflow: hidden;
     position: sticky;
     top: 20px;
     left: 0;
@@ -1240,26 +1241,8 @@ body.dark .sidebar-nav {
 /* При наведении - расширяем */
 .sidebar-nav:hover {
     width: 280px;
-}
-
-/* Скрываем текст в свернутом состоянии */
-.sidebar-nav .nav-title span,
-.sidebar-nav .nav-item span:not(.nav-icon),
-.sidebar-nav .nav-subitem span:not(.nav-icon),
-.sidebar-nav .theme-toggle-label,
-.sidebar-nav .arrow {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    white-space: nowrap;
-}
-
-/* При наведении показываем текст */
-.sidebar-nav:hover .nav-title span,
-.sidebar-nav:hover .nav-item span:not(.nav-icon),
-.sidebar-nav:hover .nav-subitem span:not(.nav-icon),
-.sidebar-nav:hover .theme-toggle-label,
-.sidebar-nav:hover .arrow {
-    opacity: 1;
+    max-width: 280px;
+    overflow: visible;
 }
 
 /* Заголовок */
@@ -1272,6 +1255,25 @@ body.dark .sidebar-nav {
     padding: 0 16px 10px 16px;
     border-bottom: 1px solid rgba(102,126,234,0.3);
     white-space: nowrap;
+    overflow: hidden;
+}
+
+/* Скрываем текст в свернутом состоянии */
+.sidebar-nav .nav-title span,
+.sidebar-nav .nav-item span:not(.nav-icon),
+.sidebar-nav .nav-subitem span:not(.nav-icon),
+.sidebar-nav .theme-toggle-label {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+}
+
+/* При наведении показываем текст */
+.sidebar-nav:hover .nav-title span,
+.sidebar-nav:hover .nav-item span:not(.nav-icon),
+.sidebar-nav:hover .nav-subitem span:not(.nav-icon),
+.sidebar-nav:hover .theme-toggle-label {
+    opacity: 1;
 }
 
 /* Пункты меню */
@@ -1293,6 +1295,22 @@ body.dark .sidebar-nav {
     font-size: 20px;
     min-width: 24px;
     text-align: center;
+}
+
+/* Стрелка */
+.sidebar-nav .arrow {
+    margin-left: auto;
+    transition: transform 0.2s;
+    font-size: 10px;
+    opacity: 0;
+}
+
+.sidebar-nav:hover .arrow {
+    opacity: 1;
+}
+
+.sidebar-nav .arrow.open {
+    transform: rotate(90deg);
 }
 
 /* Подменю */
@@ -1346,7 +1364,7 @@ body.dark .sidebar-nav .nav-submenu {
     text-align: center;
 }
 
-/* Переключатель темы */
+/* Переключатель темы - исправленный */
 .sidebar-nav .theme-toggle {
     margin-top: 30px;
     padding: 20px 16px 0 16px;
@@ -1355,6 +1373,7 @@ body.dark .sidebar-nav .nav-submenu {
     align-items: center;
     justify-content: space-between;
     white-space: nowrap;
+    overflow: hidden;
 }
 
 .sidebar-nav .theme-toggle-label {
@@ -1363,20 +1382,30 @@ body.dark .sidebar-nav .nav-submenu {
     transition: opacity 0.15s ease;
 }
 
-/* Убираем кнопку сворачивания */
-.sidebar-toggle-btn {
+/* В свернутом состоянии */
+.sidebar-nav:not(:hover) .theme-toggle {
+    justify-content: center;
+    padding: 20px 8px 0 8px;
+}
+
+.sidebar-nav:not(:hover) .theme-toggle-label {
     display: none;
 }
 
-/* Стрелка */
-.sidebar-nav .arrow {
-    margin-left: auto;
-    transition: transform 0.2s;
-    font-size: 10px;
+.sidebar-nav:not(:hover) .toggle-switch {
+    width: 26px;
+    height: 26px;
+    margin: 0;
 }
 
-.sidebar-nav .arrow.open {
-    transform: rotate(90deg);
+.sidebar-nav:not(:hover) .toggle-switch .slider {
+    left: 2px;
+    top: 2px;
+}
+
+/* Убираем кнопку сворачивания */
+.sidebar-toggle-btn {
+    display: none;
 }
 
 /* ========== ФИЛЬТРЫ В ШАПКЕ ========== */
