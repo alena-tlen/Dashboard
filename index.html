@@ -1546,6 +1546,209 @@ body.dark .filter-group-header select {
     top: 2px;
 }
 
+/* ========== ПЛАВАЮЩАЯ КНОПКА ФИЛЬТРОВ ========== */
+.floating-filter-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    color: white;
+    font-size: 28px;
+}
+
+.floating-filter-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(102,126,234,0.6);
+}
+
+.floating-filter-btn:active {
+    transform: scale(0.95);
+}
+
+/* Модальное окно фильтров */
+.filter-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.filter-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.filter-modal-content {
+    background: white;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 500px;
+    padding: 0;
+    transform: scale(0.9);
+    transition: all 0.3s ease;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+.filter-modal.active .filter-modal-content {
+    transform: scale(1);
+}
+
+body.dark .filter-modal-content {
+    background: #1a1a2a;
+    border: 1px solid #2d2d3a;
+}
+
+.filter-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(102,126,234,0.2);
+    background: rgba(102,126,234,0.05);
+}
+
+.filter-modal-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #667eea;
+    margin: 0;
+}
+
+.filter-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #a0aec0;
+    transition: all 0.2s;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.filter-modal-close:hover {
+    background: rgba(245,101,101,0.1);
+    color: #f56565;
+}
+
+.filter-modal-body {
+    padding: 24px;
+}
+
+.filter-modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(102,126,234,0.2);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    background: rgba(102,126,234,0.03);
+}
+
+.filter-modal .filter-group {
+    margin-bottom: 20px;
+}
+
+.filter-modal .filter-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 8px;
+}
+
+.filter-modal .filter-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+body.dark .filter-modal .filter-group select {
+    background: #0f0f1a;
+    border-color: #2d2d3a;
+    color: #e4e4e7;
+}
+
+.filter-modal .filter-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+}
+
+.filter-modal .filter-group select[multiple] {
+    min-height: 100px;
+}
+
+.filter-modal-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-modal-btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.filter-modal-btn-primary:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+}
+
+.filter-modal-btn-secondary {
+    background: rgba(245,101,101,0.1);
+    color: #f56565;
+}
+
+.filter-modal-btn-secondary:hover {
+    background: rgba(245,101,101,0.2);
+}
+
+/* Анимация для кнопки */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(102,126,234,0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(102,126,234,0); }
+    100% { box-shadow: 0 0 0 0 rgba(102,126,234,0); }
+}
+
+.floating-filter-btn {
+    animation: pulse 2s infinite;
+}
+
 </style>
 </head>
 <body>
@@ -7796,7 +7999,7 @@ function syncFiltersToHeader() {
         };
     }
     
-    // Загружаем сохраненную тему
+        // Загружаем сохраненную тему
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
         body.classList.remove('light');
@@ -7805,7 +8008,108 @@ function syncFiltersToHeader() {
     } else {
         body.classList.add('light');
     }
-}
+    
+    // ========== ПЛАВАЮЩАЯ КНОПКА И МОДАЛЬНОЕ ОКНО ФИЛЬТРОВ ==========
+    const floatingBtn = document.getElementById('floatingFilterBtn');
+    const filterModal = document.getElementById('filterModal');
+    const modalCloseBtn = document.getElementById('filterModalCloseBtn');
+    const modalApplyBtn = document.getElementById('modalApplyFiltersBtn');
+    const modalResetBtn = document.getElementById('modalResetFiltersBtn');
+    const modalCompanyFilter = document.getElementById('modalCompanyFilter');
+    const modalYearFilter = document.getElementById('modalYearFilter');
+    const modalMonthFilter = document.getElementById('modalMonthFilter');
+
+    // Открытие модального окна
+    if (floatingBtn) {
+        floatingBtn.onclick = () => {
+            filterModal.classList.add('active');
+            if (realCompanyFilter) modalCompanyFilter.value = realCompanyFilter.value;
+            if (realYearFilter) modalYearFilter.value = realYearFilter.value;
+            if (realMonthFilter) {
+                Array.from(modalMonthFilter.options).forEach(opt => {
+                    opt.selected = Array.from(realMonthFilter.selectedOptions).some(o => o.value === opt.value);
+                });
+            }
+        };
+    }
+
+    // Закрытие модального окна
+    function closeModal() {
+        filterModal.classList.remove('active');
+    }
+
+    if (modalCloseBtn) modalCloseBtn.onclick = closeModal;
+    if (filterModal) {
+        filterModal.onclick = (e) => {
+            if (e.target === filterModal) closeModal();
+        };
+    }
+
+    // Применение фильтров из модального окна
+    if (modalApplyBtn) {
+        modalApplyBtn.onclick = () => {
+            if (realCompanyFilter) realCompanyFilter.value = modalCompanyFilter.value;
+            if (realYearFilter) realYearFilter.value = modalYearFilter.value;
+            if (realMonthFilter) {
+                Array.from(realMonthFilter.options).forEach(opt => {
+                    opt.selected = Array.from(modalMonthFilter.selectedOptions).some(o => o.value === opt.value);
+                });
+            }
+            if (companyFilterHeader) companyFilterHeader.value = modalCompanyFilter.value;
+            if (yearFilterHeader) yearFilterHeader.value = modalYearFilter.value;
+            if (monthFilterHeader) {
+                Array.from(monthFilterHeader.options).forEach(opt => {
+                    opt.selected = Array.from(modalMonthFilter.selectedOptions).some(o => o.value === opt.value);
+                });
+            }
+            debouncedApply();
+            closeModal();
+        };
+    }
+
+    // Сброс фильтров из модального окна
+    if (modalResetBtn) {
+        modalResetBtn.onclick = () => {
+            modalCompanyFilter.value = '';
+            modalYearFilter.value = '';
+            Array.from(modalMonthFilter.options).forEach(o => o.selected = false);
+            if (realCompanyFilter) realCompanyFilter.value = '';
+            if (realYearFilter) realYearFilter.value = '';
+            if (realMonthFilter) Array.from(realMonthFilter.options).forEach(o => o.selected = false);
+            if (companyFilterHeader) companyFilterHeader.value = '';
+            if (yearFilterHeader) yearFilterHeader.value = '';
+            if (monthFilterHeader) Array.from(monthFilterHeader.options).forEach(o => o.selected = false);
+            debouncedApply();
+            closeModal();
+        };
+    }
+
+    // Обновляем опции в модальном окне при загрузке данных
+    function updateModalFilters() {
+        if (realCompanyFilter && modalCompanyFilter) {
+            modalCompanyFilter.innerHTML = realCompanyFilter.innerHTML;
+            modalCompanyFilter.value = realCompanyFilter.value;
+        }
+        if (realYearFilter && modalYearFilter) {
+            modalYearFilter.innerHTML = realYearFilter.innerHTML;
+            modalYearFilter.value = realYearFilter.value;
+        }
+        if (realMonthFilter && modalMonthFilter) {
+            modalMonthFilter.innerHTML = realMonthFilter.innerHTML;
+            Array.from(modalMonthFilter.options).forEach(opt => {
+                opt.selected = Array.from(realMonthFilter.selectedOptions).some(o => o.value === opt.value);
+            });
+        }
+    }
+
+    // Сохраняем оригинальную функцию и оборачиваем
+    const originalUpdateFilters = updateFilters;
+    updateFilters = function() {
+        originalUpdateFilters();
+        updateModalFilters();
+    };
+    
+} // <--- ЭТО ЗАКРЫВАЮЩАЯ СКОБКА ФУНКЦИИ initApp
         
     
     function showAdminPanel() {
@@ -7835,5 +8139,56 @@ function syncFiltersToHeader() {
     
     initAuth();
     </script>
+
+<!-- Плавающая кнопка фильтров -->
+<button class="floating-filter-btn" id="floatingFilterBtn">
+    🔍
+</button>
+
+<!-- Модальное окно фильтров -->
+<div class="filter-modal" id="filterModal">
+    <div class="filter-modal-content">
+        <div class="filter-modal-header">
+            <h3>🔍 Фильтры</h3>
+            <button class="filter-modal-close" id="filterModalCloseBtn">×</button>
+        </div>
+        <div class="filter-modal-body">
+            <div class="filter-group">
+                <label>🏢 Компания</label>
+                <select id="modalCompanyFilter">
+                    <option value="">Все компании</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>📅 Год</label>
+                <select id="modalYearFilter">
+                    <option value="">Все годы</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>📆 Месяц (можно выбрать несколько)</label>
+                <select id="modalMonthFilter" multiple size="4">
+                    <option value="январь">Январь</option>
+                    <option value="февраль">Февраль</option>
+                    <option value="март">Март</option>
+                    <option value="апрель">Апрель</option>
+                    <option value="май">Май</option>
+                    <option value="июнь">Июнь</option>
+                    <option value="июль">Июль</option>
+                    <option value="август">Август</option>
+                    <option value="сентябрь">Сентябрь</option>
+                    <option value="октябрь">Октябрь</option>
+                    <option value="ноябрь">Ноябрь</option>
+                    <option value="декабрь">Декабрь</option>
+                </select>
+            </div>
+        </div>
+        <div class="filter-modal-footer">
+            <button class="filter-modal-btn filter-modal-btn-secondary" id="modalResetFiltersBtn">Сбросить</button>
+            <button class="filter-modal-btn filter-modal-btn-primary" id="modalApplyFiltersBtn">Применить</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
