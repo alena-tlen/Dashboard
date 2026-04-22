@@ -1258,8 +1258,31 @@ body.dark .sidebar-nav {
     overflow: hidden;
 }
 
+/* Полностью скрываем текст заголовка в свернутом состоянии */
+.sidebar-nav:not(:hover) .nav-title {
+    opacity: 0;
+    visibility: hidden;
+    padding: 0;
+    margin-bottom: 10px;
+    border-bottom: none;
+}
+
+/* При наведении показываем */
+.sidebar-nav:hover .nav-title {
+    opacity: 1;
+    visibility: visible;
+    padding: 0 16px 10px 16px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(102,126,234,0.3);
+}
+
 /* Скрываем текст в свернутом состоянии */
-.sidebar-nav .nav-title span,
+.sidebar-nav .nav-title span {
+    display: inline;
+}
+.sidebar-nav:not(:hover) .nav-title span {
+    display: none;
+}
 .sidebar-nav .nav-item span:not(.nav-icon),
 .sidebar-nav .nav-subitem span:not(.nav-icon),
 .sidebar-nav .theme-toggle-label {
