@@ -1210,6 +1210,204 @@ body.dark .cash-sidebar {
     transition: transform 0.2s ease;
 }
 
+/* ========== НОВАЯ ЛЕВАЯ ПАНЕЛЬ С АНИМАЦИЕЙ ========== */
+.sidebar-nav {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    position: relative;
+    margin-left: 0 !important;
+    border-radius: 0 16px 16px 0 !important;
+}
+
+.sidebar-nav.collapsed {
+    width: 80px !important;
+    min-width: 80px !important;
+}
+
+.sidebar-nav.collapsed .nav-title,
+.sidebar-nav.collapsed .nav-item span:not(.nav-icon),
+.sidebar-nav.collapsed .nav-subitem span:not(.nav-icon),
+.sidebar-nav.collapsed .theme-toggle-label,
+.sidebar-nav.collapsed .filters-sidebar-header span:not(.filters-sidebar-icon),
+.sidebar-nav.collapsed .filter-group-sidebar,
+.sidebar-nav.collapsed .filter-actions-sidebar {
+    display: none !important;
+}
+
+.sidebar-nav.collapsed .nav-item {
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.sidebar-nav.collapsed .nav-submenu {
+    position: absolute;
+    left: 80px;
+    top: 0;
+    background: inherit;
+    border-radius: 0 12px 12px 0;
+    padding: 10px;
+    min-width: 180px;
+    z-index: 100;
+    box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+}
+
+body.light .sidebar-nav.collapsed .nav-submenu {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-left: none;
+}
+
+body.dark .sidebar-nav.collapsed .nav-submenu {
+    background: #1a1a2a;
+    border: 1px solid #2d2d3a;
+    border-left: none;
+}
+
+.sidebar-nav.collapsed .nav-submenu.show {
+    display: block !important;
+}
+
+.sidebar-nav.collapsed .nav-subitem {
+    padding: 10px 12px;
+    white-space: nowrap;
+}
+
+/* Кнопка сворачивания */
+.sidebar-toggle-btn {
+    position: absolute;
+    top: 20px;
+    right: -12px;
+    width: 24px;
+    height: 24px;
+    background: #667eea;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    transition: all 0.2s;
+    z-index: 10;
+}
+
+.sidebar-toggle-btn:hover {
+    transform: scale(1.1);
+    background: #5a67d8;
+}
+
+.sidebar-nav.collapsed .sidebar-toggle-btn {
+    transform: rotate(180deg);
+}
+
+/* Анимация для пунктов меню */
+.nav-item, .nav-subitem {
+    transition: all 0.2s ease;
+}
+
+.nav-item:hover, .nav-subitem:hover {
+    transform: translateX(4px);
+}
+
+.sidebar-nav.collapsed .nav-item:hover {
+    transform: translateX(0);
+}
+
+/* ========== ФИЛЬТРЫ В ШАПКЕ ========== */
+.header-filters {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    background: rgba(102,126,234,0.08);
+    padding: 12px 20px;
+    border-radius: 12px;
+    margin-top: 12px;
+}
+
+.filter-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-group-header label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #667eea;
+    white-space: nowrap;
+}
+
+.filter-group-header select {
+    padding: 6px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 13px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+body.dark .filter-group-header select {
+    background: #0f0f1a;
+    border-color: #2d2d3a;
+    color: #e4e4e7;
+}
+
+.filter-group-header select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102,126,234,0.2);
+}
+
+.filter-group-header select[multiple] {
+    min-width: 150px;
+    padding: 6px;
+}
+
+.filter-badge {
+    background: #667eea;
+    color: white;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.filter-reset-btn {
+    background: none;
+    border: none;
+    color: #f56565;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.filter-reset-btn:hover {
+    background: rgba(245,101,101,0.1);
+}
+
+@media (max-width: 1024px) {
+    .header-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group-header {
+        justify-content: space-between;
+    }
+    
+    .filter-group-header select {
+        flex: 1;
+    }
+}
+
 </style>
 </head>
 <body>
@@ -1256,57 +1454,51 @@ body.dark .cash-sidebar {
                     <button class="admin-btn" id="adminBtn" style="display: none;">👑 Админ-панель</button>
                     <button class="logout-btn" id="logoutBtn">🚪 Выйти</button>
                 </div>
+            <div class="header-filters" id="headerFilters">
+    <div class="filter-group-header">
+        <label>🏢 Компания</label>
+        <select id="companyFilterHeader"><option value="">Все компании</option></select>
+    </div>
+    <div class="filter-group-header">
+        <label>📅 Год</label>
+        <select id="yearFilterHeader"><option value="">Все годы</option></select>
+    </div>
+    <div class="filter-group-header">
+        <label>📆 Месяц</label>
+        <select id="monthFilterHeader" multiple size="1" style="min-width: 120px;"></select>
+    </div>
+    <button class="filter-reset-btn" id="resetFiltersHeader">
+        🔄 Сбросить
+    </button>
+    <button class="btn-sidebar btn-info-sidebar" id="changeDataBtnHeader" style="padding: 6px 12px;">
+        📁 Сменить данные
+    </button>
+</div>
             </div>
         </div>
 
         <div class="container">
             <div class="sidebar-nav">
-                <div class="nav-title">НАВИГАЦИЯ</div>
-                <div class="nav-item has-submenu" id="dashboardMenu">
-                    <span class="nav-icon">📊</span>
-                    <span>Дашборд</span>
-                    <span class="arrow">▶</span>
-                </div>
-                <div class="nav-submenu" id="channelsSubmenu">
-                    <div class="nav-subitem" data-channel="wildberries"><span class="nav-icon">🛍️</span><span>Wildberries</span></div>
-                    <div class="nav-subitem" data-channel="ozon"><span class="nav-icon">📦</span><span>Ozon</span></div>
-                    <div class="nav-subitem" data-channel="detsky-mir"><span class="nav-icon">🧸</span><span>Детский мир</span></div>
-                    <div class="nav-subitem" data-channel="lamoda"><span class="nav-icon">👗</span><span>Lamoda</span></div>
-                </div>
-                <div class="nav-item" data-page="ai"><span class="nav-icon">🤖</span><span>AI Аналитик</span></div>
-                
-                <div class="filters-sidebar">
-                    <div class="filters-sidebar-header">
-                        <span class="filters-sidebar-icon">🔍</span>
-                        <span>Фильтры</span>
-                        <button class="filters-sidebar-toggle" id="filtersSidebarToggle">
-                            <span class="toggle-icon">▲</span>
-                        </button>
-                    </div>
-                    <div class="filters-sidebar-content" id="filtersSidebarContent">
-                        <div class="filter-group-sidebar">
-                            <label>🏢 Компания</label>
-                            <select id="companyFilter"><option value="">Все компании</option></select>
-                        </div>
-                        <div class="filter-group-sidebar">
-                            <label>📅 Год</label>
-                            <select id="yearFilter"><option value="">Все годы</option></select>
-                        </div>
-                        <div class="filter-group-sidebar">
-                            <label>📆 Месяц</label>
-                            <select id="monthFilter" multiple size="4"></select>
-                        </div>
-                        <div class="filter-actions-sidebar">
-                            <button class="btn-sidebar btn-danger-sidebar" id="resetFilters">🔄 Сбросить</button>
-                            <button class="btn-sidebar btn-info-sidebar" id="changeDataBtn">📁 Сменить данные</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="theme-toggle">
-                    <span class="theme-toggle-label">🌙 Темная тема</span>
-                    <div class="toggle-switch" id="themeToggle"><div class="slider"></div></div>
-                </div>
-            </div>
+    <button class="sidebar-toggle-btn" id="sidebarToggleBtn">◀</button>
+    <div class="nav-title">НАВИГАЦИЯ</div>
+    <div class="nav-item has-submenu" id="dashboardMenu">
+        <span class="nav-icon">📊</span>
+        <span>Дашборд</span>
+        <span class="arrow">▶</span>
+    </div>
+    <div class="nav-submenu" id="channelsSubmenu">
+        <div class="nav-subitem" data-channel="wildberries"><span class="nav-icon">🛍️</span><span>Wildberries</span></div>
+        <div class="nav-subitem" data-channel="ozon"><span class="nav-icon">📦</span><span>Ozon</span></div>
+        <div class="nav-subitem" data-channel="detsky-mir"><span class="nav-icon">🧸</span><span>Детский мир</span></div>
+        <div class="nav-subitem" data-channel="lamoda"><span class="nav-icon">👗</span><span>Lamoda</span></div>
+    </div>
+    <div class="nav-item" data-page="ai"><span class="nav-icon">🤖</span><span>AI Аналитик</span></div>
+    
+    <div class="theme-toggle">
+        <span class="theme-toggle-label">🌙 Темная тема</span>
+        <div class="toggle-switch" id="themeToggle"><div class="slider"></div></div>
+    </div>
+</div>
             <div class="main-content">
                 <div id="uploadArea" class="upload-card">
                     <div class="upload-icon">📊</div>
@@ -7180,6 +7372,102 @@ diagnoseSberbank();
         const resetFiltersBtn = document.getElementById('resetFilters');
         const companyFilter = document.getElementById('companyFilter');
         const yearFilter = document.getElementById('yearFilter');
+        // Управление сворачиванием боковой панели
+const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+const sidebarNav = document.querySelector('.sidebar-nav');
+
+if (sidebarToggleBtn && sidebarNav) {
+    // Загружаем состояние из localStorage
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+        sidebarNav.classList.add('collapsed');
+    }
+    
+    sidebarToggleBtn.onclick = () => {
+        sidebarNav.classList.toggle('collapsed');
+        localStorage.setItem('sidebarCollapsed', sidebarNav.classList.contains('collapsed'));
+        
+        // При сворачивании скрываем подменю
+        if (sidebarNav.classList.contains('collapsed')) {
+            const submenu = document.getElementById('channelsSubmenu');
+            if (submenu) submenu.classList.remove('show');
+        }
+    };
+}
+
+// Дублируем фильтры для шапки
+const companyFilterHeader = document.getElementById('companyFilterHeader');
+const yearFilterHeader = document.getElementById('yearFilterHeader');
+const monthFilterHeader = document.getElementById('monthFilterHeader');
+const resetFiltersHeader = document.getElementById('resetFiltersHeader');
+const changeDataBtnHeader = document.getElementById('changeDataBtnHeader');
+
+// Синхронизация фильтров
+function syncFiltersToHeader() {
+    if (companyFilterHeader && companyFilter) {
+        companyFilterHeader.innerHTML = companyFilter.innerHTML;
+        companyFilterHeader.value = companyFilter.value;
+    }
+    if (yearFilterHeader && yearFilter) {
+        yearFilterHeader.innerHTML = yearFilter.innerHTML;
+        yearFilterHeader.value = yearFilter.value;
+    }
+    if (monthFilterHeader && monthFilter) {
+        monthFilterHeader.innerHTML = monthFilter.innerHTML;
+        // Синхронизация выбранных значений
+        Array.from(monthFilterHeader.options).forEach(opt => {
+            opt.selected = Array.from(monthFilter.selectedOptions).some(o => o.value === opt.value);
+        });
+    }
+}
+
+// Обработчики для фильтров в шапке
+if (companyFilterHeader) {
+    companyFilterHeader.onchange = () => {
+        if (companyFilter) companyFilter.value = companyFilterHeader.value;
+        debouncedApply();
+    };
+}
+if (yearFilterHeader) {
+    yearFilterHeader.onchange = () => {
+        if (yearFilter) yearFilter.value = yearFilterHeader.value;
+        debouncedApply();
+    };
+}
+if (monthFilterHeader) {
+    monthFilterHeader.onchange = () => {
+        if (monthFilter) {
+            Array.from(monthFilter.options).forEach(opt => {
+                opt.selected = Array.from(monthFilterHeader.selectedOptions).some(o => o.value === opt.value);
+            });
+        }
+        debouncedApply();
+    };
+}
+if (resetFiltersHeader) {
+    resetFiltersHeader.onclick = () => {
+        if (resetFiltersBtn) resetFiltersBtn.click();
+        if (companyFilterHeader) companyFilterHeader.value = '';
+        if (yearFilterHeader) yearFilterHeader.value = '';
+        if (monthFilterHeader) {
+            Array.from(monthFilterHeader.options).forEach(o => o.selected = false);
+        }
+        syncFiltersToHeader();
+    };
+}
+if (changeDataBtnHeader) {
+    changeDataBtnHeader.onclick = () => {
+        if (changeDataBtn) changeDataBtn.click();
+    };
+}
+
+// Обновляем синхронизацию при загрузке данных
+const originalUpdateFilters = updateFilters;
+updateFilters = function() {
+    originalUpdateFilters();
+    syncFiltersToHeader();
+};
+
         const monthFilter = document.getElementById('monthFilter');
         
         if (!companyFilter || !yearFilter || !monthFilter) {
