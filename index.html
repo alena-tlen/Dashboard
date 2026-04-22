@@ -783,9 +783,9 @@ body.dark .article-card:hover {
     .container { 
     display: flex; 
     max-width: 1600px; 
-    margin: 0 auto; 
+    margin: 0; 
     min-height: calc(100vh - 100px);
-    gap: 20px;
+    width: 100%;
 }
     
     .sidebar-nav {
@@ -1213,13 +1213,13 @@ body.dark .cash-sidebar {
 .sidebar-nav {
     width: 80px;
     min-width: 80px;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.2s ease;
     overflow: visible;
     position: sticky;
     top: 20px;
     left: 0;
-    margin: 20px 0 20px 0 !important;
-    border-radius: 0 16px 16px 0 !important;
+    margin: 20px 0 20px 20px !important;
+    border-radius: 16px !important;
     background: rgba(255,255,255,0.1);
     backdrop-filter: blur(10px);
     padding: 20px 0;
@@ -1229,12 +1229,12 @@ body.dark .cash-sidebar {
 
 body.light .sidebar-nav {
     background: white;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.08);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 body.dark .sidebar-nav {
     background: #1a1a2a;
-    border-right: 1px solid #2d2d3a;
+    border: 1px solid #2d2d3a;
 }
 
 /* При наведении - расширяем */
@@ -1249,7 +1249,7 @@ body.dark .sidebar-nav {
 .sidebar-nav .theme-toggle-label,
 .sidebar-nav .arrow {
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.15s ease;
     white-space: nowrap;
 }
 
@@ -1262,7 +1262,7 @@ body.dark .sidebar-nav {
     opacity: 1;
 }
 
-/* Заголовок НАВИГАЦИЯ */
+/* Заголовок */
 .sidebar-nav .nav-title {
     font-size: 12px;
     text-transform: uppercase;
@@ -1271,13 +1271,7 @@ body.dark .sidebar-nav {
     margin-bottom: 20px;
     padding: 0 16px 10px 16px;
     border-bottom: 1px solid rgba(102,126,234,0.3);
-    display: flex;
-    align-items: center;
     white-space: nowrap;
-}
-
-.sidebar-nav:hover .nav-title {
-    padding: 0 16px 10px 16px;
 }
 
 /* Пункты меню */
@@ -1304,7 +1298,7 @@ body.dark .sidebar-nav {
 /* Подменю */
 .sidebar-nav .nav-submenu {
     position: fixed;
-    left: 90px;
+    left: 105px;
     background: inherit;
     border-radius: 12px;
     padding: 10px;
@@ -1366,6 +1360,7 @@ body.dark .sidebar-nav .nav-submenu {
 .sidebar-nav .theme-toggle-label {
     font-size: 14px;
     font-weight: 500;
+    transition: opacity 0.15s ease;
 }
 
 /* Убираем кнопку сворачивания */
@@ -1373,7 +1368,7 @@ body.dark .sidebar-nav .nav-submenu {
     display: none;
 }
 
-/* Стрелка в меню Дашборд */
+/* Стрелка */
 .sidebar-nav .arrow {
     margin-left: auto;
     transition: transform 0.2s;
@@ -1476,6 +1471,27 @@ body.dark .filter-group-header select {
     .filter-group-header select {
         flex: 1;
     }
+}
+
+/* Скрываем текст и кнопку темы в свернутом состоянии */
+.sidebar-nav .theme-toggle .theme-toggle-label,
+.sidebar-nav .theme-toggle .toggle-switch .slider {
+    transition: opacity 0.2s ease;
+}
+
+.sidebar-nav:not(:hover) .theme-toggle .theme-toggle-label {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.sidebar-nav:not(:hover) .toggle-switch {
+    width: 26px;
+    height: 26px;
+}
+
+.sidebar-nav:not(:hover) .toggle-switch .slider {
+    left: 2px;
+    top: 2px;
 }
 
 </style>
@@ -7468,19 +7484,11 @@ diagnoseSberbank();
     const realYearFilter = document.getElementById('yearFilter');
     const realMonthFilter = document.getElementById('monthFilter');
     
-    // Авто-сворачивание боковой панели через 4 секунды
-    let sidebarTimeout;
-const sidebarNavHover = document.querySelector('.sidebar-nav');
-
-if (sidebarNavHover) {
-    sidebarNavHover.addEventListener('mouseleave', () => {
-        sidebarTimeout = setTimeout(() => {
-            // Панель сворачивается CSS, ничего не делаем
-        }, 3000);
-    });
-    
-    sidebarNavHover.addEventListener('mouseenter', () => {
-        if (sidebarTimeout) clearTimeout(sidebarTimeout);
+    // Авто-сворачивание боковой панели 
+const sidebarNav = document.querySelector('.sidebar-nav');
+if (sidebarNav) {
+    sidebarNav.addEventListener('mouseleave', () => {
+        // Мгновенное сворачивание - ничего не делаем, CSS сам обработает
     });
 }
     
