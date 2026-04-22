@@ -1181,6 +1181,35 @@ body.dark .cash-sidebar {
     transform: scaleY(1.5);
 }
 
+/* Анимации для уведомлений */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* Стиль для уведомления при наведении */
+#temporaryNotification:hover {
+    transform: scale(1.02);
+    transition: transform 0.2s ease;
+}
+
 </style>
 </head>
 <body>
@@ -1286,9 +1315,7 @@ body.dark .cash-sidebar {
                     <input type="file" id="fileInput" accept=".xlsx,.xls">
                 </div>
                 
-                <div id="dataSourceInfo" style="display: none; margin-bottom: 20px;">
-                    <div class="data-source" id="dataSourceText"></div>
-                </div>
+                
                 
                 <div id="page-dashboard" class="page-content active">
                     <div id="dashboardMetrics"></div>
@@ -1759,6 +1786,82 @@ if (document.readyState === 'loading') {
     function formatCurrency(value) { 
         return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(Math.abs(value)); 
     }
+
+    // Функция для показа временных уведомлений
+function showNotification(message, type = 'success') {
+    // Удаляем старое уведомление, если есть
+    const oldNotification = document.getElementById('temporaryNotification');
+    if (oldNotification) {
+        oldNotification.remove();
+    }
+    
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.id = 'temporaryNotification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 10000;
+        padding: 14px 24px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        animation: slideInRight 0.3s ease-out;
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+    `;
+    
+    // Цвета в зависимости от типа
+    if (type === 'success') {
+        notification.style.background = 'linear-gradient(135deg, #48bb78, #38a169)';
+        notification.style.color = 'white';
+        notification.innerHTML = `
+            <span style="font-size: 20px;">✅</span>
+            <span>${message}</span>
+            <span style="margin-left: 8px; opacity: 0.7; font-size: 12px;">×</span>
+        `;
+    } else if (type === 'error') {
+        notification.style.background = 'linear-gradient(135deg, #f56565, #e53e3e)';
+        notification.style.color = 'white';
+        notification.innerHTML = `
+            <span style="font-size: 20px;">❌</span>
+            <span>${message}</span>
+            <span style="margin-left: 8px; opacity: 0.7; font-size: 12px;">×</span>
+        `;
+    } else {
+        notification.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+        notification.style.color = 'white';
+        notification.innerHTML = `
+            <span style="font-size: 20px;">ℹ️</span>
+            <span>${message}</span>
+            <span style="margin-left: 8px; opacity: 0.7; font-size: 12px;">×</span>
+        `;
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Добавляем анимацию закрытия по клику
+    notification.onclick = () => {
+        notification.style.animation = 'fadeOutRight 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+    };
+    
+    // Автоматическое закрытие через 4 секунды
+    setTimeout(() => {
+        if (notification && notification.parentNode) {
+            notification.style.animation = 'fadeOutRight 0.3s ease-out';
+            setTimeout(() => {
+                if (notification && notification.parentNode) notification.remove();
+            }, 300);
+        }
+    }, 4000);
+}
+
     
     function applyFilters(data, filters = null) {
         const f = filters || currentFilters;
@@ -7102,14 +7205,16 @@ diagnoseSberbank();
     originalData = data;
     currentData = [...data];
     window._originalNdsOut = new Map();
-    document.getElementById('dataSourceText').innerHTML = `📊 Данные загружены (${data.length} записей)`;
-    document.getElementById('dataSourceInfo').style.display = 'block';
+    
+    // ПОКАЗЫВАЕМ ВРЕМЕННОЕ УВЕДОМЛЕНИЕ
+    showNotification(`✅ Данные успешно загружены! (${data.length} записей)`, 'success');
+    
     updateFilters();
     renderDashboard();
     renderCashBlock();
     uploadArea.style.display = 'none';
     
-    // ПОКАЗЫВАЕМ БЛОК ДЕНЕЖНЫХ СРЕДСТВ ПОСЛЕ ЗАГРУЗКИ ДАННЫХ
+    // ПОКАЗЫВАЕМ БЛОК ДЕНЕЖНЫХ СРЕДСТВ
     const cashSidebarBlock = document.getElementById('cashSidebarBlock');
     if (cashSidebarBlock) {
         cashSidebarBlock.style.display = 'block';
