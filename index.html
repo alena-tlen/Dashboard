@@ -1215,23 +1215,26 @@ body.dark .cash-sidebar {
     min-width: 80px;
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible;
-    position: relative;
-    margin: 20px 0 20px 20px !important;
-    border-radius: 16px !important;
+    position: sticky;
+    top: 20px;
+    left: 0;
+    margin: 20px 0 20px 0 !important;
+    border-radius: 0 16px 16px 0 !important;
     background: rgba(255,255,255,0.1);
     backdrop-filter: blur(10px);
     padding: 20px 0;
     height: fit-content;
+    z-index: 100;
 }
 
 body.light .sidebar-nav {
     background: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 2px 0 8px rgba(0,0,0,0.08);
 }
 
 body.dark .sidebar-nav {
     background: #1a1a2a;
-    border: 1px solid #2d2d3a;
+    border-right: 1px solid #2d2d3a;
 }
 
 /* При наведении - расширяем */
@@ -1240,7 +1243,7 @@ body.dark .sidebar-nav {
 }
 
 /* Скрываем текст в свернутом состоянии */
-.sidebar-nav .nav-title,
+.sidebar-nav .nav-title span,
 .sidebar-nav .nav-item span:not(.nav-icon),
 .sidebar-nav .nav-subitem span:not(.nav-icon),
 .sidebar-nav .theme-toggle-label,
@@ -1251,7 +1254,7 @@ body.dark .sidebar-nav {
 }
 
 /* При наведении показываем текст */
-.sidebar-nav:hover .nav-title,
+.sidebar-nav:hover .nav-title span,
 .sidebar-nav:hover .nav-item span:not(.nav-icon),
 .sidebar-nav:hover .nav-subitem span:not(.nav-icon),
 .sidebar-nav:hover .theme-toggle-label,
@@ -1259,31 +1262,49 @@ body.dark .sidebar-nav {
     opacity: 1;
 }
 
-/* Центрируем иконки в свернутом состоянии */
+/* Заголовок НАВИГАЦИЯ */
+.sidebar-nav .nav-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #667eea;
+    margin-bottom: 20px;
+    padding: 0 16px 10px 16px;
+    border-bottom: 1px solid rgba(102,126,234,0.3);
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.sidebar-nav:hover .nav-title {
+    padding: 0 16px 10px 16px;
+}
+
+/* Пункты меню */
 .sidebar-nav .nav-item {
-    justify-content: center;
-    padding: 12px 0;
-    margin: 0 8px;
-}
-
-.sidebar-nav:hover .nav-item {
-    justify-content: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 12px 16px;
+    margin: 4px 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
-/* Контейнер для пунктов меню */
-.sidebar-nav > div:not(.nav-submenu) {
-    padding: 0 8px;
+.sidebar-nav .nav-item .nav-icon {
+    font-size: 20px;
+    min-width: 24px;
+    text-align: center;
 }
 
-.sidebar-nav:hover > div:not(.nav-submenu) {
-    padding: 0;
-}
-
-/* Подменю - появляется при наведении */
+/* Подменю */
 .sidebar-nav .nav-submenu {
     position: fixed;
-    left: 100px;
+    left: 90px;
     background: inherit;
     border-radius: 12px;
     padding: 10px;
@@ -1313,23 +1334,22 @@ body.dark .sidebar-nav .nav-submenu {
 }
 
 .sidebar-nav .nav-subitem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     padding: 10px 12px;
+    margin: 4px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
     white-space: nowrap;
 }
 
-/* Название секции */
-.sidebar-nav .nav-title {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #667eea;
-    margin-bottom: 20px;
-    padding: 0 16px 10px 16px;
-    border-bottom: 1px solid rgba(102,126,234,0.3);
-}
-
-.sidebar-nav:hover .nav-title {
-    padding: 0 16px 10px 16px;
+.sidebar-nav .nav-subitem .nav-icon {
+    font-size: 16px;
+    min-width: 24px;
+    text-align: center;
 }
 
 /* Переключатель темы */
@@ -1337,15 +1357,31 @@ body.dark .sidebar-nav .nav-submenu {
     margin-top: 30px;
     padding: 20px 16px 0 16px;
     border-top: 1px solid rgba(102,126,234,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    white-space: nowrap;
 }
 
-.sidebar-nav:hover .theme-toggle {
-    padding: 20px 16px 0 16px;
+.sidebar-nav .theme-toggle-label {
+    font-size: 14px;
+    font-weight: 500;
 }
 
 /* Убираем кнопку сворачивания */
 .sidebar-toggle-btn {
     display: none;
+}
+
+/* Стрелка в меню Дашборд */
+.sidebar-nav .arrow {
+    margin-left: auto;
+    transition: transform 0.2s;
+    font-size: 10px;
+}
+
+.sidebar-nav .arrow.open {
+    transform: rotate(90deg);
 }
 
 /* ========== ФИЛЬТРЫ В ШАПКЕ ========== */
