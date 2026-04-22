@@ -1316,8 +1316,10 @@ body.dark .cash-sidebar {
                 </div>
             </div>
 <!-- Правая боковая панель со статьями -->
+<!-- Правая боковая панель со статьями -->
 <div class="right-sidebar">
-    <div class="cash-sidebar" style="margin-bottom: 20px;">
+    <!-- Блок денежных средств - скрыт по умолчанию, показывается только после загрузки данных -->
+    <div id="cashSidebarBlock" class="cash-sidebar" style="margin-bottom: 20px; display: none;">
         <div class="cash-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(102,126,234,0.3);">
             <span style="font-size: 18px;">💰</span>
             <span style="font-weight: 600; font-size: 13px; color: #667eea;">ДЕНЕЖНЫЕ СРЕДСТВА</span>
@@ -7097,17 +7099,22 @@ diagnoseSberbank();
         }, 100);
         
         function loadData(data) {
-            originalData = data;
-            currentData = [...data];
-            window._originalNdsOut = new Map();
-            document.getElementById('dataSourceText').innerHTML = `📊 Данные загружены (${data.length} записей)`;
-            document.getElementById('dataSourceInfo').style.display = 'block';
-            updateFilters();
-            renderDashboard();
-            renderCashBlock();
-            uploadArea.style.display = 'none';
-
-        }
+    originalData = data;
+    currentData = [...data];
+    window._originalNdsOut = new Map();
+    document.getElementById('dataSourceText').innerHTML = `📊 Данные загружены (${data.length} записей)`;
+    document.getElementById('dataSourceInfo').style.display = 'block';
+    updateFilters();
+    renderDashboard();
+    renderCashBlock();
+    uploadArea.style.display = 'none';
+    
+    // ПОКАЗЫВАЕМ БЛОК ДЕНЕЖНЫХ СРЕДСТВ ПОСЛЕ ЗАГРУЗКИ ДАННЫХ
+    const cashSidebarBlock = document.getElementById('cashSidebarBlock');
+    if (cashSidebarBlock) {
+        cashSidebarBlock.style.display = 'block';
+    }
+}
         
         // Скопируйте и вставьте это в консоль после загрузки файла
 function diagnoseSberbank() {
@@ -7187,10 +7194,23 @@ diagnoseSberbank();
         fileInput.onchange = (e) => { if (e.target.files[0]) loadFile(e.target.files[0]); };
         uploadArea.onclick = () => fileInput.click();
         changeDataBtn.onclick = () => {
-            uploadArea.style.display = 'block';
-            document.getElementById('dataSourceInfo').style.display = 'none';
-            originalData = [];
-        };
+    uploadArea.style.display = 'block';
+    document.getElementById('dataSourceInfo').style.display = 'none';
+    originalData = [];
+    currentData = [];
+    
+    // СКРЫВАЕМ БЛОК ДЕНЕЖНЫХ СРЕДСТВ ПРИ СБРОСЕ ДАННЫХ
+    const cashSidebarBlock = document.getElementById('cashSidebarBlock');
+    if (cashSidebarBlock) {
+        cashSidebarBlock.style.display = 'none';
+    }
+    
+    // Очищаем содержимое
+    const cashTotalCard = document.getElementById('cashTotalCard');
+    const cashAccountsList = document.getElementById('cashAccountsList');
+    if (cashTotalCard) cashTotalCard.innerHTML = '<div class="cash-loading">📊 Загрузите данные для отображения</div>';
+    if (cashAccountsList) cashAccountsList.innerHTML = '';
+};
         resetFiltersBtn.onclick = () => {
             companyFilter.value = '';
             yearFilter.value = '';
