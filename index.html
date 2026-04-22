@@ -1209,18 +1209,19 @@ body.dark .cash-sidebar {
     transition: transform 0.2s ease;
 }
 
-/* ========== НОВАЯ ЛЕВАЯ ПАНЕЛЬ С АНИМАЦИЕЙ ========== */
-/* ========== НОВАЯ ЛЕВАЯ ПАНЕЛЬ С HOVER-ЭФФЕКТОМ ========== */
+/* ========== ЛЕВАЯ ПАНЕЛЬ - ИСПРАВЛЕННАЯ ========== */
 .sidebar-nav {
-    width: 80px !important;
-    min-width: 80px !important;
+    width: 80px;
+    min-width: 80px;
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow: hidden;
+    overflow: visible;
     position: relative;
-    margin-left: 0 !important;
-    border-radius: 0 16px 16px 0 !important;
+    margin: 20px 0 20px 20px !important;
+    border-radius: 16px !important;
     background: rgba(255,255,255,0.1);
     backdrop-filter: blur(10px);
+    padding: 20px 0;
+    height: fit-content;
 }
 
 body.light .sidebar-nav {
@@ -1235,11 +1236,11 @@ body.dark .sidebar-nav {
 
 /* При наведении - расширяем */
 .sidebar-nav:hover {
-    width: 280px !important;
+    width: 280px;
 }
 
 /* Скрываем текст в свернутом состоянии */
-.sidebar-nav .nav-title span,
+.sidebar-nav .nav-title,
 .sidebar-nav .nav-item span:not(.nav-icon),
 .sidebar-nav .nav-subitem span:not(.nav-icon),
 .sidebar-nav .theme-toggle-label,
@@ -1250,7 +1251,7 @@ body.dark .sidebar-nav {
 }
 
 /* При наведении показываем текст */
-.sidebar-nav:hover .nav-title span,
+.sidebar-nav:hover .nav-title,
 .sidebar-nav:hover .nav-item span:not(.nav-icon),
 .sidebar-nav:hover .nav-subitem span:not(.nav-icon),
 .sidebar-nav:hover .theme-toggle-label,
@@ -1262,6 +1263,7 @@ body.dark .sidebar-nav {
 .sidebar-nav .nav-item {
     justify-content: center;
     padding: 12px 0;
+    margin: 0 8px;
 }
 
 .sidebar-nav:hover .nav-item {
@@ -1269,37 +1271,45 @@ body.dark .sidebar-nav {
     padding: 12px 16px;
 }
 
+/* Контейнер для пунктов меню */
+.sidebar-nav > div:not(.nav-submenu) {
+    padding: 0 8px;
+}
+
+.sidebar-nav:hover > div:not(.nav-submenu) {
+    padding: 0;
+}
+
 /* Подменю - появляется при наведении */
 .sidebar-nav .nav-submenu {
-    position: absolute;
-    left: 80px;
-    top: 0;
+    position: fixed;
+    left: 100px;
     background: inherit;
-    border-radius: 0 12px 12px 0;
+    border-radius: 12px;
     padding: 10px;
     min-width: 180px;
-    z-index: 100;
-    box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+    z-index: 1000;
+    box-shadow: 4px 0 12px rgba(0,0,0,0.15);
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s ease, visibility 0.2s ease;
-}
-
-body.light .sidebar-nav .nav-submenu {
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-left: none;
-}
-
-body.dark .sidebar-nav .nav-submenu {
-    background: #1a1a2a;
-    border: 1px solid #2d2d3a;
-    border-left: none;
+    pointer-events: none;
 }
 
 .sidebar-nav:hover .nav-submenu {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto;
+}
+
+body.light .sidebar-nav .nav-submenu {
+    background: white;
+    border: 1px solid #e0e0e0;
+}
+
+body.dark .sidebar-nav .nav-submenu {
+    background: #1a1a2a;
+    border: 1px solid #2d2d3a;
 }
 
 .sidebar-nav .nav-subitem {
@@ -1307,18 +1317,35 @@ body.dark .sidebar-nav .nav-submenu {
     white-space: nowrap;
 }
 
+/* Название секции */
+.sidebar-nav .nav-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #667eea;
+    margin-bottom: 20px;
+    padding: 0 16px 10px 16px;
+    border-bottom: 1px solid rgba(102,126,234,0.3);
+}
+
+.sidebar-nav:hover .nav-title {
+    padding: 0 16px 10px 16px;
+}
+
+/* Переключатель темы */
+.sidebar-nav .theme-toggle {
+    margin-top: 30px;
+    padding: 20px 16px 0 16px;
+    border-top: 1px solid rgba(102,126,234,0.3);
+}
+
+.sidebar-nav:hover .theme-toggle {
+    padding: 20px 16px 0 16px;
+}
+
 /* Убираем кнопку сворачивания */
 .sidebar-toggle-btn {
     display: none;
-}
-
-/* Автоматическое сворачивание через 4 секунды после ухода мыши */
-.sidebar-nav {
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s;
-}
-
-.sidebar-nav:hover {
-    transition-delay: 0s;
 }
 
 /* ========== ФИЛЬТРЫ В ШАПКЕ ========== */
@@ -7407,19 +7434,19 @@ diagnoseSberbank();
     
     // Авто-сворачивание боковой панели через 4 секунды
     let sidebarTimeout;
-    const sidebarNav = document.querySelector('.sidebar-nav');
+const sidebarNavHover = document.querySelector('.sidebar-nav');
+
+if (sidebarNavHover) {
+    sidebarNavHover.addEventListener('mouseleave', () => {
+        sidebarTimeout = setTimeout(() => {
+            // Панель сворачивается CSS, ничего не делаем
+        }, 3000);
+    });
     
-    if (sidebarNav) {
-        sidebarNav.addEventListener('mouseleave', () => {
-            sidebarTimeout = setTimeout(() => {
-                // CSS сам сворачивает
-            }, 4000);
-        });
-        
-        sidebarNav.addEventListener('mouseenter', () => {
-            if (sidebarTimeout) clearTimeout(sidebarTimeout);
-        });
-    }
+    sidebarNavHover.addEventListener('mouseenter', () => {
+        if (sidebarTimeout) clearTimeout(sidebarTimeout);
+    });
+}
     
     setTimeout(() => {
         const filtersSidebarToggle = document.getElementById('filtersSidebarToggle');
@@ -7497,6 +7524,31 @@ diagnoseSberbank();
         };
     }
     
+    // Добавьте эту функцию внутрь initApp(), перед функцией updateFilters
+function syncFiltersToHeader() {
+    const companyFilterHeader = document.getElementById('companyFilterHeader');
+    const yearFilterHeader = document.getElementById('yearFilterHeader');
+    const monthFilterHeader = document.getElementById('monthFilterHeader');
+    const companyFilter = document.getElementById('companyFilter');
+    const yearFilter = document.getElementById('yearFilter');
+    const monthFilter = document.getElementById('monthFilter');
+    
+    if (companyFilterHeader && companyFilter) {
+        companyFilterHeader.innerHTML = companyFilter.innerHTML;
+        companyFilterHeader.value = companyFilter.value;
+    }
+    if (yearFilterHeader && yearFilter) {
+        yearFilterHeader.innerHTML = yearFilter.innerHTML;
+        yearFilterHeader.value = yearFilter.value;
+    }
+    if (monthFilterHeader && monthFilter) {
+        monthFilterHeader.innerHTML = monthFilter.innerHTML;
+        Array.from(monthFilterHeader.options).forEach(opt => {
+            opt.selected = Array.from(monthFilter.selectedOptions).some(o => o.value === opt.value);
+        });
+    }
+}
+
     function updateFilters() {
         const companies = [...new Set(originalData.map(d => d.компания))].filter(c => c);
         const years = [...new Set(originalData.map(d => d.год))].filter(y => y && y !== '').sort();
