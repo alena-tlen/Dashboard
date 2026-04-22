@@ -1146,6 +1146,41 @@ body.dark .cash-sidebar {
     transform: scaleY(1.05);
 }
 
+/* Стили для графика НДС */
+#ndsToRevenueChart {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+#ndsToRevenueChart:hover {
+    opacity: 0.95;
+}
+
+/* Анимация для карточки статистики */
+.nds-stats-card {
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Шкала нагрузки */
+.nds-scale {
+    transition: all 0.3s ease;
+}
+
+.nds-scale:hover {
+    transform: scaleY(1.5);
+}
+
 </style>
 </head>
 <body>
@@ -4899,7 +4934,202 @@ function renderQuadrantMatrix(data, f) {
     return matrixHtml;
 }
 
+function renderNdsToRevenueChart(labels, ndsValues, revenueValues) {
+    const canvas = document.getElementById('ndsToRevenueChart');
+    if (!canvas || !labels || labels.length === 0) return;
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    
+    if (window.ndsToRevenueChart && typeof window.ndsToRevenueChart.destroy === 'function') {
+        window.ndsToRevenueChart.destroy();
+    }
+    
+    // Рассчитываем процент НДС от выручки
+    const ndsPercentages = ndsValues.map((nds, idx) => {
+        const revenue = revenueValues[idx];
+        if (revenue === 0 || revenue === undefined) return 0;
+        return (Math.abs(nds) / revenue) * 100;
+    });
+    
+    // Цвета в зависимости от процента
+    const barColors = ndsPercentages.map(percent => {
+        if (percent > 20) return '#f56565';      // критично - красный
+        if (percent > 15) return '#ed8936';      // высоко - оранжевый
+        if (percent > 10) return '#fbbf24';      // средне - жёлтый
+        return '#48bb78';                         // норма - зелёный
+    });
+    
+    window.ndsToRevenueChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'НДС (% от выручки)',
+                data: ndsPercentages,
+                backgroundColor: barColors,
+                borderRadius: 10,
+                barPercentage: 0.65,
+                categoryPercentage: 0.8,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
+                    titleColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    bodyColor: isDarkMode ? '#e2e8f0' : '#4a5568',
+                    borderColor: '#667eea',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            const idx = context.dataIndex;
+                            const percent = context.parsed.y;
+                            const nds = ndsValues[idx];
+                            const revenue = revenueValues[idx];
+                            return [
+                                `📊 НДС: ${percent.toFixed(1)}% от выручки`,
+                                `💰 НДС: ${formatCurrency(Math.abs(nds))}`,
+                                `📈 Выручка: ${formatCurrency(revenue)}`
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { 
+                        color: isDarkMode ? '#e2e8f0' : '#4a5568',
+                        maxRotation: 45,
+                        minRotation: 45
+                    },
+                    grid: { display: false }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'НДС (% от выручки)',
+                        color: isDarkMode ? '#e2e8f0' : '#4a5568',
+                        font: { size: 10 }
+                    },
+                    ticks: { 
+                        color: isDarkMode ? '#e2e8f0' : '#4a5568',
+                        callback: (value) => value + '%'
+                    },
+                    grid: { color: isDarkMode ? '#2d3748' : '#e2e8f0' },
+                    min: 0,
+                    max: 30
+                }
+            },
+            layout: {
+                padding: { top: 10, bottom: 10, left: 5, right: 5 }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+}
 
+function renderNdsStatsCard(ndsPercent, ndsAmount, revenue) {
+    const container = document.getElementById('ndsStatsCard');
+    if (!container) return;
+    
+    let status = { 
+        color: '#48bb78', 
+        text: 'Оптимально', 
+        icon: '✅', 
+        recommendation: 'Нормальная налоговая нагрузка. Хороший показатель!' 
+    };
+    
+    if (ndsPercent > 20) {
+        status = { 
+            color: '#f56565', 
+            text: 'Критично', 
+            icon: '🔴', 
+            recommendation: 'Срочно оптимизируйте налоги! Рассмотрите возможность увеличения входящего НДС через закупки у плательщиков НДС.' 
+        };
+    } else if (ndsPercent > 15) {
+        status = { 
+            color: '#ed8936', 
+            text: 'Высокая', 
+            icon: '⚠️', 
+            recommendation: 'Высокая налоговая нагрузка. Проверьте возможность применения налоговых вычетов и работу с поставщиками на ОСНО.' 
+        };
+    } else if (ndsPercent > 10) {
+        status = { 
+            color: '#fbbf24', 
+            text: 'Средняя', 
+            icon: '📊', 
+            recommendation: 'Средний уровень. Можно оптимизировать через увеличение входящего НДС.' 
+        };
+    } else if (ndsPercent > 5) {
+        status = { 
+            color: '#48bb78', 
+            text: 'Низкая', 
+            icon: '✅', 
+            recommendation: 'Хороший показатель! Поддерживайте текущий уровень.' 
+        };
+    } else {
+        status = { 
+            color: '#48bb78', 
+            text: 'Минимальная', 
+            icon: '🎯', 
+            recommendation: 'Отличный результат! Вы эффективно управляете налоговой нагрузкой.' 
+        };
+    }
+    
+    container.innerHTML = `
+        <div class="nds-stats-card" style="
+            background: ${status.color}15;
+            border-radius: 16px;
+            padding: 14px;
+            margin-top: 16px;
+            border: 1px solid ${status.color}30;
+        ">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+                <div style="font-size: 32px;">${status.icon}</div>
+                <div>
+                    <div style="font-size: 13px; font-weight: 600; color: ${status.color};">${status.text} нагрузка</div>
+                    <div style="font-size: 22px; font-weight: 700;">${ndsPercent.toFixed(1)}%</div>
+                </div>
+                <div style="margin-left: auto; text-align: right;">
+                    <div style="font-size: 10px; opacity: 0.7;">НДС / Выручка</div>
+                    <div style="font-size: 12px; font-weight: 500;">${formatCurrency(Math.abs(ndsAmount))} / ${formatCurrency(revenue)}</div>
+                </div>
+            </div>
+            <div style="
+                background: rgba(0,0,0,0.05);
+                border-radius: 8px;
+                padding: 10px;
+                font-size: 12px;
+                line-height: 1.4;
+            ">
+                💡 ${status.recommendation}
+            </div>
+            <div style="margin-top: 12px;">
+                <div style="font-size: 10px; opacity: 0.6; margin-bottom: 6px;">📊 Шкала налоговой нагрузки:</div>
+                <div style="display: flex; gap: 2px;">
+                    <div style="flex: 1; height: 6px; background: #48bb78; border-radius: 3px 0 0 3px;" class="nds-scale"></div>
+                    <div style="flex: 1; height: 6px; background: #fbbf24;" class="nds-scale"></div>
+                    <div style="flex: 1; height: 6px; background: #ed8936;" class="nds-scale"></div>
+                    <div style="flex: 1; height: 6px; background: #f56565; border-radius: 0 3px 3px 0;" class="nds-scale"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 9px; margin-top: 4px;">
+                    <span>0-5%</span>
+                    <span>5-10%</span>
+                    <span>10-15%</span>
+                    <span>15%+</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
 
     function renderDashboard() {
         if (isRendering) {
@@ -5223,6 +5453,37 @@ const monthlyLabels = monthsOrder.filter(m => monthlyDataMap.get(m).revenue > 0 
 const monthlyRevenues = monthlyLabels.map(m => monthlyDataMap.get(m).revenue / 1000);
 const monthlyProfits = monthlyLabels.map(m => monthlyDataMap.get(m).profit / 1000);
 
+// Сбор данных по НДС по месяцам для графика
+const monthlyNds = {};
+monthsOrder.forEach(month => { monthlyNds[month] = 0; });
+
+currentData.forEach(d => {
+    if (d.месяц && monthsOrder.includes(d.месяц)) {
+        // Собираем итоговый НДС (исходящий - входящий)
+        if (d.статья === 'НДС' && d.подканал === 'НДС исходящий') {
+            monthlyNds[d.месяц] += d.сумма;
+        } else if (d.статья === 'НДС' && d.подканал === 'НДС входящий') {
+            monthlyNds[d.месяц] -= d.сумма;
+        }
+    }
+});
+
+// Получаем массивы для графика (только те месяцы, где есть выручка)
+const ndsLabels = monthlyLabels; // используем те же метки, что и для выручки
+const ndsValues = ndsLabels.map(m => monthlyNds[m] || 0);
+const revenueForNds = ndsLabels.map(m => monthlyDataMap.get(m)?.revenue || 0);
+
+// Рассчитываем общий процент НДС от выручки
+const totalNdsAmount = f.totalNDS;
+const totalRevenueAmount = totalRevenue;
+const totalNdsPercent = totalRevenueAmount > 0 ? (Math.abs(totalNdsAmount) / totalRevenueAmount) * 100 : 0;
+
+// Обновляем отображение процента
+const ndsPercentElement = document.getElementById('ndsPercentValue');
+if (ndsPercentElement) {
+    animateNumber(ndsPercentElement, 0, totalNdsPercent, 800, false, true);
+}
+
 // Сбор данных по продажам по месяцам
 const monthlySales = {};
 monthsOrder.forEach(month => { monthlySales[month] = 0; });
@@ -5258,6 +5519,12 @@ setTimeout(() => {
         renderExpenseMiniChartJS('expenseMiniChartNew', monthlyLabels, monthlyRevenues, '#f56565');
     }
 }, 100);
+
+// Отрисовка графика НДС и карточки статистики
+setTimeout(() => {
+    renderNdsToRevenueChart(ndsLabels, ndsValues, revenueForNds);
+    renderNdsStatsCard(totalNdsPercent, totalNdsAmount, totalRevenueAmount);
+}, 150);
 
 // ДОБАВЬТЕ ЭТОТ БЛОК:
 setTimeout(() => {
@@ -5619,24 +5886,40 @@ console.log('costData:', costData);
     </div>
     <div class="metrics-grid" style="margin-top: 24px;">
                     <div class="metric-card">
-                        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 18px;">💸</span>
-                                <span>НДС</span>
-                            </div>
-                            <button class="toggle-nds-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-                                <span>▶</span> Показать по каналам
-                            </button>
-                        </div>
-                        <div>
-                            <div class="metric-value" id="mainNdsValue">${formatCurrency(f.totalNDS)}</div>
-                            <div class="metric-sub" style="font-size: 12px; margin-top: 4px;">${f.totalNDS >= 0 ? '↗ НДС к уплате' : '↙ НДС к возмещению'}</div>
-                            ${ndsChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(ndsChange)}</span>` : ''}
-                        </div>
-                        <div class="nds-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
-                            <div style="padding-top: 16px;">${generateNDSBreakdown(currentData)}</div>
-                        </div>
-                    </div>
+    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">💸</span>
+            <span>НДС</span>
+        </div>
+        <button class="toggle-nds-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
+            <span>▶</span> Показать по каналам
+        </button>
+    </div>
+    
+    <!-- Основные цифры -->
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <div class="metric-value" id="mainNdsValue">${formatCurrency(f.totalNDS)}</div>
+            <div class="metric-sub" style="font-size: 12px;">${f.totalNDS >= 0 ? '↗ НДС к уплате' : '↙ НДС к возмещению'}</div>
+            ${ndsChange ? `<span style="font-size: 12px;">${getChangeHtml(ndsChange)}</span>` : ''}
+        </div>
+        <div style="text-align: right;">
+            <div class="metric-value" id="ndsPercentValue" style="font-size: 28px;">0%</div>
+            <div class="metric-sub">от выручки</div>
+        </div>
+    </div>
+    
+    <!-- График НДС vs Выручка -->
+    <canvas id="ndsToRevenueChart" style="height: 140px; width: 100%; margin-top: 8px;"></canvas>
+    
+    <!-- Карточка со статистикой и рекомендациями -->
+    <div id="ndsStatsCard"></div>
+    
+    <!-- Разбивка по каналам (скрыта) -->
+    <div class="nds-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+        <div style="padding-top: 16px;">${generateNDSBreakdown(currentData)}</div>
+    </div>
+</div>
                     <div class="metric-card">
     <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 8px;">
