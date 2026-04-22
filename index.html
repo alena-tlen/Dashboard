@@ -88,7 +88,6 @@
     .close-admin { background: #f56565; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
     
     .container { display: flex; max-width: 1600px; margin: 0 auto; min-height: calc(100vh - 100px); }
-    .sidebar-nav { width: 280px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 16px; margin: 20px 0 20px 20px; padding: 20px; position: sticky; top: 20px; height: fit-content; }
     body.light .sidebar-nav { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     body.dark .sidebar-nav { background: #1a1a2a; border: 1px solid #2d2d3a; }
     .nav-title { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #667eea; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid rgba(102,126,234,0.3); }
@@ -1211,35 +1210,67 @@ body.dark .cash-sidebar {
 }
 
 /* ========== НОВАЯ ЛЕВАЯ ПАНЕЛЬ С АНИМАЦИЕЙ ========== */
+/* ========== НОВАЯ ЛЕВАЯ ПАНЕЛЬ С HOVER-ЭФФЕКТОМ ========== */
 .sidebar-nav {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 80px !important;
+    min-width: 80px !important;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     position: relative;
     margin-left: 0 !important;
     border-radius: 0 16px 16px 0 !important;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
 }
 
-.sidebar-nav.collapsed {
-    width: 80px !important;
-    min-width: 80px !important;
+body.light .sidebar-nav {
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.sidebar-nav.collapsed .nav-title,
-.sidebar-nav.collapsed .nav-item span:not(.nav-icon),
-.sidebar-nav.collapsed .nav-subitem span:not(.nav-icon),
-.sidebar-nav.collapsed .theme-toggle-label,
-.sidebar-nav.collapsed .filters-sidebar-header span:not(.filters-sidebar-icon),
-.sidebar-nav.collapsed .filter-group-sidebar,
-.sidebar-nav.collapsed .filter-actions-sidebar {
-    display: none !important;
+body.dark .sidebar-nav {
+    background: #1a1a2a;
+    border: 1px solid #2d2d3a;
 }
 
-.sidebar-nav.collapsed .nav-item {
+/* При наведении - расширяем */
+.sidebar-nav:hover {
+    width: 280px !important;
+}
+
+/* Скрываем текст в свернутом состоянии */
+.sidebar-nav .nav-title span,
+.sidebar-nav .nav-item span:not(.nav-icon),
+.sidebar-nav .nav-subitem span:not(.nav-icon),
+.sidebar-nav .theme-toggle-label,
+.sidebar-nav .arrow {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+}
+
+/* При наведении показываем текст */
+.sidebar-nav:hover .nav-title span,
+.sidebar-nav:hover .nav-item span:not(.nav-icon),
+.sidebar-nav:hover .nav-subitem span:not(.nav-icon),
+.sidebar-nav:hover .theme-toggle-label,
+.sidebar-nav:hover .arrow {
+    opacity: 1;
+}
+
+/* Центрируем иконки в свернутом состоянии */
+.sidebar-nav .nav-item {
     justify-content: center;
     padding: 12px 0;
 }
 
-.sidebar-nav.collapsed .nav-submenu {
+.sidebar-nav:hover .nav-item {
+    justify-content: flex-start;
+    padding: 12px 16px;
+}
+
+/* Подменю - появляется при наведении */
+.sidebar-nav .nav-submenu {
     position: absolute;
     left: 80px;
     top: 0;
@@ -1249,69 +1280,45 @@ body.dark .cash-sidebar {
     min-width: 180px;
     z-index: 100;
     box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
-body.light .sidebar-nav.collapsed .nav-submenu {
+body.light .sidebar-nav .nav-submenu {
     background: white;
     border: 1px solid #e0e0e0;
     border-left: none;
 }
 
-body.dark .sidebar-nav.collapsed .nav-submenu {
+body.dark .sidebar-nav .nav-submenu {
     background: #1a1a2a;
     border: 1px solid #2d2d3a;
     border-left: none;
 }
 
-.sidebar-nav.collapsed .nav-submenu.show {
-    display: block !important;
+.sidebar-nav:hover .nav-submenu {
+    opacity: 1;
+    visibility: visible;
 }
 
-.sidebar-nav.collapsed .nav-subitem {
+.sidebar-nav .nav-subitem {
     padding: 10px 12px;
     white-space: nowrap;
 }
 
-/* Кнопка сворачивания */
+/* Убираем кнопку сворачивания */
 .sidebar-toggle-btn {
-    position: absolute;
-    top: 20px;
-    right: -12px;
-    width: 24px;
-    height: 24px;
-    background: #667eea;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 12px;
-    transition: all 0.2s;
-    z-index: 10;
+    display: none;
 }
 
-.sidebar-toggle-btn:hover {
-    transform: scale(1.1);
-    background: #5a67d8;
+/* Автоматическое сворачивание через 4 секунды после ухода мыши */
+.sidebar-nav {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s;
 }
 
-.sidebar-nav.collapsed .sidebar-toggle-btn {
-    transform: rotate(180deg);
-}
-
-/* Анимация для пунктов меню */
-.nav-item, .nav-subitem {
-    transition: all 0.2s ease;
-}
-
-.nav-item:hover, .nav-subitem:hover {
-    transform: translateX(4px);
-}
-
-.sidebar-nav.collapsed .nav-item:hover {
-    transform: translateX(0);
+.sidebar-nav:hover {
+    transition-delay: 0s;
 }
 
 /* ========== ФИЛЬТРЫ В ШАПКЕ ========== */
@@ -7361,305 +7368,188 @@ function diagnoseSberbank() {
 diagnoseSberbank();
 
     function initApp() {
-        if (typeof Plotly === 'undefined') {
-            setTimeout(initApp, 200);
-            return;
-        }
-        
-        const fileInput = document.getElementById('fileInput');
-        const uploadArea = document.getElementById('uploadArea');
-        const changeDataBtn = document.getElementById('changeDataBtn');
-        const resetFiltersBtn = document.getElementById('resetFilters');
-        const companyFilter = document.getElementById('companyFilter');
-        const yearFilter = document.getElementById('yearFilter');
-        // Управление сворачиванием боковой панели
-const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-const sidebarNav = document.querySelector('.sidebar-nav');
-
-if (sidebarToggleBtn && sidebarNav) {
-    // Загружаем состояние из localStorage
-    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-    if (isCollapsed) {
-        sidebarNav.classList.add('collapsed');
-    }
-    
-    sidebarToggleBtn.onclick = () => {
-        sidebarNav.classList.toggle('collapsed');
-        localStorage.setItem('sidebarCollapsed', sidebarNav.classList.contains('collapsed'));
-        
-        // При сворачивании скрываем подменю
-        if (sidebarNav.classList.contains('collapsed')) {
-            const submenu = document.getElementById('channelsSubmenu');
-            if (submenu) submenu.classList.remove('show');
-        }
-    };
-}
-
-// Дублируем фильтры для шапки
-const companyFilterHeader = document.getElementById('companyFilterHeader');
-const yearFilterHeader = document.getElementById('yearFilterHeader');
-const monthFilterHeader = document.getElementById('monthFilterHeader');
-const resetFiltersHeader = document.getElementById('resetFiltersHeader');
-const changeDataBtnHeader = document.getElementById('changeDataBtnHeader');
-
-// Синхронизация фильтров
-function syncFiltersToHeader() {
-    if (companyFilterHeader && companyFilter) {
-        companyFilterHeader.innerHTML = companyFilter.innerHTML;
-        companyFilterHeader.value = companyFilter.value;
-    }
-    if (yearFilterHeader && yearFilter) {
-        yearFilterHeader.innerHTML = yearFilter.innerHTML;
-        yearFilterHeader.value = yearFilter.value;
-    }
-    if (monthFilterHeader && monthFilter) {
-        monthFilterHeader.innerHTML = monthFilter.innerHTML;
-        // Синхронизация выбранных значений
-        Array.from(monthFilterHeader.options).forEach(opt => {
-            opt.selected = Array.from(monthFilter.selectedOptions).some(o => o.value === opt.value);
-        });
-    }
-}
-
-// Обработчики для фильтров в шапке
-if (companyFilterHeader) {
-    companyFilterHeader.onchange = () => {
-        if (companyFilter) companyFilter.value = companyFilterHeader.value;
-        debouncedApply();
-    };
-}
-if (yearFilterHeader) {
-    yearFilterHeader.onchange = () => {
-        if (yearFilter) yearFilter.value = yearFilterHeader.value;
-        debouncedApply();
-    };
-}
-if (monthFilterHeader) {
-    monthFilterHeader.onchange = () => {
-        if (monthFilter) {
-            Array.from(monthFilter.options).forEach(opt => {
-                opt.selected = Array.from(monthFilterHeader.selectedOptions).some(o => o.value === opt.value);
-            });
-        }
-        debouncedApply();
-    };
-}
-if (resetFiltersHeader) {
-    resetFiltersHeader.onclick = () => {
-        if (resetFiltersBtn) resetFiltersBtn.click();
-        if (companyFilterHeader) companyFilterHeader.value = '';
-        if (yearFilterHeader) yearFilterHeader.value = '';
-        if (monthFilterHeader) {
-            Array.from(monthFilterHeader.options).forEach(o => o.selected = false);
-        }
-        syncFiltersToHeader();
-    };
-}
-if (changeDataBtnHeader) {
-    changeDataBtnHeader.onclick = () => {
-        if (changeDataBtn) changeDataBtn.click();
-    };
-}
-
-// Обновляем синхронизацию при загрузке данных
-const originalUpdateFilters = updateFilters;
-updateFilters = function() {
-    originalUpdateFilters();
-    syncFiltersToHeader();
-};
-
-        const monthFilter = document.getElementById('monthFilter');
-        
-        if (!companyFilter || !yearFilter || !monthFilter) {
-            console.error('Не найдены элементы фильтров');
-            return;
-        }
-        
-        setTimeout(() => {
-            const filtersSidebarToggle = document.getElementById('filtersSidebarToggle');
-            const filtersSidebarContent = document.getElementById('filtersSidebarContent');
-            if (filtersSidebarToggle && filtersSidebarContent) {
-                const toggleIconSidebar = filtersSidebarToggle.querySelector('.toggle-icon');
-                filtersSidebarToggle.onclick = () => {
-                    filtersSidebarContent.classList.toggle('collapsed');
-                    if (toggleIconSidebar) {
-                        toggleIconSidebar.style.transform = filtersSidebarContent.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
-                    }
-                };
-            }
-        }, 100);
-        
-        function loadData(data) {
-    originalData = data;
-    currentData = [...data];
-    window._originalNdsOut = new Map();
-    
-    // ПОКАЗЫВАЕМ ВРЕМЕННОЕ УВЕДОМЛЕНИЕ
-    showNotification(`✅ Данные успешно загружены! (${data.length} записей)`, 'success');
-    
-    updateFilters();
-    renderDashboard();
-    renderCashBlock();
-    uploadArea.style.display = 'none';
-    
-    // ПОКАЗЫВАЕМ БЛОК ДЕНЕЖНЫХ СРЕДСТВ
-    const cashSidebarBlock = document.getElementById('cashSidebarBlock');
-    if (cashSidebarBlock) {
-        cashSidebarBlock.style.display = 'block';
-    }
-}
-        
-        // Скопируйте и вставьте это в консоль после загрузки файла
-function diagnoseSberbank() {
-    console.log('=== ДИАГНОСТИКА СБЕРБАНКА ===');
-    
-    if (!originalData || originalData.length === 0) {
-        console.log('❌ Данные не загружены! Сначала загрузите Excel файл.');
+    if (typeof Plotly === 'undefined') {
+        setTimeout(initApp, 200);
         return;
     }
     
-    // Ищем Сбербанк по точному названию
-    const sberbankOps = originalData.filter(row => {
-        const account = row.Счет || '';
-        return account === 'ПАО СБЕРБАНК';
-    });
+    const fileInput = document.getElementById('fileInput');
+    const uploadArea = document.getElementById('uploadArea');
+    const changeDataBtn = document.getElementById('changeDataBtn');
+    const resetFiltersBtn = document.getElementById('resetFilters');
+    const companyFilter = document.getElementById('companyFilter');
+    const yearFilter = document.getElementById('yearFilter');
+    const monthFilter = document.getElementById('monthFilter');
     
-    console.log('Всего операций по Сбербанку:', sberbankOps.length);
-    
-    // Начальные остатки
-    const initialOps = sberbankOps.filter(r => r.статья === 'Начальный остаток');
-    console.log('Начальные остатки:', initialOps.length);
-    initialOps.forEach(r => {
-        console.log(`  Сумма: ${r.сумма}, год: ${r.год}, месяц: ${r.месяц}`);
-    });
-    
-    // Поступления (положительная сумма)
-    const incomeOps = sberbankOps.filter(r => r.сумма > 0 && r.статья !== 'Начальный остаток');
-    console.log('Поступления:', incomeOps.length);
-    let totalIncome = 0;
-    incomeOps.forEach(r => {
-        totalIncome += r.сумма;
-        console.log(`  ${r.год} ${r.месяц}: ${r.статья}, сумма: ${r.сумма}`);
-    });
-    console.log(`ИТОГО ПОСТУПЛЕНИЙ: ${totalIncome.toFixed(2)}`);
-    
-    // Списания (отрицательная сумма)
-    const expenseOps = sberbankOps.filter(r => r.сумма < 0 && r.статья !== 'Начальный остаток');
-    console.log('Списания:', expenseOps.length);
-    let totalExpense = 0;
-    expenseOps.forEach(r => {
-        totalExpense += Math.abs(r.сумма);
-        console.log(`  ${r.год} ${r.месяц}: ${r.статья}, сумма: ${r.сумма}`);
-    });
-    console.log(`ИТОГО СПИСАНИЙ: ${totalExpense.toFixed(2)}`);
-    
-    // Начальный остаток
-    const initialTotal = initialOps.reduce((sum, r) => sum + r.сумма, 0);
-    console.log(`Начальный остаток: ${initialTotal.toFixed(2)}`);
-    console.log(`РАСЧЕТНЫЙ БАЛАНС: ${(initialTotal + totalIncome - totalExpense).toFixed(2)}`);
-    
-    // Группировка по месяцам
-    const byMonth = {};
-    sberbankOps.forEach(r => {
-        if (r.статья === 'Начальный остаток') return;
-        const key = `${r.год}-${r.месяц}`;
-        if (!byMonth[key]) byMonth[key] = { income: 0, expense: 0 };
-        if (r.сумма > 0) byMonth[key].income += r.сумма;
-        else byMonth[key].expense += Math.abs(r.сумма);
-    });
-    
-    console.log('Операции по месяцам:');
-    Object.keys(byMonth).sort().forEach(key => {
-        const d = byMonth[key];
-        console.log(`  ${key}: доход: ${d.income.toFixed(2)}, расход: ${d.expense.toFixed(2)}`);
-    });
-}
-
-diagnoseSberbank();
-
-        async function loadFile(file) {
-            try {
-                const data = await readExcelFile(file);
-                loadData(data);
-            } catch (error) { alert('Ошибка: ' + error.message); }
-        }
-        
-        fileInput.onchange = (e) => { if (e.target.files[0]) loadFile(e.target.files[0]); };
-        uploadArea.onclick = () => fileInput.click();
-        changeDataBtn.onclick = () => {
-    uploadArea.style.display = 'block';
-    document.getElementById('dataSourceInfo').style.display = 'none';
-    originalData = [];
-    currentData = [];
-    
-    // СКРЫВАЕМ БЛОК ДЕНЕЖНЫХ СРЕДСТВ ПРИ СБРОСЕ ДАННЫХ
-    const cashSidebarBlock = document.getElementById('cashSidebarBlock');
-    if (cashSidebarBlock) {
-        cashSidebarBlock.style.display = 'none';
+    // Создаем элементы фильтров, если их нет
+    if (!companyFilter) {
+        const newFilter = document.createElement('select');
+        newFilter.id = 'companyFilter';
+        newFilter.style.display = 'none';
+        document.body.appendChild(newFilter);
+    }
+    if (!yearFilter) {
+        const newFilter = document.createElement('select');
+        newFilter.id = 'yearFilter';
+        newFilter.style.display = 'none';
+        document.body.appendChild(newFilter);
+    }
+    if (!monthFilter) {
+        const newFilter = document.createElement('select');
+        newFilter.id = 'monthFilter';
+        newFilter.style.display = 'none';
+        document.body.appendChild(newFilter);
     }
     
-    // Очищаем содержимое
-    const cashTotalCard = document.getElementById('cashTotalCard');
-    const cashAccountsList = document.getElementById('cashAccountsList');
-    if (cashTotalCard) cashTotalCard.innerHTML = '<div class="cash-loading">📊 Загрузите данные для отображения</div>';
-    if (cashAccountsList) cashAccountsList.innerHTML = '';
-};
+    const realCompanyFilter = document.getElementById('companyFilter');
+    const realYearFilter = document.getElementById('yearFilter');
+    const realMonthFilter = document.getElementById('monthFilter');
+    
+    // Авто-сворачивание боковой панели через 4 секунды
+    let sidebarTimeout;
+    const sidebarNav = document.querySelector('.sidebar-nav');
+    
+    if (sidebarNav) {
+        sidebarNav.addEventListener('mouseleave', () => {
+            sidebarTimeout = setTimeout(() => {
+                // CSS сам сворачивает
+            }, 4000);
+        });
+        
+        sidebarNav.addEventListener('mouseenter', () => {
+            if (sidebarTimeout) clearTimeout(sidebarTimeout);
+        });
+    }
+    
+    setTimeout(() => {
+        const filtersSidebarToggle = document.getElementById('filtersSidebarToggle');
+        const filtersSidebarContent = document.getElementById('filtersSidebarContent');
+        if (filtersSidebarToggle && filtersSidebarContent) {
+            const toggleIconSidebar = filtersSidebarToggle.querySelector('.toggle-icon');
+            filtersSidebarToggle.onclick = () => {
+                filtersSidebarContent.classList.toggle('collapsed');
+                if (toggleIconSidebar) {
+                    toggleIconSidebar.style.transform = filtersSidebarContent.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
+                }
+            };
+        }
+    }, 100);
+    
+    function loadData(data) {
+        originalData = data;
+        currentData = [...data];
+        window._originalNdsOut = new Map();
+        
+        showNotification(`✅ Данные успешно загружены! (${data.length} записей)`, 'success');
+        
+        updateFilters();
+        renderDashboard();
+        renderCashBlock();
+        uploadArea.style.display = 'none';
+        
+        const cashSidebarBlock = document.getElementById('cashSidebarBlock');
+        if (cashSidebarBlock) {
+            cashSidebarBlock.style.display = 'block';
+        }
+    }
+    
+    async function loadFile(file) {
+        try {
+            const data = await readExcelFile(file);
+            loadData(data);
+        } catch (error) { 
+            showNotification('Ошибка: ' + error.message, 'error');
+        }
+    }
+    
+    fileInput.onchange = (e) => { if (e.target.files[0]) loadFile(e.target.files[0]); };
+    uploadArea.onclick = () => fileInput.click();
+    
+    if (changeDataBtn) {
+        changeDataBtn.onclick = () => {
+            uploadArea.style.display = 'block';
+            originalData = [];
+            currentData = [];
+            
+            const cashSidebarBlock = document.getElementById('cashSidebarBlock');
+            if (cashSidebarBlock) {
+                cashSidebarBlock.style.display = 'none';
+            }
+            
+            const cashTotalCard = document.getElementById('cashTotalCard');
+            const cashAccountsList = document.getElementById('cashAccountsList');
+            if (cashTotalCard) cashTotalCard.innerHTML = '<div class="cash-loading">📊 Загрузите данные для отображения</div>';
+            if (cashAccountsList) cashAccountsList.innerHTML = '';
+            
+            document.getElementById('dashboardMetrics').innerHTML = '<div class="loading">Нет данных</div>';
+        };
+    }
+    
+    if (resetFiltersBtn) {
         resetFiltersBtn.onclick = () => {
-            companyFilter.value = '';
-            yearFilter.value = '';
-            Array.from(monthFilter.options).forEach(o => o.selected = false);
+            if (realCompanyFilter) realCompanyFilter.value = '';
+            if (realYearFilter) realYearFilter.value = '';
+            if (realMonthFilter) Array.from(realMonthFilter.options).forEach(o => o.selected = false);
+            if (companyFilterHeader) companyFilterHeader.value = '';
+            if (yearFilterHeader) yearFilterHeader.value = '';
+            if (monthFilterHeader) Array.from(monthFilterHeader.options).forEach(o => o.selected = false);
             debouncedApply();
         };
-        
-        function updateFilters() {
-    // Приводим все компании к единому виду
-    const companies = [...new Set(originalData.map(d => d.компания))].filter(c => c);
-    const years = [...new Set(originalData.map(d => d.год))].filter(y => y && y !== '').sort();
-    const months = [...new Set(originalData.map(d => d.месяц))].filter(m => m && m !== '').sort((a, b) => monthsOrder.indexOf(a) - monthsOrder.indexOf(b));
-    
-    companyFilter.innerHTML = '<option value="">Все компании</option>' + companies.map(c => `<option value="${c}">${c}</option>`).join('');
-    yearFilter.innerHTML = '<option value="">Все годы</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
-    
-    // Автоматически выбираем самый ранний год
-    if (years.length > 0) {
-        yearFilter.value = years[0];  // самый ранний год
     }
-    monthFilter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
-    monthFilter.setAttribute('multiple', 'multiple');
-    monthFilter.size = 4;
     
-    console.log('Фильтры обновлены:', { companies, years, months });
-}
+    function updateFilters() {
+        const companies = [...new Set(originalData.map(d => d.компания))].filter(c => c);
+        const years = [...new Set(originalData.map(d => d.год))].filter(y => y && y !== '').sort();
+        const months = [...new Set(originalData.map(d => d.месяц))].filter(m => m && m !== '').sort((a, b) => monthsOrder.indexOf(a) - monthsOrder.indexOf(b));
         
-        const debouncedApply = () => {
-            currentFilters.company = companyFilter.value;
-            currentFilters.year = yearFilter.value;
-            currentFilters.month = Array.from(monthFilter.selectedOptions).map(o => o.value);
-            currentData = originalData.filter(row => {
-                if (currentFilters.company && row.компания !== currentFilters.company) return false;
-                if (currentFilters.year && row.год != currentFilters.year) return false;
-                if (currentFilters.month.length > 0 && !currentFilters.month.includes(row.месяц)) return false;
-                return true;
-            });
-            renderDashboard();
-            renderCashBlock();
-            renderNetRevenueMiniChart();
-            renderProfitMiniChart();
-            if (currentChannel) renderChannelPage(currentChannel);
-        };
+        if (realCompanyFilter) {
+            realCompanyFilter.innerHTML = '<option value="">Все компании</option>' + companies.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+        if (realYearFilter) {
+            realYearFilter.innerHTML = '<option value="">Все годы</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+            if (years.length > 0) realYearFilter.value = years[0];
+        }
+        if (realMonthFilter) {
+            realMonthFilter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+            realMonthFilter.setAttribute('multiple', 'multiple');
+            realMonthFilter.size = 4;
+        }
         
-        companyFilter.onchange = debouncedApply;
-        yearFilter.onchange = debouncedApply;
-        monthFilter.onchange = debouncedApply;
+        // Синхронизируем с фильтрами в шапке
+        syncFiltersToHeader();
+    }
+    
+    const debouncedApply = () => {
+        if (realCompanyFilter) currentFilters.company = realCompanyFilter.value;
+        if (realYearFilter) currentFilters.year = realYearFilter.value;
+        if (realMonthFilter) currentFilters.month = Array.from(realMonthFilter.selectedOptions).map(o => o.value);
         
-        const dashboardMenu = document.getElementById('dashboardMenu');
-        const channelsSubmenu = document.getElementById('channelsSubmenu');
-        const arrow = dashboardMenu.querySelector('.arrow');
-        
+        currentData = originalData.filter(row => {
+            if (currentFilters.company && row.компания !== currentFilters.company) return false;
+            if (currentFilters.year && row.год != currentFilters.year) return false;
+            if (currentFilters.month.length > 0 && !currentFilters.month.includes(row.месяц)) return false;
+            return true;
+        });
+        renderDashboard();
+        renderCashBlock();
+        renderNetRevenueMiniChart();
+        renderProfitMiniChart();
+        if (currentChannel) renderChannelPage(currentChannel);
+    };
+    
+    if (realCompanyFilter) realCompanyFilter.onchange = debouncedApply;
+    if (realYearFilter) realYearFilter.onchange = debouncedApply;
+    if (realMonthFilter) realMonthFilter.onchange = debouncedApply;
+    
+    const dashboardMenu = document.getElementById('dashboardMenu');
+    const channelsSubmenu = document.getElementById('channelsSubmenu');
+    const arrow = dashboardMenu?.querySelector('.arrow');
+    
+    if (dashboardMenu) {
         dashboardMenu.onclick = (e) => {
             e.stopPropagation();
             channelsSubmenu.classList.toggle('show');
-            arrow.classList.toggle('open');
+            if (arrow) arrow.classList.toggle('open');
             if (!channelsSubmenu.classList.contains('show')) {
                 currentChannel = null;
                 document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
@@ -7668,79 +7558,65 @@ diagnoseSberbank();
                 renderDashboard();
             }
         };
-        
-        document.querySelectorAll('.nav-subitem').forEach(item => {
-            item.onclick = () => {
-                const channel = item.dataset.channel;
-                currentChannel = channel;
-                document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
-                item.classList.add('active');
-                document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
-                document.getElementById(`page-channel-${channel}`).classList.add('active');
-                renderChannelPage(channel);
-            };
-        });
-        
-        const aiNavItem = document.querySelector('.nav-item[data-page="ai"]');
-        const dashboardNavItem = document.getElementById('dashboardMenu');
-        
+    }
+    
+    document.querySelectorAll('.nav-subitem').forEach(item => {
+        item.onclick = () => {
+            const channel = item.dataset.channel;
+            currentChannel = channel;
+            document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
+            item.classList.add('active');
+            document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`page-channel-${channel}`).classList.add('active');
+            renderChannelPage(channel);
+        };
+    });
+    
+    const aiNavItem = document.querySelector('.nav-item[data-page="ai"]');
+    if (aiNavItem) {
         aiNavItem.onclick = () => {
             currentChannel = null;
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
             aiNavItem.classList.add('active');
-            channelsSubmenu.classList.remove('show');
-            arrow.classList.remove('open');
+            if (channelsSubmenu) channelsSubmenu.classList.remove('show');
+            if (arrow) arrow.classList.remove('open');
             document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
             document.getElementById('page-ai').classList.add('active');
         };
-        
-        dashboardNavItem.onclick = (e) => {
-            e.stopPropagation();
-            if (channelsSubmenu.classList.contains('show')) {
-                channelsSubmenu.classList.remove('show');
-                arrow.classList.remove('open');
-                currentChannel = null;
-                document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
-                document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
-                document.getElementById('page-dashboard').classList.add('active');
-                renderDashboard();
-            } else {
-                channelsSubmenu.classList.add('show');
-                arrow.classList.add('open');
-            }
-        };
-        
-        const aiSendBtn = document.getElementById('aiSendBtn');
-        const aiInput = document.getElementById('aiInput');
-        const aiChatMessages = document.getElementById('aiChatMessages');
-        
-        function addAIMessage(text, isUser) {
-            const div = document.createElement('div');
-            div.className = `ai-message ${isUser ? 'user' : 'assistant'}`;
-            div.style.whiteSpace = 'pre-line';
-            div.innerHTML = text;
-            aiChatMessages.appendChild(div);
-            aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+    }
+    
+    const aiSendBtn = document.getElementById('aiSendBtn');
+    const aiInput = document.getElementById('aiInput');
+    const aiChatMessages = document.getElementById('aiChatMessages');
+    
+    function addAIMessage(text, isUser) {
+        const div = document.createElement('div');
+        div.className = `ai-message ${isUser ? 'user' : 'assistant'}`;
+        div.style.whiteSpace = 'pre-line';
+        div.innerHTML = text;
+        aiChatMessages.appendChild(div);
+        aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+    }
+    
+    function getAIResponse(question) {
+        const f = calculateFinancials(currentData);
+        if (question === 'analyze' || question.includes('анализ')) {
+            return `📊 **Анализ:**\nВыручка: ${formatCurrency(f.totalRevenue)}\nНДС: ${formatCurrency(f.totalNDS)}\nРасходы: ${formatCurrency(f.totalExpenses)}\nПрибыль: ${formatCurrency(f.profit)}\nРентабельность: ${f.profitability.toFixed(1)}%`;
         }
-        
-        function getAIResponse(question) {
-            const f = calculateFinancials(currentData);
-            if (question === 'analyze' || question.includes('анализ')) {
-                return `📊 **Анализ:**\nВыручка: ${formatCurrency(f.totalRevenue)}\nНДС: ${formatCurrency(f.totalNDS)}\nРасходы: ${formatCurrency(f.totalExpenses)}\nПрибыль: ${formatCurrency(f.profit)}\nРентабельность: ${f.profitability.toFixed(1)}%`;
-            }
-            if (question === 'bestChannel' || question.includes('прибыльн')) {
-                return `🏆 Wildberries: ${formatCurrency(calculateFinancials(currentData, 'wildberries').profit)}\nOzon: ${formatCurrency(calculateFinancials(currentData, 'ozon').profit)}`;
-            }
-            if (question === 'expenses' || question.includes('расход')) {
-                return `💰 Расходы: ${formatCurrency(f.totalExpenses)} (${((f.totalExpenses / f.netRevenue) * 100).toFixed(1)}% от выручки)`;
-            }
-            if (question === 'recommend' || question.includes('рекоменд')) {
-                return `💡 **Рекомендации:**\n1. Оптимизируйте логистику\n2. Увеличьте маржинальность\n3. Диверсифицируйте каналы`;
-            }
-            return `🔍 Задайте вопрос о выручке, расходах или каналах.`;
+        if (question === 'bestChannel' || question.includes('прибыльн')) {
+            return `🏆 Wildberries: ${formatCurrency(calculateFinancials(currentData, 'wildberries').profit)}\nOzon: ${formatCurrency(calculateFinancials(currentData, 'ozon').profit)}`;
         }
-        
+        if (question === 'expenses' || question.includes('расход')) {
+            return `💰 Расходы: ${formatCurrency(f.totalExpenses)} (${((f.totalExpenses / f.netRevenue) * 100).toFixed(1)}% от выручки)`;
+        }
+        if (question === 'recommend' || question.includes('рекоменд')) {
+            return `💡 **Рекомендации:**\n1. Оптимизируйте логистику\n2. Увеличьте маржинальность\n3. Диверсифицируйте каналы`;
+        }
+        return `🔍 Задайте вопрос о выручке, расходах или каналах.`;
+    }
+    
+    if (aiSendBtn) {
         aiSendBtn.onclick = () => {
             const q = aiInput.value.trim();
             if (!q) return;
@@ -7748,26 +7624,40 @@ diagnoseSberbank();
             aiInput.value = '';
             setTimeout(() => addAIMessage(getAIResponse(q), false), 300);
         };
-        
-        document.querySelectorAll('.ai-suggestion').forEach(s => {
-            s.onclick = () => { aiInput.value = s.dataset.question; aiSendBtn.click(); };
-        });
-        
-        const themeToggle = document.getElementById('themeToggle');
-        const body = document.body;
+    }
+    
+    document.querySelectorAll('.ai-suggestion').forEach(s => {
+        s.onclick = () => { aiInput.value = s.dataset.question; aiSendBtn.click(); };
+    });
+    
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+    if (themeToggle) {
         themeToggle.onclick = () => {
             if (body.classList.contains('dark')) {
                 body.classList.remove('dark');
                 body.classList.add('light');
                 themeToggle.classList.remove('active');
+                localStorage.setItem('theme', 'light');
             } else {
                 body.classList.remove('light');
                 body.classList.add('dark');
                 themeToggle.classList.add('active');
+                localStorage.setItem('theme', 'dark');
             }
         };
+    }
+    
+    // Загружаем сохраненную тему
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        body.classList.remove('light');
+        body.classList.add('dark');
+        if (themeToggle) themeToggle.classList.add('active');
+    } else {
         body.classList.add('light');
     }
+}
         
     
     function showAdminPanel() {
