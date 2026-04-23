@@ -1671,6 +1671,23 @@ body.dark .filter-modal .filter-group select {
     animation: pulse 2s infinite;
 }
 
+/* Пульсация для красной карточки убытка */
+@keyframes pulseRed {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245,101,101,0.4);
+        border-color: #f56565;
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(245,101,101,0);
+        border-color: #f56565;
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245,101,101,0);
+        border-color: #f56565;
+    }
+}
+
+
 </style>
 </head>
 <body>
@@ -6487,17 +6504,19 @@ console.log('costData:', costData);
     </div>
 </div>
                     <div class="metric-card">
+    <div class="metric-card" style="${f.profit < 0 ? 'border: 2px solid #f56565; box-shadow: 0 0 15px rgba(245,101,101,0.3); animation: pulseRed 1s ease-in-out infinite;' : ''}">
     <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 18px;">📈</span>
+            <span style="font-size: 18px;">${f.profit < 0 ? '🔴' : '📈'}</span>
             <span>Маржинальная прибыль</span>
+            ${f.profit < 0 ? '<span style="background: #f56565; color: white; padding: 2px 8px; border-radius: 20px; font-size: 10px;">УБЫТОК!</span>' : ''}
         </div>
         <button class="toggle-channels-profit-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
             <span>▶</span> Показать по каналам
         </button>
     </div>
     <div>
-        <div class="metric-value ${f.profit >= 0 ? 'positive' : 'negative'}" id="mainProfitValue">${formatCurrency(f.profit)}</div>
+        <div class="metric-value ${f.profit >= 0 ? 'positive' : 'negative'}" id="mainProfitValue" style="${f.profit < 0 ? 'font-size: 42px;' : ''}">${formatCurrency(f.profit)}</div>
         ${profitChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(profitChange)}</span>` : ''}
     </div>
     <div class="metric-sub" style="margin-top: 4px;">
@@ -7330,7 +7349,35 @@ function renderProfitMiniChart() {
     const ctx = canvas.getContext('2d');
     const isDarkMode = document.body.classList.contains('dark');
     const areaColor = isDarkMode ? 'rgba(72,187,120,0.08)' : 'rgba(72,187,120,0.05)';
-    const lineColor = profitData[profitData.length - 1] >= profitData[0] ? '#48bb78' : '#f56565';
+    
+    // Определяем цвет линии в зависимости от последнего значения
+    const lastProfit = profitData[profitData.length - 1];
+    const firstProfit = profitData[0];
+    const overallTrend = lastProfit >= firstProfit ? '#48bb78' : '#f56565';
+    const lineColor = overallTrend;
+    
+    // СОЗДАЕМ ГРАДИЕНТ ДЛЯ ЗАЛИВКИ (зеленый -> красный)
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 100);
+    
+    // Находим минимальное и максимальное значение прибыли
+    const maxProfit = Math.max(...profitData, 0);
+    const minProfit = Math.min(...profitData, 0);
+    
+    // Нормализуем значения для градиента (от отрицательных к положительным)
+    if (minProfit < 0 && maxProfit > 0) {
+        // Есть и положительные, и отрицательные значения — градиент от красного через желтый к зеленому
+        gradient.addColorStop(0, '#f56565');      // красный (убыток)
+        gradient.addColorStop(0.5, '#fbbf24');    // желтый (ноль)
+        gradient.addColorStop(1, '#48bb78');      // зеленый (прибыль)
+    } else if (minProfit < 0 && maxProfit <= 0) {
+        // Только отрицательные значения — от темно-красного к красному
+        gradient.addColorStop(0, '#f56565');
+        gradient.addColorStop(1, '#e53e3e');
+    } else {
+        // Только положительные значения — от светло-зеленого к темно-зеленому
+        gradient.addColorStop(0, '#6ee7b7');
+        gradient.addColorStop(1, '#48bb78');
+    }
     
     if (profitMiniChart) {
         profitMiniChart.destroy();
@@ -7345,7 +7392,7 @@ function renderProfitMiniChart() {
                 label: '',
                 data: profitData,
                 borderColor: lineColor,
-                backgroundColor: areaColor,
+                backgroundColor: gradient,
                 borderWidth: 2,
                 pointRadius: 0,
                 pointHoverRadius: 5,
