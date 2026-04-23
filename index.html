@@ -7347,36 +7347,26 @@ function renderProfitMiniChart() {
     
     const ctx = canvas.getContext('2d');
     const isDarkMode = document.body.classList.contains('dark');
-    const areaColor = isDarkMode ? 'rgba(72,187,120,0.08)' : 'rgba(72,187,120,0.05)';
     
     // Определяем цвет линии в зависимости от последнего значения
     const lastProfit = profitData[profitData.length - 1];
-    const firstProfit = profitData[0];
-    const overallTrend = lastProfit >= firstProfit ? '#48bb78' : '#f56565';
-    const lineColor = overallTrend;
+    const lineColor = lastProfit >= 0 ? '#48bb78' : '#f56565';
     
-    // СОЗДАЕМ ГРАДИЕНТ ДЛЯ ЗАЛИВКИ (зеленый -> красный)
+    // СОЗДАЕМ ГРАДИЕНТ ДЛЯ ЗАЛИВКИ
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 100);
     
-    // Находим минимальное и максимальное значение прибыли
-    const maxProfit = Math.max(...profitData, 0);
-    const minProfit = Math.min(...profitData, 0);
+    // Определяем цвет заливки по последнему значению
+    const isLastProfitNegative = lastProfit < 0;
     
-    // Нормализуем значения для градиента (от отрицательных к положительным)
-    if (minProfit < 0 && maxProfit > 0) {
-    // смешанные значения
-    gradient.addColorStop(0, '#f56565');  // красный (убыток)
-    gradient.addColorStop(0.5, '#fbbf24');
-    gradient.addColorStop(1, '#48bb78');  // зеленый (прибыль)
-} else if (minProfit < 0 && maxProfit <= 0) {
-    // только убытки
-    gradient.addColorStop(0, '#f56565');
-    gradient.addColorStop(1, '#e53e3e');
-} else {
-    // только прибыль
-    gradient.addColorStop(0, '#6ee7b7');
-    gradient.addColorStop(1, '#48bb78');
-}
+    if (isLastProfitNegative) {
+        // Если последнее значение отрицательное - красный градиент
+        gradient.addColorStop(0, '#f56565');
+        gradient.addColorStop(1, '#e53e3e');
+    } else {
+        // Если положительное - зеленый градиент
+        gradient.addColorStop(0, '#6ee7b7');
+        gradient.addColorStop(1, '#48bb78');
+    }
     
     if (profitMiniChart) {
         profitMiniChart.destroy();
