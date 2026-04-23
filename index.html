@@ -7373,10 +7373,7 @@ function renderProfitMiniChart() {
                     backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
                     titleColor: isDarkMode ? '#e2e8f0' : '#4a5568',
                     bodyColor: isDarkMode ? '#e2e8f0' : '#4a5568',
-                    borderColor: (context) => {
-                        const value = context.parsed.y;
-                        return value >= 0 ? '#48bb78' : '#f56565';
-                    },
+                    borderColor: '#667eea',
                     borderWidth: 1,
                     callbacks: {
                         title: function(context) {
