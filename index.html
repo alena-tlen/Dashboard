@@ -2236,8 +2236,8 @@ if (document.readyState === 'loading') {
     };
     
     function formatCurrency(value) { 
-    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(value); 
-}
+        return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(Math.abs(value)); 
+    }
 
     // Функция для показа временных уведомлений
 function showNotification(message, type = 'success') {
@@ -6515,7 +6515,7 @@ console.log('costData:', costData);
         </button>
     </div>
     <div>
-        <div class="metric-value ${f.profit >= 0 ? 'positive' : 'negative'}" id="mainProfitValue" style="${f.profit < 0 ? 'font-size: 42px;' : ''}">${formatCurrency(f.profit)}</div>
+        <div class="metric-value ${f.profit >= 0 ? 'positive' : 'negative'}" id="mainProfitValue" style="${f.profit < 0 ? 'color: #f56565 !important; font-size: 42px;' : ''}">${formatCurrency(f.profit)}</div>
         ${profitChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(profitChange)}</span>` : ''}
     </div>
     <div class="metric-sub" style="margin-top: 4px;">
