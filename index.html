@@ -6503,7 +6503,6 @@ console.log('costData:', costData);
         <div style="padding-top: 16px;">${generateChannelBreakdown('ВЫРУЧКА ЧИСТАЯ ПО КАНАЛАМ', 'value', calculateNetRevenueByChannel(currentData), true, '')}</div>
     </div>
 </div>
-                    <div class="metric-card">
     <div class="metric-card" style="${f.profit < 0 ? 'border: 2px solid #f56565; box-shadow: 0 0 15px rgba(245,101,101,0.3); animation: pulseRed 1s ease-in-out infinite;' : ''}">
     <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -7365,19 +7364,19 @@ function renderProfitMiniChart() {
     
     // Нормализуем значения для градиента (от отрицательных к положительным)
     if (minProfit < 0 && maxProfit > 0) {
-        // Есть и положительные, и отрицательные значения — градиент от красного через желтый к зеленому
-        gradient.addColorStop(0, '#f56565');      // красный (убыток)
-        gradient.addColorStop(0.5, '#fbbf24');    // желтый (ноль)
-        gradient.addColorStop(1, '#48bb78');      // зеленый (прибыль)
-    } else if (minProfit < 0 && maxProfit <= 0) {
-        // Только отрицательные значения — от темно-красного к красному
-        gradient.addColorStop(0, '#f56565');
-        gradient.addColorStop(1, '#e53e3e');
-    } else {
-        // Только положительные значения — от светло-зеленого к темно-зеленому
-        gradient.addColorStop(0, '#6ee7b7');
-        gradient.addColorStop(1, '#48bb78');
-    }
+    // смешанные значения
+    gradient.addColorStop(0, '#f56565');  // красный (убыток)
+    gradient.addColorStop(0.5, '#fbbf24');
+    gradient.addColorStop(1, '#48bb78');  // зеленый (прибыль)
+} else if (minProfit < 0 && maxProfit <= 0) {
+    // только убытки
+    gradient.addColorStop(0, '#f56565');
+    gradient.addColorStop(1, '#e53e3e');
+} else {
+    // только прибыль
+    gradient.addColorStop(0, '#6ee7b7');
+    gradient.addColorStop(1, '#48bb78');
+}
     
     if (profitMiniChart) {
         profitMiniChart.destroy();
@@ -7996,9 +7995,6 @@ if (sidebarNav) {
             if (realCompanyFilter) realCompanyFilter.value = '';
             if (realYearFilter) realYearFilter.value = '';
             if (realMonthFilter) Array.from(realMonthFilter.options).forEach(o => o.selected = false);
-            if (companyFilterHeader) companyFilterHeader.value = '';
-            if (yearFilterHeader) yearFilterHeader.value = '';
-            if (monthFilterHeader) Array.from(monthFilterHeader.options).forEach(o => o.selected = false);
             debouncedApply();
             closeModal();
         };
