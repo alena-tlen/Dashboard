@@ -7759,22 +7759,20 @@ if (sidebarNav) {
 }
     
     const debouncedApply = () => {
-        if (realCompanyFilter) currentFilters.company = realCompanyFilter.value;
-        if (realYearFilter) currentFilters.year = realYearFilter.value;
-        if (realMonthFilter) currentFilters.month = Array.from(realMonthFilter.selectedOptions).map(o => o.value);
-        
-        currentData = originalData.filter(row => {
-            if (currentFilters.company && row.компания !== currentFilters.company) return false;
-            if (currentFilters.year && row.год != currentFilters.year) return false;
-            if (currentFilters.month.length > 0 && !currentFilters.month.includes(row.месяц)) return false;
-            return true;
-        });
-        renderDashboard();
-        renderCashBlock();
-        renderNetRevenueMiniChart();
-        renderProfitMiniChart();
-        if (currentChannel) renderChannelPage(currentChannel);
-    };
+    if (realCompanyFilter) currentFilters.company = realCompanyFilter.value;
+    if (realYearFilter) currentFilters.year = realYearFilter.value;
+    if (realMonthFilter) currentFilters.month = Array.from(realMonthFilter.selectedOptions).map(o => o.value);
+    
+    currentData = originalData.filter(row => {
+        if (currentFilters.company && row.компания !== currentFilters.company) return false;
+        if (currentFilters.year && row.год != currentFilters.year) return false;
+        if (currentFilters.month.length > 0 && !currentFilters.month.includes(row.месяц)) return false;
+        return true;
+    });
+    renderDashboard();  // <-- ЭТОТ ВЫЗОВ УЖЕ ПЕРЕРИСОВЫВАЕТ ВСЕ ГРАФИКИ
+    renderCashBlock();
+    if (currentChannel) renderChannelPage(currentChannel);
+};
     
     if (realCompanyFilter) realCompanyFilter.onchange = debouncedApply;
     if (realYearFilter) realYearFilter.onchange = debouncedApply;
