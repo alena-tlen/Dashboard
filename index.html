@@ -7725,23 +7725,30 @@ if (sidebarNav) {
     
 
     function updateFilters() {
-        const companies = [...new Set(originalData.map(d => d.компания))].filter(c => c);
-        const years = [...new Set(originalData.map(d => d.год))].filter(y => y && y !== '').sort();
-        const months = [...new Set(originalData.map(d => d.месяц))].filter(m => m && m !== '').sort((a, b) => monthsOrder.indexOf(a) - monthsOrder.indexOf(b));
-        
-        if (realCompanyFilter) {
-            realCompanyFilter.innerHTML = '<option value="">Все компании</option>' + companies.map(c => `<option value="${c}">${c}</option>`).join('');
-        }
-        if (realYearFilter) {
-            realYearFilter.innerHTML = '<option value="">Все годы</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
-            if (years.length > 0) realYearFilter.value = years[0];
-        }
-        if (realMonthFilter) {
-            realMonthFilter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
-            realMonthFilter.setAttribute('multiple', 'multiple');
-            realMonthFilter.size = 4;
+    const companies = [...new Set(originalData.map(d => d.компания))].filter(c => c);
+    const years = [...new Set(originalData.map(d => d.год))].filter(y => y && y !== '').sort();
+    const months = [...new Set(originalData.map(d => d.месяц))].filter(m => m && m !== '').sort((a, b) => monthsOrder.indexOf(a) - monthsOrder.indexOf(b));
+    
+    if (realCompanyFilter) {
+        realCompanyFilter.innerHTML = '<option value="">Все компании</option>' + companies.map(c => `<option value="${c}">${c}</option>`).join('');
+        realCompanyFilter.value = '';
+    }
+    if (realYearFilter) {
+        realYearFilter.innerHTML = '<option value="">Все годы</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+        // ИСПРАВЛЕНО: выбираем самый РАННИЙ год (минимальный)
+        if (years.length > 0) {
+            const earliestYear = Math.min(...years.map(y => parseInt(y)));
+            realYearFilter.value = earliestYear.toString();
         }
     }
+    if (realMonthFilter) {
+        realMonthFilter.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+        realMonthFilter.setAttribute('multiple', 'multiple');
+        realMonthFilter.size = 4;
+        // Очищаем выбранные месяцы
+        Array.from(realMonthFilter.options).forEach(opt => opt.selected = false);
+    }
+}
     
     const debouncedApply = () => {
         if (realCompanyFilter) currentFilters.company = realCompanyFilter.value;
@@ -7952,21 +7959,21 @@ if (sidebarNav) {
 
     // Обновляем опции в модальном окне при загрузке данных
     function updateModalFilters() {
-        if (realCompanyFilter && modalCompanyFilter) {
-            modalCompanyFilter.innerHTML = realCompanyFilter.innerHTML;
-            modalCompanyFilter.value = realCompanyFilter.value;
-        }
-        if (realYearFilter && modalYearFilter) {
-            modalYearFilter.innerHTML = realYearFilter.innerHTML;
-            modalYearFilter.value = realYearFilter.value;
-        }
-        if (realMonthFilter && modalMonthFilter) {
-            modalMonthFilter.innerHTML = realMonthFilter.innerHTML;
-            Array.from(modalMonthFilter.options).forEach(opt => {
-                opt.selected = Array.from(realMonthFilter.selectedOptions).some(o => o.value === opt.value);
-            });
-        }
+    if (realCompanyFilter && modalCompanyFilter) {
+        modalCompanyFilter.innerHTML = realCompanyFilter.innerHTML;
+        modalCompanyFilter.value = realCompanyFilter.value;
     }
+    if (realYearFilter && modalYearFilter) {
+        modalYearFilter.innerHTML = realYearFilter.innerHTML;
+        modalYearFilter.value = realYearFilter.value;  // Теперь будет самый ранний год
+    }
+    if (realMonthFilter && modalMonthFilter) {
+        modalMonthFilter.innerHTML = realMonthFilter.innerHTML;
+        Array.from(modalMonthFilter.options).forEach(opt => {
+            opt.selected = false;
+        });
+    }
+}
 
     // Сохраняем оригинальную функцию и оборачиваем
     const originalUpdateFilters = updateFilters;
