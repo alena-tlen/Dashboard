@@ -87,13 +87,7 @@
     body.dark .admin-table th { background: #0f0f1a; }
     .close-admin { background: #f56565; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
     
-    .container { 
-    display: flex; 
-    max-width: 1600px; 
-    margin: 0 20px;  /* ← отступы как у шапки */
-    min-height: calc(100vh - 100px);
-    width: calc(100% - 40px);
-}
+    .container { display: flex; max-width: 1600px; margin: 0; min-height: calc(100vh - 100px); width: 100%; }
     body.light .sidebar-nav { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     body.dark .sidebar-nav { background: #1a1a2a; border: 1px solid #2d2d3a; }
     .nav-title { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #667eea; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid rgba(102,126,234,0.3); }
@@ -120,11 +114,7 @@
     .toggle-switch.active { background: #667eea; }
     .toggle-switch .slider { width: 22px; height: 22px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 3px; transition: 0.3s; }
     .toggle-switch.active .slider { left: 25px; }
-    .main-content { 
-    flex: 1; 
-    padding: 20px;
-    min-width: 0;
-}
+    .main-content { flex: 1; padding: 20px; }
     .upload-card { background: white; border-radius: 16px; padding: 32px; margin-bottom: 24px; text-align: center; border: 2px dashed #e0e0e0; transition: all 0.3s; cursor: pointer; }
     body.dark .upload-card { background: #1a1a2a; border-color: #2d2d3a; }
     .upload-card:hover { border-color: #667eea; background: #f8f9ff; }
@@ -594,12 +584,10 @@
 /* ========== ПРАВАЯ БОКОВАЯ ПАНЕЛЬ ========== */
 .right-sidebar {
     width: 320px;
-    margin: 20px 0 20px 0;
+    margin: 20px 20px 20px 0;
     position: sticky;
     top: 20px;
     height: fit-content;
-    flex-shrink: 0;
-    align-self: flex-start;
 }
 
 /* ========== БЛОК СТАТЕЙ В ПРАВОЙ ПАНЕЛИ ========== */
@@ -790,30 +778,14 @@ body.dark .article-card:hover {
     border-radius: 4px;
 }
 
-/* ========== ОСНОВНЫЕ СТИЛИ ДЛЯ ДЕСКТОПА ========== */
-.container { 
-    display: flex; 
-    max-width: 1600px; 
-    margin: 0 20px;
-    min-height: calc(100vh - 100px);
-    width: calc(100% - 40px);
-    gap: 20px;
-}
-
-.main-content { 
-    flex: 1; 
-    padding: 20px;
-    min-width: 0;
-}
-
 /* Адаптив для мобильных устройств */
 @media (max-width: 1024px) {
     .container { 
     display: flex; 
     max-width: 1600px; 
-    margin: 0 20px;  /* Добавьте отступы по бокам как у шапки */
+    margin: 0; 
     min-height: calc(100vh - 100px);
-    width: calc(100% - 40px);
+    width: 100%;
 }
     
     .sidebar-nav {
@@ -823,19 +795,14 @@ body.dark .article-card:hover {
     }
     
     .right-sidebar {
-    width: 320px;
-    margin: 20px 20px 20px auto;  /* Изменено: auto справа - прижимает панель к правому краю */
-    position: sticky;
-    top: 20px;
-    height: fit-content;
-    flex-shrink: 0;
-}
+        width: auto;
+        margin: 0 20px 20px 20px;
+        position: static;
+    }
     
-    .main-content { 
-    flex: 1; 
-    padding: 20px;
-    min-width: 0; /* Важно для flex-контейнера, чтобы контент не вылезал */
-}
+    .main-content {
+        margin: 0 20px 20px 20px;
+    }
 }
 
 /* Стили для скрытия скролла (но оставляем возможность скроллить) */
