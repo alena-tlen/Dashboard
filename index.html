@@ -5502,11 +5502,11 @@ function renderNdsToRevenueChart(labels, ndsValues, revenueValues) {
         window.ndsToRevenueChart.destroy();
     }
     
-    // Рассчитываем процент НДС от выручки
+    // Рассчитываем процент НДС от ЧИСТОЙ выручки (revenueValues - это уже чистая выручка)
     const ndsPercentages = ndsValues.map((nds, idx) => {
-        const revenue = revenueValues[idx];
-        if (revenue === 0 || revenue === undefined) return 0;
-        return (Math.abs(nds) / revenue) * 100;
+        const netRevenue = revenueValues[idx];
+        if (netRevenue === 0 || netRevenue === undefined) return 0;
+        return (Math.abs(nds) / netRevenue) * 100;
     });
     
     // Цвета в зависимости от процента
@@ -5522,13 +5522,14 @@ function renderNdsToRevenueChart(labels, ndsValues, revenueValues) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'НДС (% от выручки)',
+                label: 'НДС (% от чистой выручки)',
                 data: ndsPercentages,
                 backgroundColor: barColors,
+                borderColor: barColors,
                 borderRadius: 10,
                 barPercentage: 0.65,
                 categoryPercentage: 0.8,
-                borderWidth: 0
+                borderWidth: 1
             }]
         },
         options: {
@@ -5547,11 +5548,11 @@ function renderNdsToRevenueChart(labels, ndsValues, revenueValues) {
                             const idx = context.dataIndex;
                             const percent = context.parsed.y;
                             const nds = ndsValues[idx];
-                            const revenue = revenueValues[idx];
+                            const netRevenue = revenueValues[idx];
                             return [
-                                `📊 НДС: ${percent.toFixed(1)}% от выручки`,
+                                `📊 НДС: ${percent.toFixed(1)}% от чистой выручки`,
                                 `💰 НДС: ${formatCurrency(Math.abs(nds))}`,
-                                `📈 Выручка: ${formatCurrency(revenue)}`
+                                `📈 Чистая выручка: ${formatCurrency(netRevenue)}`
                             ];
                         }
                     }
@@ -5569,7 +5570,7 @@ function renderNdsToRevenueChart(labels, ndsValues, revenueValues) {
                 y: {
                     title: {
                         display: true,
-                        text: 'НДС (% от выручки)',
+                        text: 'НДС (% от чистой выручки)',
                         color: isDarkMode ? '#e2e8f0' : '#4a5568',
                         font: { size: 10 }
                     },
