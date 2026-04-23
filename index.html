@@ -7332,7 +7332,7 @@ function renderProfitMiniChart() {
         const data = monthlyProfit[key];
         const netRevenue = data.revenue - data.ndsOut;
         const profit = netRevenue - data.expenses;
-        return profit / 1000; // в тысячах
+        return profit / 1000;
     });
     
     if (labels.length === 0 || profitData.length === 0) return;
@@ -7340,10 +7340,10 @@ function renderProfitMiniChart() {
     const ctx = canvas.getContext('2d');
     const isDarkMode = document.body.classList.contains('dark');
     
-    // Цвета для столбцов (зеленый для прибыли, красный для убытка)
+    // ✅ ИСПРАВЛЕНО: используем backgroundColor с массивом цветов
+    // borderColor оставляем одной строкой или вообще убираем
     const barColors = profitData.map(value => value >= 0 ? '#48bb78' : '#f56565');
     
-    // Уничтожаем старый график
     if (profitMiniChart) {
         profitMiniChart.destroy();
         profitMiniChart = null;
@@ -7357,7 +7357,7 @@ function renderProfitMiniChart() {
                 label: 'Прибыль (тыс. ₽)',
                 data: profitData,
                 backgroundColor: barColors,
-                borderColor: barColors,  // <-- ИСПРАВЛЕНО: теперь массив, а не функция
+                borderColor: '#ffffff',  // ✅ строка, а не массив
                 borderWidth: 1,
                 borderRadius: 6,
                 barPercentage: 0.7,
@@ -7385,13 +7385,6 @@ function renderProfitMiniChart() {
                         label: function(context) {
                             const value = context.parsed.y;
                             return `${value >= 0 ? '+' : ''}${value.toFixed(0)} тыс. ₽`;
-                        },
-                        labelColor: function(context) {
-                            const value = context.parsed.y;
-                            return { 
-                                borderColor: value >= 0 ? '#48bb78' : '#f56565',
-                                backgroundColor: value >= 0 ? '#48bb78' : '#f56565'
-                            };
                         }
                     }
                 }
@@ -7479,12 +7472,11 @@ function renderSalesChart(labels, salesData) {
                 label: 'Продажи (шт)',
                 data: salesData,
                 backgroundColor: gradients,
-                borderWidth: 0,
+                borderColor: '#ffffff',  // ✅ строка, не массив
+                borderWidth: 1,
                 borderRadius: 10,
                 barPercentage: 0.7,
-                categoryPercentage: 0.85,
-                hoverBackgroundColor: gradients,
-                hoverBorderWidth: 0
+                categoryPercentage: 0.85
             }]
         },
         options: {
@@ -7534,11 +7526,10 @@ function renderSalesChart(labels, salesData) {
                 }
             },
             elements: {
-                bar: {
-                    borderWidth: 0,
-                    borderRadius: 10
-                }
-            },
+    bar: {
+        borderRadius: 10
+    }
+},
             layout: {
                 padding: { top: 15, bottom: 5, left: 5, right: 5 }
             },
