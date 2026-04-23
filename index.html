@@ -6098,15 +6098,6 @@ setTimeout(() => {
     renderProfitMiniChart();
 }, 100);
 
-setTimeout(() => {
-    renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
-}, 150);
-
-// Отрисовка основного графика - передаем данные как параметры
-setTimeout(() => {
-    renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
-}, 150);
-
 // Анализ для рекомендаций
 let healthStatus = { color: '#48bb78', text: 'Отлично', icon: '🚀' };
 let recommendations = [];
@@ -7348,49 +7339,8 @@ function renderProfitMiniChart() {
     const ctx = canvas.getContext('2d');
     const isDarkMode = document.body.classList.contains('dark');
     
-    // Находим min и max для градиента заливки
-    const maxProfitVal = Math.max(...profitData, 0);
-    const minProfitVal = Math.min(...profitData, 0);
-    
-    // СОЗДАЕМ ГРАДИЕНТ ДЛЯ ЗАЛИВКИ
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 100);
-    
-    if (minProfitVal < 0 && maxProfitVal > 0) {
-        // Есть и плюсы и минусы - градиент от красного через желтый к зеленому
-        gradient.addColorStop(0, '#f56565');   // красный (убыток)
-        gradient.addColorStop(0.5, '#fbbf24'); // желтый (ноль)
-        gradient.addColorStop(1, '#48bb78');   // зеленый (прибыль)
-    } else if (minProfitVal < 0 && maxProfitVal <= 0) {
-        // Только убытки - красный
-        gradient.addColorStop(0, '#f56565');
-        gradient.addColorStop(1, '#e53e3e');
-    } else {
-        // Только прибыль - зеленый
-        gradient.addColorStop(0, '#6ee7b7');
-        gradient.addColorStop(1, '#48bb78');
-    }
-    
-    // СОЗДАЕМ ГРАДИЕНТ ДЛЯ ЛИНИИ (по точкам)
-    // Для линии используем отдельные сегменты с разными цветами
-    const segments = [];
-    const colors = [];
-    
-    // Определяем цвет для каждого сегмента между точками
-    for (let i = 0; i < profitData.length - 1; i++) {
-        const currentVal = profitData[i];
-        const nextVal = profitData[i + 1];
-        // Цвет сегмента определяется по среднему значению или по первому значению
-        const avgVal = (currentVal + nextVal) / 2;
-        const segmentColor = avgVal >= 0 ? '#48bb78' : '#f56565';
-        segments.push({
-            from: i,
-            to: i + 1,
-            color: segmentColor
-        });
-    }
-    
-    // Определяем цвет для каждой точки
-    const pointColors = profitData.map(val => val >= 0 ? '#48bb78' : '#f56565');
+    // Цвета для столбцов (зеленый для прибыли, красный для убытка)
+    const barColors = profitData.map(value => value >= 0 ? '#48bb78' : '#f56565');
     
     // Уничтожаем старый график
     if (profitMiniChart) {
@@ -7398,81 +7348,19 @@ function renderProfitMiniChart() {
         profitMiniChart = null;
     }
     
-    // Создаем несколько наборов данных для разноцветных сегментов линии
-    const datasets = [];
-    
-    // Добавляем сегменты линии с разными цветами
-    for (let i = 0; i < segments.length; i++) {
-        const segment = segments[i];
-        const segmentData = new Array(profitData.length).fill(null);
-        segmentData[segment.from] = profitData[segment.from];
-        segmentData[segment.to] = profitData[segment.to];
-        
-        datasets.push({
-            label: '',
-            data: segmentData,
-            borderColor: segment.color,
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            pointRadius: 0,
-            pointHoverRadius: 0,
-            tension: 0.4,
-            fill: false,
-            spanGaps: false,
-            segment: {
-                borderColor: ctx => {
-                    const value = (ctx.p0.parsed.y + ctx.p1.parsed.y) / 2;
-                    return value >= 0 ? '#48bb78' : '#f56565';
-                }
-            }
-        });
-    }
-    
-    // Добавляем точки поверх
-    datasets.push({
-        label: '',
-        data: profitData,
-        borderColor: 'transparent',
-        backgroundColor: pointColors,
-        borderWidth: 0,
-        pointRadius: 3,
-        pointHoverRadius: 6,
-        pointBorderColor: 'transparent',
-        pointBorderWidth: 0,
-        type: 'line',
-        fill: false,
-        showLine: false
-    });
-    
     profitMiniChart = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: '',
+                label: 'Прибыль (тыс. ₽)',
                 data: profitData,
-                borderColor: function(context) {
-                    // Используем сегментный подход
-                    const chart = context.chart;
-                    const { ctx, dataIndex } = context;
-                    if (dataIndex === 0) return '#48bb78';
-                    const value = profitData[dataIndex];
-                    return value >= 0 ? '#48bb78' : '#f56565';
-                },
-                borderWidth: 2,
-                pointRadius: 3,
-                pointHoverRadius: 6,
-                pointBackgroundColor: pointColors,
-                pointBorderColor: 'transparent',
-                tension: 0.4,
-                fill: true,
-                backgroundColor: gradient,
-                segment: {
-                    borderColor: (ctx) => {
-                        const value = (ctx.p0.parsed.y + ctx.p1.parsed.y) / 2;
-                        return value >= 0 ? '#48bb78' : '#f56565';
-                    }
-                }
+                backgroundColor: barColors,
+                borderColor: barColors.map(c => c === '#48bb78' ? '#2f9e5a' : '#c0392b'),
+                borderWidth: 1,
+                borderRadius: 6,
+                barPercentage: 0.7,
+                categoryPercentage: 0.8
             }]
         },
         options: {
@@ -7481,8 +7369,6 @@ function renderProfitMiniChart() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    mode: 'index',
-                    intersect: false,
                     backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
                     titleColor: isDarkMode ? '#e2e8f0' : '#4a5568',
                     bodyColor: isDarkMode ? '#e2e8f0' : '#4a5568',
@@ -7510,32 +7396,34 @@ function renderProfitMiniChart() {
                 }
             },
             scales: {
-                x: { 
-                    display: false,
-                    grid: { display: false },
-                    ticks: { display: false }
+                x: {
+                    ticks: {
+                        color: isDarkMode ? '#e2e8f0' : '#4a5568',
+                        maxRotation: 45,
+                        minRotation: 45,
+                        font: { size: 10 }
+                    },
+                    grid: { display: false }
                 },
-                y: { 
-                    display: false,
-                    grid: { display: false },
-                    ticks: { display: false }
+                y: {
+                    ticks: {
+                        color: isDarkMode ? '#e2e8f0' : '#4a5568',
+                        callback: (value) => value.toFixed(0) + ' тыс.'
+                    },
+                    grid: { color: isDarkMode ? '#2d3748' : '#e2e8f0' },
+                    beginAtZero: false
                 }
             },
-            elements: {
-                line: { tension: 0.4 },
-                point: { hoverRadius: 6, radius: 3 }
-            },
             layout: {
-                padding: { top: 5, bottom: 5, left: 5, right: 5 }
+                padding: { top: 10, bottom: 10, left: 5, right: 5 }
             },
             interaction: {
-                mode: 'nearest',
-                axis: 'x',
+                mode: 'index',
                 intersect: false
             },
             animation: {
-                duration: 1000,
-                easing: 'easeInOutQuart'
+                duration: 800,
+                easing: 'easeOutQuart'
             }
         }
     });
