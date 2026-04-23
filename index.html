@@ -7357,7 +7357,7 @@ function renderProfitMiniChart() {
                 label: 'Прибыль (тыс. ₽)',
                 data: profitData,
                 backgroundColor: barColors,
-                borderColor: barColors.map(c => c === '#48bb78' ? '#2f9e5a' : '#c0392b'),
+                borderColor: barColors,  // <-- ИСПРАВЛЕНО: теперь массив, а не функция
                 borderWidth: 1,
                 borderRadius: 6,
                 barPercentage: 0.7,
