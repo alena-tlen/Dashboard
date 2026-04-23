@@ -1687,15 +1687,15 @@ body.dark .filter-modal .filter-group select {
     }
 }
 
-/* ========== БОКОВАЯ ПАНЕЛЬ СРАВНЕНИЯ ========== */
-.comparison-panel {
+/* ========== БОКОВАЯ ПАНЕЛЬ С РАЗБИВКАМИ ========== */
+.breakdown-panel {
     position: fixed;
-    right: -420px;
+    right: -450px;
     top: 0;
-    width: 420px;
+    width: 450px;
     height: 100vh;
     background: var(--panel-bg, #ffffff);
-    box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+    box-shadow: -4px 0 25px rgba(0,0,0,0.15);
     z-index: 1001;
     transition: right 0.3s ease;
     display: flex;
@@ -1703,12 +1703,12 @@ body.dark .filter-modal .filter-group select {
     overflow: hidden;
 }
 
-body.dark .comparison-panel {
+body.dark .breakdown-panel {
     background: #1a1a2a;
     border-left: 1px solid #2d2d3a;
 }
 
-.comparison-panel.open {
+.breakdown-panel.open {
     right: 0;
 }
 
@@ -1719,6 +1719,7 @@ body.dark .comparison-panel {
     padding: 16px 20px;
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
+    flex-shrink: 0;
 }
 
 .panel-header h3 {
@@ -1752,21 +1753,33 @@ body.dark .comparison-panel {
     padding: 16px;
 }
 
-.comparison-card {
+.breakdown-card {
     background: rgba(102,126,234,0.05);
     border-radius: 12px;
     margin-bottom: 16px;
     overflow: hidden;
     transition: all 0.2s;
     border: 1px solid rgba(102,126,234,0.15);
+    animation: slideInCard 0.3s ease;
 }
 
-.comparison-card:hover {
+@keyframes slideInCard {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.breakdown-card:hover {
     transform: translateX(-4px);
     box-shadow: -4px 4px 12px rgba(0,0,0,0.1);
 }
 
-.comparison-card.pinned {
+.breakdown-card.pinned {
     border-left: 3px solid #f59e0b;
     background: rgba(245,158,11,0.08);
 }
@@ -1821,7 +1834,7 @@ body.dark .comparison-panel {
 
 .card-content {
     padding: 16px;
-    max-height: 300px;
+    max-height: 350px;
     overflow-y: auto;
 }
 
@@ -1829,12 +1842,27 @@ body.dark .comparison-panel {
     margin-bottom: 12px;
 }
 
+.card-content .channel-item:last-child {
+    margin-bottom: 0;
+}
+
+.card-footer {
+    padding: 8px 16px;
+    border-top: 1px solid rgba(102,126,234,0.1);
+    font-size: 10px;
+    color: rgba(102,126,234,0.5);
+    display: flex;
+    justify-content: flex-end;
+}
+
 .panel-footer {
     padding: 12px 16px;
     border-top: 1px solid rgba(102,126,234,0.2);
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-size: 12px;
+    flex-shrink: 0;
 }
 
 .clear-all-btn {
@@ -1843,8 +1871,9 @@ body.dark .comparison-panel {
     color: #f56565;
     cursor: pointer;
     font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    transition: all 0.2s;
 }
 
 .clear-all-btn:hover {
@@ -1863,7 +1892,7 @@ body.dark .comparison-panel {
     color: white;
     cursor: pointer;
     z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 15px rgba(102,126,234,0.4);
     transition: all 0.3s;
     display: flex;
     align-items: center;
@@ -1873,7 +1902,31 @@ body.dark .comparison-panel {
 
 .panel-toggle:hover {
     transform: scale(1.05);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    box-shadow: 0 6px 20px rgba(102,126,234,0.6);
+}
+
+.empty-panel {
+    text-align: center;
+    padding: 60px 20px;
+    opacity: 0.5;
+}
+
+.empty-panel span {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 16px;
+}
+
+/* Адаптив для мобильных */
+@media (max-width: 768px) {
+    .breakdown-panel {
+        width: 100%;
+        right: -100%;
+    }
+    .panel-toggle {
+        bottom: 80px;
+        right: 16px;
+    }
 }
 
 
@@ -6626,8 +6679,8 @@ const netRevenueBlock = `
             <span style="font-size: 18px;">📊</span>
             <span>Выручка чистая</span>
         </div>
-        <button class="toggle-breakdown-btn" data-type="netRevenue" onclick="addToComparison('Выручка чистая по каналам', null, 'revenue', ${JSON.stringify(calculateNetRevenueByChannel(currentData))})" style="background: rgba(102,126,234,0.15); border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; transition: all 0.2s;">
-    <span>📌</span> Добавить в сравнение
+        <button class="toggle-breakdown-btn" onclick="addBreakdownToPanel('Выручка чистая', 'revenue', ${JSON.stringify(calculateNetRevenueByChannel(currentData))})" style="background: rgba(102,126,234,0.15); border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; transition: all 0.2s;">
+    <span>📋</span> Показать по каналам
 </button>
     </div>
     <div>
@@ -6655,9 +6708,9 @@ const salesBlock = `
             <span style="font-size: 18px;">📦</span>
             <span>Продажи (шт)</span>
         </div>
-        <button class="toggle-sales-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-            <span>▶</span> Показать по каналам
-        </button>
+        <button class="toggle-sales-breakdown-btn" onclick="addBreakdownToPanel('Продажи по каналам', 'sales', ${JSON.stringify(generateSalesBreakdownData(currentData))})" style="background: rgba(102,126,234,0.15); border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; transition: all 0.2s;">
+    <span>📋</span> Показать по каналам
+</button>
     </div>
     <div>
         <div class="metric-value" id="mainSalesValue">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
@@ -6679,9 +6732,9 @@ const avgCheckBlock = `
             <span style="font-size: 18px;">💰</span>
             <span>Средний чек</span>
         </div>
-        <button class="toggle-avgcheck-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-            <span>▶</span> Показать по каналам
-        </button>
+        <button class="toggle-avgcheck-breakdown-btn" onclick="addBreakdownToPanel('Средний чек по каналам', 'avgcheck', ${JSON.stringify(generateAverageCheckBreakdownData(currentData))})" style="background: rgba(102,126,234,0.15); border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; transition: all 0.2s;">
+    <span>📋</span> Показать по каналам
+</button>
     </div>
     <div>
         <div class="metric-value" id="mainAvgCheckValue">${formatCurrency(avgCheck)}</div>
@@ -6724,9 +6777,9 @@ document.getElementById('dashboardMetrics').innerHTML = topPanelHtml + `
             <span style="font-size: 18px;">💸</span>
             <span>НДС</span>
         </div>
-        <button class="toggle-nds-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-            <span>▶</span> Показать по каналам
-        </button>
+        <button class="toggle-nds-breakdown-btn" onclick="addBreakdownToPanel('НДС по каналам', 'nds', ${JSON.stringify(generateNDSBreakdownData(currentData))})" style="background: rgba(102,126,234,0.15); border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; transition: all 0.2s;">
+    <span>📋</span> Показать по каналам
+</button>
     </div>
     
     <!-- Основные цифры -->
@@ -8223,179 +8276,245 @@ if (sidebarNav) {
     document.getElementById('logoutBtn')?.addEventListener('click', logout);
     
     initAuth();
-    // ========== БОКОВАЯ ПАНЕЛЬ СРАВНЕНИЯ ==========
-let comparisonItems = [];
+    // ========== БОКОВАЯ ПАНЕЛЬ РАЗБИВОК ==========
+let breakdownItems = [];
 let nextItemId = 1;
 
-// Загрузка сохранённых элементов из localStorage
-function loadComparisonItems() {
-    const saved = localStorage.getItem('comparison_items');
+// Загрузка сохранённых элементов
+function loadBreakdownItems() {
+    const saved = localStorage.getItem('breakdown_items');
     if (saved) {
         try {
-            comparisonItems = JSON.parse(saved);
-            nextItemId = Math.max(...comparisonItems.map(i => i.id), 0) + 1;
-            renderComparisonPanel();
+            breakdownItems = JSON.parse(saved);
+            nextItemId = Math.max(...breakdownItems.map(i => i.id), 0) + 1;
+            renderBreakdownPanel();
         } catch(e) {}
     }
 }
 
-// Сохранение в localStorage
-function saveComparisonItems() {
-    localStorage.setItem('comparison_items', JSON.stringify(comparisonItems));
-    document.getElementById('panelCount').innerText = `${comparisonItems.length} элемент${comparisonItems.length !== 1 ? 'а' : ''}`;
+// Сохранение
+function saveBreakdownItems() {
+    localStorage.setItem('breakdown_items', JSON.stringify(breakdownItems));
+    const countEl = document.getElementById('panelCount');
+    if (countEl) {
+        countEl.innerText = `${breakdownItems.length} элемент${breakdownItems.length !== 1 ? 'а' : ''}`;
+    }
 }
 
-// Добавление элемента в панель
-function addToComparison(title, data, type, channelData) {
+// Добавление разбивки в панель
+function addBreakdownToPanel(title, type, channelData) {
+    if (!channelData || channelData.length === 0) {
+        showNotification('Нет данных для отображения', 'error');
+        return;
+    }
+    
     const newItem = {
         id: nextItemId++,
         title: title,
         type: type,
-        data: data,
         channelData: channelData,
         pinned: false,
         timestamp: Date.now()
     };
-    comparisonItems.unshift(newItem); // добавляем в начало
-    if (comparisonItems.length > 10) comparisonItems.pop(); // максимум 10 элементов
-    saveComparisonItems();
-    renderComparisonPanel();
-    openPanel();
+    breakdownItems.unshift(newItem);
+    if (breakdownItems.length > 15) breakdownItems.pop();
+    saveBreakdownItems();
+    renderBreakdownPanel();
+    openBreakdownPanel();
+    showNotification(`✅ Добавлено: ${title}`, 'success');
 }
 
-// Удаление элемента
-function removeComparisonItem(id) {
-    comparisonItems = comparisonItems.filter(item => item.id !== id);
-    saveComparisonItems();
-    renderComparisonPanel();
+// Удаление
+function removeBreakdownItem(id) {
+    breakdownItems = breakdownItems.filter(item => item.id !== id);
+    saveBreakdownItems();
+    renderBreakdownPanel();
 }
 
 // Закрепить/открепить
-function togglePinItem(id) {
-    const item = comparisonItems.find(i => i.id === id);
+function togglePinBreakdownItem(id) {
+    const item = breakdownItems.find(i => i.id === id);
     if (item) {
         item.pinned = !item.pinned;
-        // Сортируем: закреплённые вверху
-        comparisonItems.sort((a, b) => {
+        breakdownItems.sort((a, b) => {
             if (a.pinned === b.pinned) return b.timestamp - a.timestamp;
             return a.pinned ? -1 : 1;
         });
-        saveComparisonItems();
-        renderComparisonPanel();
+        saveBreakdownItems();
+        renderBreakdownPanel();
     }
 }
 
 // Очистить всё
-function clearAllComparison() {
-    if (confirm('Удалить все элементы из панели сравнения?')) {
-        comparisonItems = [];
-        saveComparisonItems();
-        renderComparisonPanel();
+function clearAllBreakdowns() {
+    if (confirm('Удалить все разбивки из панели?')) {
+        breakdownItems = [];
+        saveBreakdownItems();
+        renderBreakdownPanel();
+        showNotification('Все разбивки удалены', 'info');
     }
 }
 
-// Генерация HTML для карточки
-function renderComparisonCard(item) {
+// Форматирование валюты для панели
+function formatPanelCurrency(value) {
+    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(Math.abs(value));
+}
+
+// Генерация содержимого карточки
+function renderBreakdownCard(item) {
     const pinnedClass = item.pinned ? 'pinned' : '';
+    const total = item.channelData.reduce((sum, ch) => sum + Math.abs(ch.value), 0);
     
-    // Генерация содержимого в зависимости от типа
-    let contentHtml = '';
-    if (item.channelData && item.channelData.length) {
-        const total = item.channelData.reduce((sum, ch) => sum + ch.value, 0);
-        contentHtml = item.channelData.map(ch => {
-            const percent = total > 0 ? (ch.value / total) * 100 : 0;
-            return `
-                <div class="channel-item" style="margin-bottom: 12px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
-                        <span style="font-weight: 500;">${ch.name}</span>
-                        <span>${formatCurrency(ch.value)} (${percent.toFixed(1)}%)</span>
-                    </div>
-                    <div style="background: rgba(102,126,234,0.15); height: 6px; border-radius: 3px; overflow: hidden;">
-                        <div style="width: ${percent}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 3px;"></div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+    let valueSuffix = '';
+    let valuePrefix = '';
+    if (item.type === 'sales') {
+        valueSuffix = ' шт';
+        valuePrefix = '';
+    } else if (item.type === 'avgcheck') {
+        valuePrefix = '₽ ';
+        valueSuffix = '';
     } else {
-        contentHtml = `<div style="text-align: center; padding: 20px; opacity: 0.6;">Нет данных для отображения</div>`;
+        valuePrefix = '₽ ';
+        valueSuffix = '';
+    }
+    
+    const channelsHtml = item.channelData.map((ch, idx) => {
+        const percent = total > 0 ? (Math.abs(ch.value) / total) * 100 : 0;
+        let displayValue = ch.value;
+        if (item.type === 'sales') {
+            displayValue = Math.round(ch.value).toLocaleString('ru-RU');
+        } else if (item.type === 'avgcheck') {
+            displayValue = Math.round(ch.value).toLocaleString('ru-RU');
+        } else {
+            displayValue = formatPanelCurrency(ch.value);
+        }
+        
+        let sign = '';
+        let signColor = '';
+        if (item.type === 'nds') {
+            sign = ch.value >= 0 ? ' ↗' : ' ↘';
+            signColor = ch.value >= 0 ? '#f56565' : '#48bb78';
+        }
+        
+        return `
+            <div class="channel-item" style="margin-bottom: 12px; animation: slideInCard 0.2s ease; animation-delay: ${idx * 0.03}s;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                    <span style="font-weight: 500;">${ch.name}</span>
+                    <span>${valuePrefix}${displayValue}${valueSuffix}<span style="color: ${signColor}; font-size: 10px;">${sign}</span> (${percent.toFixed(1)}%)</span>
+                </div>
+                <div style="background: rgba(102,126,234,0.15); height: 6px; border-radius: 3px; overflow: hidden;">
+                    <div style="width: ${percent}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 3px; transition: width 0.5s ease;"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Иконка для заголовка
+    let icon = '📊';
+    if (item.type === 'revenue') icon = '💰';
+    else if (item.type === 'sales') icon = '📦';
+    else if (item.type === 'avgcheck') icon = '💳';
+    else if (item.type === 'nds') icon = '💸';
+    else if (item.type === 'profit') icon = '📈';
+    
+    // Форматирование итоговой суммы
+    let totalDisplay = '';
+    if (item.type === 'sales') {
+        totalDisplay = `${Math.round(total).toLocaleString('ru-RU')} шт`;
+    } else if (item.type === 'avgcheck') {
+        totalDisplay = `${Math.round(total / item.channelData.length).toLocaleString('ru-RU')} ₽ (средний)`;
+    } else {
+        totalDisplay = formatPanelCurrency(total);
     }
     
     return `
-        <div class="comparison-card ${pinnedClass}" data-id="${item.id}">
+        <div class="breakdown-card ${pinnedClass}" data-id="${item.id}">
             <div class="card-header">
                 <div class="card-title">
-                    <span>${item.type === 'revenue' ? '💰' : item.type === 'profit' ? '📈' : item.type === 'nds' ? '💸' : '📊'}</span>
+                    <span>${icon}</span>
                     <span>${item.title}</span>
                 </div>
                 <div class="card-actions">
-                    <button class="pin-btn" onclick="togglePinItem(${item.id})" title="${item.pinned ? 'Открепить' : 'Закрепить'}">
+                    <button class="pin-btn" onclick="togglePinBreakdownItem(${item.id})" title="${item.pinned ? 'Открепить' : 'Закрепить'}">
                         ${item.pinned ? '📌' : '📍'}
                     </button>
-                    <button class="close-btn" onclick="removeComparisonItem(${item.id})" title="Удалить">✕</button>
+                    <button class="close-btn" onclick="removeBreakdownItem(${item.id})" title="Удалить">✕</button>
                 </div>
             </div>
             <div class="card-content">
-                ${contentHtml}
-                <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(102,126,234,0.1); font-size: 10px; opacity: 0.5;">
-                    ${new Date(item.timestamp).toLocaleTimeString()}
-                </div>
+                ${channelsHtml}
+            </div>
+            <div class="card-footer">
+                Итого: ${totalDisplay} • ${new Date(item.timestamp).toLocaleTimeString()}
             </div>
         </div>
     `;
 }
 
-// Отрисовка всей панели
-function renderComparisonPanel() {
+// Отрисовка панели
+function renderBreakdownPanel() {
     const panelContent = document.getElementById('panelContent');
     if (!panelContent) return;
     
-    if (comparisonItems.length === 0) {
-        panelContent.innerHTML = '<div style="text-align: center; padding: 40px; opacity: 0.5;">🔍 Нажмите "Показать по каналам"<br>на любом блоке, чтобы добавить сюда</div>';
-        document.getElementById('panelCount').innerText = '0 элементов';
+    if (breakdownItems.length === 0) {
+        panelContent.innerHTML = `
+            <div class="empty-panel">
+                <span>🔍</span>
+                <div>Нажмите "Показать по каналам"<br>на любом блоке, чтобы добавить сюда</div>
+            </div>
+        `;
+        const countEl = document.getElementById('panelCount');
+        if (countEl) countEl.innerText = '0 элементов';
         return;
     }
     
-    panelContent.innerHTML = comparisonItems.map(item => renderComparisonCard(item)).join('');
-    document.getElementById('panelCount').innerText = `${comparisonItems.length} элемент${comparisonItems.length !== 1 ? 'а' : ''}`;
+    panelContent.innerHTML = breakdownItems.map(item => renderBreakdownCard(item)).join('');
+    const countEl = document.getElementById('panelCount');
+    if (countEl) {
+        countEl.innerText = `${breakdownItems.length} элемент${breakdownItems.length !== 1 ? 'а' : ''}`;
+    }
 }
 
 // Открыть/закрыть панель
-function openPanel() {
-    document.getElementById('comparisonPanel').classList.add('open');
+function openBreakdownPanel() {
+    document.getElementById('breakdownPanel').classList.add('open');
 }
 
-function closePanel() {
-    document.getElementById('comparisonPanel').classList.remove('open');
+function closeBreakdownPanel() {
+    document.getElementById('breakdownPanel').classList.remove('open');
 }
 
-function togglePanel() {
-    const panel = document.getElementById('comparisonPanel');
+function toggleBreakdownPanel() {
+    const panel = document.getElementById('breakdownPanel');
     if (panel.classList.contains('open')) {
-        closePanel();
+        closeBreakdownPanel();
     } else {
-        openPanel();
+        openBreakdownPanel();
     }
 }
 
 // Инициализация
-function initComparisonPanel() {
-    loadComparisonItems();
+function initBreakdownPanel() {
+    loadBreakdownItems();
     
-    document.getElementById('panelToggleBtn')?.addEventListener('click', togglePanel);
-    document.getElementById('panelCloseBtn')?.addEventListener('click', closePanel);
-    document.getElementById('clearAllBtn')?.addEventListener('click', clearAllComparison);
+    document.getElementById('panelToggleBtn')?.addEventListener('click', toggleBreakdownPanel);
+    document.getElementById('panelCloseBtn')?.addEventListener('click', closeBreakdownPanel);
+    document.getElementById('clearAllBtn')?.addEventListener('click', clearAllBreakdowns);
     
     // Закрытие по клику вне панели
     document.addEventListener('click', (e) => {
-        const panel = document.getElementById('comparisonPanel');
+        const panel = document.getElementById('breakdownPanel');
         const toggle = document.getElementById('panelToggleBtn');
         if (panel?.classList.contains('open') && 
             !panel.contains(e.target) && 
             !toggle?.contains(e.target)) {
-            closePanel();
+            closeBreakdownPanel();
         }
     });
 }
+
+// Запускаем инициализацию
+initBreakdownPanel();
     </script>
 
 <!-- Плавающая кнопка фильтров -->
@@ -8448,17 +8567,21 @@ function initComparisonPanel() {
     </div>
 </div>
 
-<!-- Боковая панель сравнения -->
-<button class="panel-toggle" id="panelToggleBtn" title="Панель сравнения">📊</button>
+<!-- Боковая панель для разбивок -->
+<button class="panel-toggle" id="panelToggleBtn" title="Показать панель разбивок">📊</button>
 
-<div class="comparison-panel" id="comparisonPanel">
+<div class="breakdown-panel" id="breakdownPanel">
     <div class="panel-header">
-        <h3>📊 Панель сравнения</h3>
+        <h3>
+            <span>📋</span>
+            <span>Разбивки по каналам</span>
+        </h3>
         <button class="panel-close" id="panelCloseBtn">×</button>
     </div>
     <div class="panel-content" id="panelContent">
-        <div style="text-align: center; padding: 40px; opacity: 0.5;">
-            🔍 Нажмите "Показать по каналам"<br>на любом блоке, чтобы добавить сюда
+        <div class="empty-panel">
+            <span>🔍</span>
+            <div>Нажмите "Показать по каналам"<br>на любом блоке, чтобы добавить сюда</div>
         </div>
     </div>
     <div class="panel-footer">
