@@ -1687,6 +1687,195 @@ body.dark .filter-modal .filter-group select {
     }
 }
 
+/* ========== БОКОВАЯ ПАНЕЛЬ СРАВНЕНИЯ ========== */
+.comparison-panel {
+    position: fixed;
+    right: -420px;
+    top: 0;
+    width: 420px;
+    height: 100vh;
+    background: var(--panel-bg, #ffffff);
+    box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+    z-index: 1001;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+body.dark .comparison-panel {
+    background: #1a1a2a;
+    border-left: 1px solid #2d2d3a;
+}
+
+.comparison-panel.open {
+    right: 0;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panel-header .panel-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+}
+
+.panel-header .panel-close:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.05);
+}
+
+.panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.comparison-card {
+    background: rgba(102,126,234,0.05);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: all 0.2s;
+    border: 1px solid rgba(102,126,234,0.15);
+}
+
+.comparison-card:hover {
+    transform: translateX(-4px);
+    box-shadow: -4px 4px 12px rgba(0,0,0,0.1);
+}
+
+.comparison-card.pinned {
+    border-left: 3px solid #f59e0b;
+    background: rgba(245,158,11,0.08);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(102,126,234,0.1);
+    cursor: move;
+}
+
+.card-header .card-title {
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.card-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.card-actions .pin-btn {
+    color: #f59e0b;
+}
+
+.card-actions .pin-btn:hover {
+    background: rgba(245,158,11,0.2);
+}
+
+.card-actions .close-btn {
+    color: #f56565;
+}
+
+.card-actions .close-btn:hover {
+    background: rgba(245,101,101,0.2);
+}
+
+.card-content {
+    padding: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.card-content .channel-item {
+    margin-bottom: 12px;
+}
+
+.panel-footer {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(102,126,234,0.2);
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.clear-all-btn {
+    background: none;
+    border: none;
+    color: #f56565;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.clear-all-btn:hover {
+    background: rgba(245,101,101,0.1);
+}
+
+.panel-toggle {
+    position: fixed;
+    right: 20px;
+    bottom: 100px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    color: white;
+    cursor: pointer;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.panel-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+}
+
 
 </style>
 </head>
@@ -6437,9 +6626,9 @@ const netRevenueBlock = `
             <span style="font-size: 18px;">📊</span>
             <span>Выручка чистая</span>
         </div>
-        <button class="toggle-breakdown-btn" data-type="netRevenue" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-            <span>▶</span> Показать по каналам
-        </button>
+        <button class="toggle-breakdown-btn" data-type="netRevenue" onclick="addToComparison('Выручка чистая по каналам', null, 'revenue', ${JSON.stringify(calculateNetRevenueByChannel(currentData))})" style="background: rgba(102,126,234,0.15); border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; transition: all 0.2s;">
+    <span>📌</span> Добавить в сравнение
+</button>
     </div>
     <div>
         <div class="metric-value" id="mainNetRevenueValue">${formatCurrency(f.netRevenue)}</div>
@@ -8034,6 +8223,179 @@ if (sidebarNav) {
     document.getElementById('logoutBtn')?.addEventListener('click', logout);
     
     initAuth();
+    // ========== БОКОВАЯ ПАНЕЛЬ СРАВНЕНИЯ ==========
+let comparisonItems = [];
+let nextItemId = 1;
+
+// Загрузка сохранённых элементов из localStorage
+function loadComparisonItems() {
+    const saved = localStorage.getItem('comparison_items');
+    if (saved) {
+        try {
+            comparisonItems = JSON.parse(saved);
+            nextItemId = Math.max(...comparisonItems.map(i => i.id), 0) + 1;
+            renderComparisonPanel();
+        } catch(e) {}
+    }
+}
+
+// Сохранение в localStorage
+function saveComparisonItems() {
+    localStorage.setItem('comparison_items', JSON.stringify(comparisonItems));
+    document.getElementById('panelCount').innerText = `${comparisonItems.length} элемент${comparisonItems.length !== 1 ? 'а' : ''}`;
+}
+
+// Добавление элемента в панель
+function addToComparison(title, data, type, channelData) {
+    const newItem = {
+        id: nextItemId++,
+        title: title,
+        type: type,
+        data: data,
+        channelData: channelData,
+        pinned: false,
+        timestamp: Date.now()
+    };
+    comparisonItems.unshift(newItem); // добавляем в начало
+    if (comparisonItems.length > 10) comparisonItems.pop(); // максимум 10 элементов
+    saveComparisonItems();
+    renderComparisonPanel();
+    openPanel();
+}
+
+// Удаление элемента
+function removeComparisonItem(id) {
+    comparisonItems = comparisonItems.filter(item => item.id !== id);
+    saveComparisonItems();
+    renderComparisonPanel();
+}
+
+// Закрепить/открепить
+function togglePinItem(id) {
+    const item = comparisonItems.find(i => i.id === id);
+    if (item) {
+        item.pinned = !item.pinned;
+        // Сортируем: закреплённые вверху
+        comparisonItems.sort((a, b) => {
+            if (a.pinned === b.pinned) return b.timestamp - a.timestamp;
+            return a.pinned ? -1 : 1;
+        });
+        saveComparisonItems();
+        renderComparisonPanel();
+    }
+}
+
+// Очистить всё
+function clearAllComparison() {
+    if (confirm('Удалить все элементы из панели сравнения?')) {
+        comparisonItems = [];
+        saveComparisonItems();
+        renderComparisonPanel();
+    }
+}
+
+// Генерация HTML для карточки
+function renderComparisonCard(item) {
+    const pinnedClass = item.pinned ? 'pinned' : '';
+    
+    // Генерация содержимого в зависимости от типа
+    let contentHtml = '';
+    if (item.channelData && item.channelData.length) {
+        const total = item.channelData.reduce((sum, ch) => sum + ch.value, 0);
+        contentHtml = item.channelData.map(ch => {
+            const percent = total > 0 ? (ch.value / total) * 100 : 0;
+            return `
+                <div class="channel-item" style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                        <span style="font-weight: 500;">${ch.name}</span>
+                        <span>${formatCurrency(ch.value)} (${percent.toFixed(1)}%)</span>
+                    </div>
+                    <div style="background: rgba(102,126,234,0.15); height: 6px; border-radius: 3px; overflow: hidden;">
+                        <div style="width: ${percent}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 3px;"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        contentHtml = `<div style="text-align: center; padding: 20px; opacity: 0.6;">Нет данных для отображения</div>`;
+    }
+    
+    return `
+        <div class="comparison-card ${pinnedClass}" data-id="${item.id}">
+            <div class="card-header">
+                <div class="card-title">
+                    <span>${item.type === 'revenue' ? '💰' : item.type === 'profit' ? '📈' : item.type === 'nds' ? '💸' : '📊'}</span>
+                    <span>${item.title}</span>
+                </div>
+                <div class="card-actions">
+                    <button class="pin-btn" onclick="togglePinItem(${item.id})" title="${item.pinned ? 'Открепить' : 'Закрепить'}">
+                        ${item.pinned ? '📌' : '📍'}
+                    </button>
+                    <button class="close-btn" onclick="removeComparisonItem(${item.id})" title="Удалить">✕</button>
+                </div>
+            </div>
+            <div class="card-content">
+                ${contentHtml}
+                <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(102,126,234,0.1); font-size: 10px; opacity: 0.5;">
+                    ${new Date(item.timestamp).toLocaleTimeString()}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Отрисовка всей панели
+function renderComparisonPanel() {
+    const panelContent = document.getElementById('panelContent');
+    if (!panelContent) return;
+    
+    if (comparisonItems.length === 0) {
+        panelContent.innerHTML = '<div style="text-align: center; padding: 40px; opacity: 0.5;">🔍 Нажмите "Показать по каналам"<br>на любом блоке, чтобы добавить сюда</div>';
+        document.getElementById('panelCount').innerText = '0 элементов';
+        return;
+    }
+    
+    panelContent.innerHTML = comparisonItems.map(item => renderComparisonCard(item)).join('');
+    document.getElementById('panelCount').innerText = `${comparisonItems.length} элемент${comparisonItems.length !== 1 ? 'а' : ''}`;
+}
+
+// Открыть/закрыть панель
+function openPanel() {
+    document.getElementById('comparisonPanel').classList.add('open');
+}
+
+function closePanel() {
+    document.getElementById('comparisonPanel').classList.remove('open');
+}
+
+function togglePanel() {
+    const panel = document.getElementById('comparisonPanel');
+    if (panel.classList.contains('open')) {
+        closePanel();
+    } else {
+        openPanel();
+    }
+}
+
+// Инициализация
+function initComparisonPanel() {
+    loadComparisonItems();
+    
+    document.getElementById('panelToggleBtn')?.addEventListener('click', togglePanel);
+    document.getElementById('panelCloseBtn')?.addEventListener('click', closePanel);
+    document.getElementById('clearAllBtn')?.addEventListener('click', clearAllComparison);
+    
+    // Закрытие по клику вне панели
+    document.addEventListener('click', (e) => {
+        const panel = document.getElementById('comparisonPanel');
+        const toggle = document.getElementById('panelToggleBtn');
+        if (panel?.classList.contains('open') && 
+            !panel.contains(e.target) && 
+            !toggle?.contains(e.target)) {
+            closePanel();
+        }
+    });
+}
     </script>
 
 <!-- Плавающая кнопка фильтров -->
@@ -8083,6 +8445,25 @@ if (sidebarNav) {
             <button class="filter-modal-btn filter-modal-btn-secondary" id="modalResetFiltersBtn">Сбросить</button>
             <button class="filter-modal-btn filter-modal-btn-primary" id="modalApplyFiltersBtn">Применить</button>
         </div>
+    </div>
+</div>
+
+<!-- Боковая панель сравнения -->
+<button class="panel-toggle" id="panelToggleBtn" title="Панель сравнения">📊</button>
+
+<div class="comparison-panel" id="comparisonPanel">
+    <div class="panel-header">
+        <h3>📊 Панель сравнения</h3>
+        <button class="panel-close" id="panelCloseBtn">×</button>
+    </div>
+    <div class="panel-content" id="panelContent">
+        <div style="text-align: center; padding: 40px; opacity: 0.5;">
+            🔍 Нажмите "Показать по каналам"<br>на любом блоке, чтобы добавить сюда
+        </div>
+    </div>
+    <div class="panel-footer">
+        <span id="panelCount">0 элементов</span>
+        <button class="clear-all-btn" id="clearAllBtn">🗑 Очистить всё</button>
     </div>
 </div>
 
