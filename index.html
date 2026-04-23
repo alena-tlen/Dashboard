@@ -2236,8 +2236,8 @@ if (document.readyState === 'loading') {
     };
     
     function formatCurrency(value) { 
-        return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(Math.abs(value)); 
-    }
+    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(value); 
+}
 
     // Функция для показа временных уведомлений
 function showNotification(message, type = 'success') {
