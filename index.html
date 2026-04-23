@@ -6429,47 +6429,79 @@ console.log('costData:', costData);
             const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false, monthlyDataMap, monthlyLabels, monthlyRevenues, null);
             const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true, monthlyDataMap, monthlyLabels, monthlyExpensesArray, f.totalRevenue);
             
-            // Блок Выручка чистая
+            // Блок Выручка чистая (полная версия)
 const netRevenueBlock = `
-<div class="metric-card" style="padding: 20px;">
-    <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-        <span style="font-size: 20px;">📈</span>
-        <span>ВЫРУЧКА ЧИСТАЯ</span>
+<div class="metric-card">
+    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📊</span>
+            <span>Выручка чистая</span>
+        </div>
+        <button class="toggle-breakdown-btn" data-type="netRevenue" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
+            <span>▶</span> Показать по каналам
+        </button>
     </div>
-    <div class="metric-value" style="font-size: 32px;">${formatCurrency(f.netRevenue)}</div>
-    ${netRevenueChange ? `<div style="margin-top: 8px;"><span class="${netRevenueChange.isPositive ? 'positive' : 'negative'}" style="font-weight: 600;">${netRevenueChange.formatted}</span> <span style="font-size: 12px; opacity: 0.6;">к прошлому периоду</span></div>` : ''}
-    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(102,126,234,0.15); display: flex; justify-content: space-between;">
-        <div><div style="font-size: 10px; opacity: 0.6;">Выручка (с НДС)</div><div style="font-size: 14px; font-weight: 600;">${formatCurrency(f.totalRevenue)}</div></div>
-        <div><div style="font-size: 10px; opacity: 0.6;">НДС</div><div style="font-size: 14px; font-weight: 600; ${f.totalNDS >= 0 ? 'color: #f56565' : 'color: #48bb78'}">${formatCurrency(Math.abs(f.totalNDS))}</div></div>
+    <div>
+        <div class="metric-value" id="mainNetRevenueValue">${formatCurrency(f.netRevenue)}</div>
+        ${netRevenueChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(netRevenueChange)}</span>` : ''}
+    </div>
+    
+    <!-- ГРАФИК -->
+    <div class="revenue-chart-wrapper" style="margin-top: 16px;">
+        <div class="chart-gradient-overlay"></div>
+        <canvas id="netRevenueMiniChart" style="height: 100px; width: 100%; display: block; margin: 0; padding: 0;"></canvas>
+    </div>
+    
+    <div class="netrevenue-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+        <div style="padding-top: 16px;">${generateChannelBreakdown('ВЫРУЧКА ЧИСТАЯ ПО КАНАЛАМ', 'value', calculateNetRevenueByChannel(currentData), true, '')}</div>
     </div>
 </div>
 `;
 
-// Блок Продажи
+// Блок Продажи (полная версия)
 const salesBlock = `
-<div class="metric-card" style="padding: 16px;">
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-        <span style="font-size: 24px;">📦</span>
-        <div>
-            <div class="metric-title" style="font-size: 11px; margin: 0;">ПРОДАЖИ</div>
-            <div class="metric-value" style="font-size: 22px;">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
+<div class="metric-card">
+    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📦</span>
+            <span>Продажи (шт)</span>
         </div>
+        <button class="toggle-sales-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
+            <span>▶</span> Показать по каналам
+        </button>
     </div>
-    ${salesChange ? `<div style="font-size: 12px;"><span class="${salesChange.isPositive ? 'positive' : 'negative'}">${salesChange.formatted}</span> <span style="font-size: 10px; opacity: 0.6;">к прошлому</span></div>` : ''}
+    <div>
+        <div class="metric-value" id="mainSalesValue">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
+        ${salesChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(salesChange)}</span>` : ''}
+    </div>
+    <canvas id="salesChart" style="height: 100px; width: 100%; margin-top: 8px; border-radius: 8px; cursor: pointer;"></canvas>
+    <div class="metric-sub">всего за период</div>
+    <div class="sales-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+        <div style="padding-top: 16px;">${generateSalesBreakdown(currentData)}</div>
+    </div>
 </div>
 `;
 
-// Блок Средний чек
+// Блок Средний чек (полная версия)
 const avgCheckBlock = `
-<div class="metric-card" style="padding: 16px;">
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-        <span style="font-size: 24px;">💳</span>
-        <div>
-            <div class="metric-title" style="font-size: 11px; margin: 0;">СРЕДНИЙ ЧЕК</div>
-            <div class="metric-value" style="font-size: 22px;">${formatCurrency(avgCheck)}</div>
+<div class="metric-card">
+    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">💰</span>
+            <span>Средний чек</span>
         </div>
+        <button class="toggle-avgcheck-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
+            <span>▶</span> Показать по каналам
+        </button>
     </div>
-    ${avgCheckChange ? `<div style="font-size: 12px;"><span class="${avgCheckChange.isPositive ? 'positive' : 'negative'}">${avgCheckChange.formatted}</span> <span style="font-size: 10px; opacity: 0.6;">к прошлому</span></div>` : ''}
+    <div>
+        <div class="metric-value" id="mainAvgCheckValue">${formatCurrency(avgCheck)}</div>
+        ${avgCheckChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(avgCheckChange)}</span>` : ''}
+    </div>
+    <div class="metric-sub">на 1 продажу</div>
+    <div class="avgcheck-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+        <div style="padding-top: 16px;">${generateAverageCheckBreakdown(currentData)}</div>
+    </div>
 </div>
 `;
 
