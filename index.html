@@ -1431,84 +1431,6 @@ body.dark .sidebar-nav .nav-submenu {
     display: none;
 }
 
-/* ========== ФИЛЬТРЫ В ШАПКЕ ========== */
-.header-filters {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-wrap: wrap;
-    background: rgba(102,126,234,0.08);
-    padding: 12px 20px;
-    border-radius: 12px;
-    margin-top: 12px;
-}
-
-.filter-group-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.filter-group-header label {
-    font-size: 12px;
-    font-weight: 500;
-    color: #667eea;
-    white-space: nowrap;
-}
-
-.filter-group-header select {
-    padding: 6px 12px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 13px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-body.dark .filter-group-header select {
-    background: #0f0f1a;
-    border-color: #2d2d3a;
-    color: #e4e4e7;
-}
-
-.filter-group-header select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 2px rgba(102,126,234,0.2);
-}
-
-.filter-group-header select[multiple] {
-    min-width: 150px;
-    padding: 6px;
-}
-
-.filter-badge {
-    background: #667eea;
-    color: white;
-    border-radius: 20px;
-    padding: 4px 10px;
-    font-size: 11px;
-    font-weight: 500;
-}
-
-.filter-reset-btn {
-    background: none;
-    border: none;
-    color: #f56565;
-    cursor: pointer;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    transition: all 0.2s;
-}
-
-.filter-reset-btn:hover {
-    background: rgba(245,101,101,0.1);
-}
 
 @media (max-width: 1024px) {
     .header-filters {
@@ -1795,26 +1717,6 @@ body.dark .filter-modal .filter-group select {
                     <button class="admin-btn" id="adminBtn" style="display: none;">👑 Админ-панель</button>
                     <button class="logout-btn" id="logoutBtn">🚪 Выйти</button>
                 </div>
-            <div class="header-filters" id="headerFilters">
-    <div class="filter-group-header">
-        <label>🏢 Компания</label>
-        <select id="companyFilterHeader"><option value="">Все компании</option></select>
-    </div>
-    <div class="filter-group-header">
-        <label>📅 Год</label>
-        <select id="yearFilterHeader"><option value="">Все годы</option></select>
-    </div>
-    <div class="filter-group-header">
-        <label>📆 Месяц</label>
-        <select id="monthFilterHeader" multiple size="1" style="min-width: 120px;"></select>
-    </div>
-    <button class="filter-reset-btn" id="resetFiltersHeader">
-        🔄 Сбросить
-    </button>
-    <button class="btn-sidebar btn-info-sidebar" id="changeDataBtnHeader" style="padding: 6px 12px;">
-        📁 Сменить данные
-    </button>
-</div>
             </div>
         </div>
 
@@ -7816,37 +7718,10 @@ if (sidebarNav) {
             if (realCompanyFilter) realCompanyFilter.value = '';
             if (realYearFilter) realYearFilter.value = '';
             if (realMonthFilter) Array.from(realMonthFilter.options).forEach(o => o.selected = false);
-            if (companyFilterHeader) companyFilterHeader.value = '';
-            if (yearFilterHeader) yearFilterHeader.value = '';
-            if (monthFilterHeader) Array.from(monthFilterHeader.options).forEach(o => o.selected = false);
             debouncedApply();
         };
     }
     
-    // Добавьте эту функцию внутрь initApp(), перед функцией updateFilters
-function syncFiltersToHeader() {
-    const companyFilterHeader = document.getElementById('companyFilterHeader');
-    const yearFilterHeader = document.getElementById('yearFilterHeader');
-    const monthFilterHeader = document.getElementById('monthFilterHeader');
-    const companyFilter = document.getElementById('companyFilter');
-    const yearFilter = document.getElementById('yearFilter');
-    const monthFilter = document.getElementById('monthFilter');
-    
-    if (companyFilterHeader && companyFilter) {
-        companyFilterHeader.innerHTML = companyFilter.innerHTML;
-        companyFilterHeader.value = companyFilter.value;
-    }
-    if (yearFilterHeader && yearFilter) {
-        yearFilterHeader.innerHTML = yearFilter.innerHTML;
-        yearFilterHeader.value = yearFilter.value;
-    }
-    if (monthFilterHeader && monthFilter) {
-        monthFilterHeader.innerHTML = monthFilter.innerHTML;
-        Array.from(monthFilterHeader.options).forEach(opt => {
-            opt.selected = Array.from(monthFilter.selectedOptions).some(o => o.value === opt.value);
-        });
-    }
-}
 
     function updateFilters() {
         const companies = [...new Set(originalData.map(d => d.компания))].filter(c => c);
@@ -7865,9 +7740,6 @@ function syncFiltersToHeader() {
             realMonthFilter.setAttribute('multiple', 'multiple');
             realMonthFilter.size = 4;
         }
-        
-        // Синхронизируем с фильтрами в шапке
-        syncFiltersToHeader();
     }
     
     const debouncedApply = () => {
@@ -8052,13 +7924,6 @@ function syncFiltersToHeader() {
             if (realYearFilter) realYearFilter.value = modalYearFilter.value;
             if (realMonthFilter) {
                 Array.from(realMonthFilter.options).forEach(opt => {
-                    opt.selected = Array.from(modalMonthFilter.selectedOptions).some(o => o.value === opt.value);
-                });
-            }
-            if (companyFilterHeader) companyFilterHeader.value = modalCompanyFilter.value;
-            if (yearFilterHeader) yearFilterHeader.value = modalYearFilter.value;
-            if (monthFilterHeader) {
-                Array.from(monthFilterHeader.options).forEach(opt => {
                     opt.selected = Array.from(modalMonthFilter.selectedOptions).some(o => o.value === opt.value);
                 });
             }
