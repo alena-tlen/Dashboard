@@ -7778,9 +7778,12 @@ setTimeout(() => {
     }
 }, 300);
 
-        } finally {
+        } catch(e) {   // <--- ДОБАВЬ ЭТУ СТРОКУ
+            console.error('Ошибка рендера:', e);
+        } finally {    // <--- ОСТАВЬ ЭТУ СТРОКУ
             isRendering = false;
         }
+
 
     }
     
