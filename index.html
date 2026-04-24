@@ -8413,10 +8413,8 @@ function renderBreakdownPanel() {
 function openBreakdownPanel() {
     const panel = document.getElementById('breakdownPanel');
     if (panel) {
+        panel.style.right = '0';
         panel.classList.add('open');
-        console.log('Панель открыта'); // для отладки
-    } else {
-        console.error('Панель не найдена!');
     }
 }
 
