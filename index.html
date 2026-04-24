@@ -7147,10 +7147,147 @@ setTimeout(() => {
     }
     
 // ========== ИНИЦИАЛИЗАЦИЯ КАРУСЕЛИ (ТОЛЬКО ОДИН РАЗ) ==========
+// ========== ИНИЦИАЛИЗАЦИЯ КАРУСЕЛИ (ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ) ==========
 let currentSlide = 0;
 let carouselInterval = null;
-let isCarouselInitialized = false;
 
+// Функция для ОБНОВЛЕНИЯ карусели (вызывается после renderDashboard)
+function updateCarouselDisplay() {
+    const slidesContainer = document.getElementById('carouselSlides');
+    const slides = document.querySelectorAll('.carousel-slide');
+    const dots = document.querySelectorAll('.dot');
+    
+    if (!slidesContainer || slides.length === 0) return;
+    
+    // Обновляем позицию
+    slidesContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+    
+    // Обновляем точки
+    dots.forEach((dot, i) => {
+        dot.style.background = i === currentSlide ? '#667eea' : 'rgba(102,126,234,0.3)';
+    });
+}
+
+// Функция для следующего слайда
+function nextSlide() {
+    const slides = document.querySelectorAll('.carousel-slide');
+    if (slides.length === 0) return;
+    currentSlide = (currentSlide + 1) % slides.length;
+    updateCarouselDisplay();
+}
+
+// Функция для предыдущего слайда
+function prevSlide() {
+    const slides = document.querySelectorAll('.carousel-slide');
+    if (slides.length === 0) return;
+    currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+    updateCarouselDisplay();
+}
+
+// Сброс таймера
+function resetCarouselTimer() {
+    if (carouselInterval) {
+        clearInterval(carouselInterval);
+        carouselInterval = null;
+    }
+    carouselInterval = setInterval(() => {
+        const slides = document.querySelectorAll('.carousel-slide');
+        if (slides.length > 0) {
+            currentSlide = (currentSlide + 1) % slides.length;
+            updateCarouselDisplay();
+        }
+    }, 10000);
+}
+
+// Привязка обработчиков (вызывать ПОСЛЕ отрисовки HTML)
+function bindCarouselEvents() {
+    const prevBtn = document.querySelector('.carousel-prev');
+    const nextBtn = document.querySelector('.carousel-next');
+    const dots = document.querySelectorAll('.dot');
+    const carouselContainer = document.querySelector('.carousel-container');
+    
+    // Удаляем старые обработчики, если они есть (через клонирование)
+    if (prevBtn) {
+        const newPrevBtn = prevBtn.cloneNode(true);
+        prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
+        newPrevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            prevSlide();
+            resetCarouselTimer();
+        });
+    }
+    
+    if (nextBtn) {
+        const newNextBtn = nextBtn.cloneNode(true);
+        nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+        newNextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            nextSlide();
+            resetCarouselTimer();
+        });
+    }
+    
+    // Пересоздаём точки
+    const dotsContainer = document.querySelector('.carousel-dots');
+    if (dotsContainer) {
+        const newDotsContainer = dotsContainer.cloneNode(true);
+        dotsContainer.parentNode.replaceChild(newDotsContainer, dotsContainer);
+        const newDots = newDotsContainer.querySelectorAll('.dot');
+        newDots.forEach((dot, i) => {
+            dot.addEventListener('click', () => {
+                currentSlide = i;
+                updateCarouselDisplay();
+                resetCarouselTimer();
+            });
+        });
+    }
+    
+    // Обработчики для паузы при наведении
+    if (carouselContainer) {
+        const newContainer = carouselContainer.cloneNode(true);
+        carouselContainer.parentNode.replaceChild(newContainer, carouselContainer);
+        newContainer.addEventListener('mouseenter', () => {
+            if (carouselInterval) clearInterval(carouselInterval);
+        });
+        newContainer.addEventListener('mouseleave', () => {
+            if (carouselInterval) clearInterval(carouselInterval);
+            carouselInterval = setInterval(() => {
+                const slides = document.querySelectorAll('.carousel-slide');
+                if (slides.length > 0) {
+                    currentSlide = (currentSlide + 1) % slides.length;
+                    updateCarouselDisplay();
+                }
+            }, 10000);
+        });
+    }
+}
+
+// Полный сброс и переинициализация карусели
+function resetAndInitCarousel() {
+    // Сбрасываем индекс
+    currentSlide = 0;
+    
+    // Останавливаем старый таймер
+    if (carouselInterval) {
+        clearInterval(carouselInterval);
+        carouselInterval = null;
+    }
+    
+    // Обновляем отображение
+    updateCarouselDisplay();
+    
+    // Привязываем новые обработчики
+    bindCarouselEvents();
+    
+    // Запускаем новый таймер
+    carouselInterval = setInterval(() => {
+        const slides = document.querySelectorAll('.carousel-slide');
+        if (slides.length > 0) {
+            currentSlide = (currentSlide + 1) % slides.length;
+            updateCarouselDisplay();
+        }
+    }, 10000);
+}
 function initCarousel() {
     const slides = document.querySelectorAll('.carousel-slide');
     const dots = document.querySelectorAll('.dot');
@@ -7783,10 +7920,9 @@ if (sidebarNav) {
         if (cashSidebarBlock) {
             cashSidebarBlock.style.display = 'block';
         }
-        // ===== СБРОС КАРУСЕЛИ ПРИ ЗАГРУЗКЕ НОВЫХ ДАННЫХ =====
+                // ===== СБРОС КАРУСЕЛИ ПРИ ЗАГРУЗКЕ НОВЫХ ДАННЫХ =====
         setTimeout(() => {
-            resetCarousel();
-            initCarousel();
+            resetAndInitCarousel();
         }, 300);
    
     }
@@ -8086,9 +8222,9 @@ if (sidebarNav) {
         updateModalFilters();
     };
 
-    setTimeout(() => {
-    initCarousel();
-}, 200);
+        setTimeout(() => {
+        resetAndInitCarousel();
+    }, 200);
     
 } // <--- ЭТО ЗАКРЫВАЮЩАЯ СКОБКА ФУНКЦИИ initApp
         
