@@ -1874,6 +1874,14 @@ body.dark .filter-modal .filter-group select {
     border-radius: 4px;
 }
 
+/* Стили для страницы ABC/XYZ */
+.abcxyz-container .metric-card {
+    overflow: visible;
+}
+#paretoChart {
+    max-height: 300px;
+}
+
 
 </style>
 </head>
@@ -1939,6 +1947,7 @@ body.dark .filter-modal .filter-group select {
         <div class="nav-subitem" data-channel="detsky-mir"><span class="nav-icon">🧸</span><span>Детский мир</span></div>
         <div class="nav-subitem" data-channel="lamoda"><span class="nav-icon">👗</span><span>Lamoda</span></div>
     </div>
+    <div class="nav-item" data-page="abcxyz"><span class="nav-icon">📊</span><span>ABC/XYZ анализ</span></div>
     <div class="nav-item" data-page="ai"><span class="nav-icon">🤖</span><span>AI Аналитик</span></div>
     
     <div class="theme-toggle">
@@ -1964,6 +1973,17 @@ body.dark .filter-modal .filter-group select {
                 <div id="page-channel-ozon" class="page-content"><div id="channelOzonMetrics"></div></div>
                 <div id="page-channel-detsky-mir" class="page-content"><div id="channelDetskyMirMetrics"></div></div>
                 <div id="page-channel-lamoda" class="page-content"><div id="channelLamodaMetrics"></div></div>
+                <div id="page-abcxyz" class="page-content">
+    <div class="abcxyz-container" id="abcxyzContainer">
+        <div class="upload-card" id="abcxyzUploadArea" style="margin-bottom: 24px; cursor: pointer;">
+            <div class="upload-icon">📦</div>
+            <div class="upload-title">Загрузите Excel файл с продажами</div>
+            <div class="upload-text">Формат: даты в столбцах, строки - товары (как в вашем файле)</div>
+            <input type="file" id="abcxyzFileInput" accept=".xlsx,.xls" style="display: none;">
+        </div>
+        <div id="abcxyzResults" style="display: none;"></div>
+    </div>
+</div>
                 <div id="page-ai" class="page-content">
                     <div class="ai-agent-card">
                         <div class="ai-header"><div class="ai-icon">🤖</div><div><div class="ai-title">AI Финансовый Аналитик</div><div class="ai-subtitle">Задайте вопрос о ваших данных или получите автоматический анализ</div></div></div>
@@ -8340,6 +8360,284 @@ function diagnoseSberbank() {
 
 diagnoseSberbank();
 
+// ========== ABC/XYZ АНАЛИЗ ==========
+let abcxyzData = null;
+
+function parseABCXYZExcel(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+                
+                if (!jsonData || jsonData.length < 3) {
+                    reject(new Error('Неверный формат файла'));
+                    return;
+                }
+                
+                // Определяем заголовки (даты)
+                const headers = jsonData[1] || [];
+                const dates = [];
+                for (let i = 2; i < headers.length; i += 2) {
+                    if (headers[i] && typeof headers[i] === 'string' && headers[i].match(/\d{2}\.\d{2}\.\d{2}/)) {
+                        dates.push({ colIndex: i, date: headers[i], amountCol: i + 1 });
+                    }
+                }
+                
+                // Парсим данные по товарам
+                const sales = [];
+                const productMap = new Map();
+                
+                for (let rowIdx = 2; rowIdx < jsonData.length; rowIdx++) {
+                    const row = jsonData[rowIdx];
+                    if (!row || row.length < 2) continue;
+                    
+                    const productName = row[0] ? String(row[0]).trim() : '';
+                    const article = row[1] ? String(row[1]).trim() : '';
+                    
+                    if (!productName && !article) continue;
+                    if (productName === 'Итого' || productName === 'ИТОГО') break;
+                    
+                    const key = article || productName;
+                    
+                    for (const d of dates) {
+                        const qty = parseFloat(row[d.colIndex]) || 0;
+                        const amount = parseFloat(row[d.amountCol]) || 0;
+                        
+                        if (qty !== 0 && amount !== 0) {
+                            sales.push({
+                                productName: productName,
+                                article: article,
+                                key: key,
+                                date: d.date,
+                                quantity: qty,
+                                amount: amount
+                            });
+                        }
+                    }
+                }
+                
+                if (sales.length === 0) reject(new Error('Нет данных о продажах'));
+                else resolve(sales);
+            } catch (error) {
+                reject(error);
+            }
+        };
+        reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function calculateABCXYZ(salesData) {
+    // Агрегируем по товарам
+    const productStats = new Map();
+    
+    salesData.forEach(sale => {
+        const key = sale.key;
+        if (!productStats.has(key)) {
+            productStats.set(key, {
+                name: sale.productName,
+                article: sale.article,
+                totalQuantity: 0,
+                totalAmount: 0,
+                dailySales: []
+            });
+        }
+        const stats = productStats.get(key);
+        stats.totalQuantity += sale.quantity;
+        stats.totalAmount += sale.amount;
+        stats.dailySales.push({ date: sale.date, quantity: sale.quantity, amount: sale.amount });
+    });
+    
+    // Рассчитываем коэффициент вариации (XYZ)
+    const products = Array.from(productStats.values()).map(product => {
+        const quantities = product.dailySales.map(d => d.quantity);
+        const mean = quantities.reduce((a, b) => a + b, 0) / quantities.length;
+        const variance = quantities.reduce((sum, q) => sum + Math.pow(q - mean, 2), 0) / quantities.length;
+        const stdDev = Math.sqrt(variance);
+        const cv = mean > 0 ? (stdDev / mean) * 100 : 100;
+        
+        let xyz = 'Z';
+        if (cv < 10) xyz = 'X';
+        else if (cv < 25) xyz = 'Y';
+        
+        return {
+            ...product,
+            cv: cv,
+            xyz: xyz
+        };
+    });
+    
+    // ABC по выручке
+    const sortedByAmount = [...products].sort((a, b) => b.totalAmount - a.totalAmount);
+    const totalAmount = sortedByAmount.reduce((sum, p) => sum + p.totalAmount, 0);
+    let cumAmount = 0;
+    sortedByAmount.forEach(p => {
+        cumAmount += p.totalAmount;
+        const percent = (cumAmount / totalAmount) * 100;
+        if (percent <= 80) p.abcAmount = 'A';
+        else if (percent <= 95) p.abcAmount = 'B';
+        else p.abcAmount = 'C';
+    });
+    
+    // ABC по количеству
+    const sortedByQuantity = [...products].sort((a, b) => b.totalQuantity - a.totalQuantity);
+    const totalQuantity = sortedByQuantity.reduce((sum, p) => sum + p.totalQuantity, 0);
+    let cumQuantity = 0;
+    sortedByQuantity.forEach(p => {
+        cumQuantity += p.totalQuantity;
+        const percent = (cumQuantity / totalQuantity) * 100;
+        if (percent <= 80) p.abcQuantity = 'A';
+        else if (percent <= 95) p.abcQuantity = 'B';
+        else p.abcQuantity = 'C';
+    });
+    
+    return { products, totalAmount, totalQuantity };
+}
+
+function renderABCXYZ(products, totalAmount, totalQuantity) {
+    const container = document.getElementById('abcxyzResults');
+    if (!container) return;
+    
+    const matrix = { AX: [], AY: [], AZ: [], BX: [], BY: [], BZ: [], CX: [], CY: [], CZ: [] };
+    
+    products.forEach(p => {
+        const key = `${p.abcAmount}${p.xyz}`;
+        if (matrix[key]) matrix[key].push(p);
+    });
+    
+    const recommendations = {
+        'AX': '🏆 Золотой стандарт - высокая выручка, стабильные продажи. Держать запас, увеличивать рекламу.',
+        'AY': '📈 Стабильные лидеры - высокая выручка, небольшие колебания. Увеличить страховой запас.',
+        'AZ': '⚠️ Нестабильные лидеры - высокая выручка, но сильные колебания. Нужен большой страховой запас.',
+        'BX': '✅ Стабильные середняки - средняя выручка, стабильно. Оптимизировать заказы.',
+        'BY': '📊 Средние с колебаниями - средняя выручка, небольшая нестабильность. Следить за трендами.',
+        'BZ': '🔴 Нестабильные середняки - средняя выручка, сильные колебания. Анализировать причины.',
+        'CX': '🟢 Стабильные аутсайдеры - низкая выручка, но стабильно. Можно заказывать малыми партиями.',
+        'CY': '🟡 Нестабильные аутсайдеры - низкая выручка, колебания. Рассмотреть снятие.',
+        'CZ': '🔴 Проблемные - низкая выручка, сильные колебания. Рекомендуется снятие с продаж.'
+    };
+    
+    let html = `
+        <div class="metrics-grid" style="margin-bottom: 24px;">
+            <div class="metric-card">
+                <div class="metric-title">📊 Всего товаров</div>
+                <div class="metric-value">${products.length}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">💰 Общая выручка</div>
+                <div class="metric-value">${formatCurrency(totalAmount)}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">📦 Продано штук</div>
+                <div class="metric-value">${totalQuantity.toLocaleString('ru-RU')}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">🎯 Средний чек</div>
+                <div class="metric-value">${formatCurrency(totalAmount / totalQuantity)}</div>
+            </div>
+        </div>
+        
+        <!-- Матрица ABC/XYZ -->
+        <div class="metric-card" style="margin-bottom: 24px;">
+            <div class="metric-title" style="margin-bottom: 16px;">📊 Матрица ABC/XYZ (9 квадрантов)</div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                ${['AX', 'AY', 'AZ', 'BX', 'BY', 'BZ', 'CX', 'CY', 'CZ'].map(cell => `
+                    <div style="background: rgba(102,126,234,0.1); border-radius: 12px; padding: 12px; border-left: 3px solid ${cell.includes('A') ? '#48bb78' : cell.includes('B') ? '#fbbf24' : '#f56565'}">
+                        <div style="font-weight: 700; margin-bottom: 8px;">${cell}</div>
+                        <div style="font-size: 11px; margin-bottom: 8px; opacity: 0.8;">${matrix[cell].length} товаров</div>
+                        <div style="font-size: 11px; color: #667eea;">${recommendations[cell]}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        
+        <!-- Диаграмма Парето -->
+        <div class="metric-card" style="margin-bottom: 24px;">
+            <div class="metric-title">📈 Диаграмма Парето (выручка)</div>
+            <canvas id="paretoChart" style="height: 300px; width: 100%;"></canvas>
+        </div>
+        
+        <!-- Таблица товаров -->
+        <div class="metric-card">
+            <div class="metric-title" style="margin-bottom: 16px;">📋 Детальный анализ товаров</div>
+            <div style="overflow-x: auto; max-height: 500px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: rgba(102,126,234,0.1); position: sticky; top: 0;">
+                            <th style="padding: 12px; text-align: left;">Артикул</th>
+                            <th style="padding: 12px; text-align: left;">Номенклатура</th>
+                            <th style="padding: 12px; text-align: right;">Выручка</th>
+                            <th style="padding: 12px; text-align: right;">Кол-во (шт)</th>
+                            <th style="padding: 12px; text-align: center;">ABC (выручка)</th>
+                            <th style="padding: 12px; text-align: center;">XYZ</th>
+                            <th style="padding: 12px; text-align: center;">Матрица</th>
+                            <th style="padding: 12px; text-align: left;">Рекомендация</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${products.sort((a,b) => b.totalAmount - a.totalAmount).map(p => {
+                            const matrixCell = `${p.abcAmount}${p.xyz}`;
+                            const bgColor = p.abcAmount === 'A' ? 'rgba(72,187,120,0.15)' : p.abcAmount === 'B' ? 'rgba(251,191,36,0.15)' : 'rgba(245,101,101,0.15)';
+                            return `
+                                <tr style="border-bottom: 1px solid rgba(102,126,234,0.1); background: ${bgColor};">
+                                    <td style="padding: 10px;">${p.article || '—'}</td>
+                                    <td style="padding: 10px;">${p.name.substring(0, 40)}</td>
+                                    <td style="padding: 10px; text-align: right;">${formatCurrency(p.totalAmount)}</td>
+                                    <td style="padding: 10px; text-align: right;">${p.totalQuantity.toLocaleString('ru-RU')}</td>
+                                    <td style="padding: 10px; text-align: center; font-weight: 700; color: ${p.abcAmount === 'A' ? '#48bb78' : p.abcAmount === 'B' ? '#fbbf24' : '#f56565'}">${p.abcAmount}</td>
+                                    <td style="padding: 10px; text-align: center; font-weight: 700; color: ${p.xyz === 'X' ? '#48bb78' : p.xyz === 'Y' ? '#fbbf24' : '#f56565'}">${p.xyz}</td>
+                                    <td style="padding: 10px; text-align: center; font-weight: 700;">${matrixCell}</td>
+                                    <td style="padding: 10px; font-size: 11px;">${recommendations[matrixCell]}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+    container.style.display = 'block';
+    
+    // Отрисовка диаграммы Парето
+    setTimeout(() => {
+        const sorted = [...products].sort((a,b) => b.totalAmount - a.totalAmount);
+        const labels = sorted.slice(0, 20).map(p => p.article || p.name.substring(0, 15));
+        const amounts = sorted.slice(0, 20).map(p => p.totalAmount);
+        const cumulative = [];
+        let sum = 0;
+        const total = amounts.reduce((a,b) => a+b, 0);
+        amounts.forEach(a => { sum += a; cumulative.push((sum / total) * 100); });
+        
+        const canvas = document.getElementById('paretoChart');
+        if (canvas) {
+            if (window.paretoChart) window.paretoChart.destroy();
+            const ctx = canvas.getContext('2d');
+            window.paretoChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Выручка (₽)', data: amounts, type: 'bar', backgroundColor: '#667eea', borderRadius: 6, yAxisID: 'y' },
+                        { label: 'Кумулятивная доля (%)', data: cumulative, type: 'line', borderColor: '#f56565', borderWidth: 3, fill: false, tension: 0.4, yAxisID: 'y1', pointRadius: 4, pointBackgroundColor: '#f56565' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { tooltip: { callbacks: { label: (ctx) => ctx.dataset.label === 'Выручка (₽)' ? formatCurrency(ctx.raw) : ctx.raw.toFixed(1) + '%' } } },
+                    scales: { y: { title: { display: true, text: 'Выручка (₽)' }, ticks: { callback: (v) => formatCurrency(v) } }, y1: { position: 'right', title: { display: true, text: 'Кумулятивная доля (%)' }, min: 0, max: 100, ticks: { callback: (v) => v + '%' } } }
+                }
+            });
+        }
+    }, 100);
+}
+
     function initApp() {
     if (typeof Plotly === 'undefined') {
         setTimeout(initApp, 200);
@@ -8536,6 +8834,21 @@ if (sidebarNav) {
             renderChannelPage(channel);
         };
     });
+
+    const abcxyzNavItem = document.querySelector('.nav-item[data-page="abcxyz"]');
+if (abcxyzNavItem) {
+    abcxyzNavItem.onclick = () => {
+        currentChannel = null;
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
+        abcxyzNavItem.classList.add('active');
+        if (channelsSubmenu) channelsSubmenu.classList.remove('show');
+        if (arrow) arrow.classList.remove('open');
+        document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('page-abcxyz').classList.add('active');
+        if (window.abcxyzData) renderABCXYZ(window.abcxyzData.products, window.abcxyzData.totalAmount, window.abcxyzData.totalQuantity);
+    };
+}
     
     const aiNavItem = document.querySelector('.nav-item[data-page="ai"]');
     if (aiNavItem) {
@@ -8712,6 +9025,32 @@ if (sidebarNav) {
         originalUpdateFilters();
         updateModalFilters();
     };
+
+// ========== ОБРАБОТЧИК ABC/XYZ ==========
+const abcxyzFileInput = document.getElementById('abcxyzFileInput');
+const abcxyzUploadArea = document.getElementById('abcxyzUploadArea');
+
+if (abcxyzFileInput) {
+    abcxyzFileInput.onchange = async (e) => {
+        if (e.target.files[0]) {
+            try {
+                showNotification('🔄 Обработка файла...', 'info');
+                const salesData = await parseABCXYZExcel(e.target.files[0]);
+                const { products, totalAmount, totalQuantity } = calculateABCXYZ(salesData);
+                window.abcxyzData = { products, totalAmount, totalQuantity };
+                renderABCXYZ(products, totalAmount, totalQuantity);
+                showNotification(`✅ Загружено ${products.length} товаров, ${salesData.length} продаж`, 'success');
+                if (abcxyzUploadArea) abcxyzUploadArea.style.display = 'none';
+            } catch (error) {
+                showNotification('❌ Ошибка: ' + error.message, 'error');
+            }
+        }
+    };
+}
+
+if (abcxyzUploadArea) {
+    abcxyzUploadArea.onclick = () => abcxyzFileInput?.click();
+}
     
 } // <--- ЭТО ЗАКРЫВАЮЩАЯ СКОБКА ФУНКЦИИ initApp
         
@@ -8796,3 +9135,4 @@ if (sidebarNav) {
 
 </body>
 </html>
+
