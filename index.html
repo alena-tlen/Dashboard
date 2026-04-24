@@ -8380,26 +8380,19 @@ function parseABCXYZExcel(file) {
                     return;
                 }
                 
-                // В вашем файле:
-                // Строка 2 (индекс 1) - пустая строка с датами? На самом деле строка 3 (индекс 2) - это даты
-                // Строка 3 (индекс 2) - "Номенклатура", "Артикул", "01.01.26", "", "02.01.26", "" ...
-                // Строка 4 (индекс 3) - "", "", "Количество", "Сумма", "Количество", "Сумма" ...
-                
-                // Ищем строку с датами (содержит "01.01.26" или подобное)
+                // Ищем строку с датами
                 let dateRowIndex = -1;
                 let dataStartRow = -1;
                 
-                // Сначала ищем строку с датами
                 for (let i = 0; i < Math.min(jsonData.length, 10); i++) {
                     const row = jsonData[i];
                     if (!row) continue;
                     
-                    // Проверяем, есть ли в строке дата в формате ДД.ММ.ГГ
                     for (let j = 0; j < row.length; j++) {
                         const cell = row[j];
                         if (cell && typeof cell === 'string' && cell.match(/\d{2}\.\d{2}\.\d{2}/)) {
                             dateRowIndex = i;
-                            dataStartRow = i + 2; // Данные начинаются через 2 строки после дат
+                            dataStartRow = i + 2;
                             console.log('Найдена строка с датами на индексе:', i);
                             break;
                         }
@@ -8415,18 +8408,17 @@ function parseABCXYZExcel(file) {
                 const dateRow = jsonData[dateRowIndex];
                 console.log('Строка с датами:', dateRow);
                 
-                // Собираем даты (столбцы, начиная с индекса 2, так как 0 и 1 - Номенклатура и Артикул)
+                // Собираем даты
                 const dates = [];
                 for (let i = 2; i < dateRow.length; i++) {
                     const cell = dateRow[i];
                     if (cell && typeof cell === 'string' && cell.match(/\d{2}\.\d{2}\.\d{2}/)) {
-                        // Далее идут пары: Количество (i) и Сумма (i+1)
                         dates.push({ 
-                            dateIndex: i,
+                            qtyIndex: i,
                             amountIndex: i + 1,
                             date: cell
                         });
-                        console.log('Найдена дата:', cell, 'индекс количества:', i, 'индекс суммы:', i + 1);
+                        console.log('Найдена дата:', cell, 'индекс кол-ва:', i, 'индекс суммы:', i + 1);
                     }
                 }
                 
@@ -8437,8 +8429,8 @@ function parseABCXYZExcel(file) {
                     return;
                 }
                 
-                // Парсим данные по товарам (начинаем с dataStartRow)
-                const sales = [];
+                // Парсим данные по товарам
+                const salesMap = new Map(); // Используем Map для агрегации по ключу "артикул|дата"
                 
                 for (let rowIdx = dataStartRow; rowIdx < jsonData.length; rowIdx++) {
                     const row = jsonData[rowIdx];
@@ -8456,28 +8448,53 @@ function parseABCXYZExcel(file) {
                         let qty = 0;
                         let amount = 0;
                         
-                        if (d.dateIndex !== undefined && row[d.dateIndex] !== undefined) {
-                            qty = parseFloat(row[d.dateIndex]) || 0;
+                        if (d.qtyIndex !== undefined && row[d.qtyIndex] !== undefined && row[d.qtyIndex] !== '') {
+                            qty = parseFloat(row[d.qtyIndex]) || 0;
                         }
-                        if (d.amountIndex !== undefined && row[d.amountIndex] !== undefined) {
+                        if (d.amountIndex !== undefined && row[d.amountIndex] !== undefined && row[d.amountIndex] !== '') {
                             amount = parseFloat(row[d.amountIndex]) || 0;
                         }
                         
-                        // Пропускаем нулевые продажи
-                        if (qty !== 0 && amount !== 0) {
-                            sales.push({
+                        // Пропускаем только если оба нулевые (пустые ячейки)
+                        if (qty === 0 && amount === 0) continue;
+                        
+                        // Создаем уникальный ключ для агрегации: артикул|дата
+                        const uniqueKey = `${key}|${d.date}`;
+                        
+                        if (!salesMap.has(uniqueKey)) {
+                            salesMap.set(uniqueKey, {
                                 productName: productName,
                                 article: article,
                                 key: key,
                                 date: d.date,
-                                quantity: qty,
-                                amount: amount
+                                quantity: 0,
+                                amount: 0
                             });
                         }
+                        
+                        const sale = salesMap.get(uniqueKey);
+                        // Суммируем количество и сумму (отрицательные значения будут вычитаться)
+                        sale.quantity += qty;
+                        sale.amount += amount;
                     }
                 }
                 
-                console.log('Всего продаж найдено:', sales.length);
+                // Преобразуем Map в массив и фильтруем нулевые позиции
+                const sales = Array.from(salesMap.values()).filter(sale => sale.quantity !== 0 || sale.amount !== 0);
+                
+                console.log('Всего продаж найдено (после агрегации):', sales.length);
+                
+                // Выводим примеры для проверки
+                if (sales.length > 0) {
+                    console.log('Пример первых 5 продаж:', sales.slice(0, 5));
+                    
+                    // Проверяем наличие отрицательных значений
+                    const negativeSales = sales.filter(s => s.quantity < 0 || s.amount < 0);
+                    console.log('Из них с отрицательными значениями (возвраты):', negativeSales.length);
+                    if (negativeSales.length > 0) {
+                        console.log('Примеры возвратов:', negativeSales.slice(0, 3));
+                    }
+                }
                 
                 if (sales.length === 0) {
                     reject(new Error('Нет данных о продажах. Проверьте формат файла.'));
