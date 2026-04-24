@@ -8685,37 +8685,77 @@ function renderABCXYZ(products, totalAmount, totalQuantity) {
     container.style.display = 'block';
     
     // Отрисовка диаграммы Парето
-    setTimeout(() => {
-        const sorted = [...products].sort((a,b) => b.totalAmount - a.totalAmount);
-        const labels = sorted.slice(0, 20).map(p => p.article || p.name.substring(0, 15));
-        const amounts = sorted.slice(0, 20).map(p => p.totalAmount);
-        const cumulative = [];
-        let sum = 0;
-        const total = amounts.reduce((a,b) => a+b, 0);
-        amounts.forEach(a => { sum += a; cumulative.push((sum / total) * 100); });
-        
-        const canvas = document.getElementById('paretoChart');
-        if (canvas) {
-            if (window.paretoChart) window.paretoChart.destroy();
-            const ctx = canvas.getContext('2d');
-            window.paretoChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Выручка (₽)', data: amounts, type: 'bar', backgroundColor: '#667eea', borderRadius: 6, yAxisID: 'y' },
-                        { label: 'Кумулятивная доля (%)', data: cumulative, type: 'line', borderColor: '#f56565', borderWidth: 3, fill: false, tension: 0.4, yAxisID: 'y1', pointRadius: 4, pointBackgroundColor: '#f56565' }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { tooltip: { callbacks: { label: (ctx) => ctx.dataset.label === 'Выручка (₽)' ? formatCurrency(ctx.raw) : ctx.raw.toFixed(1) + '%' } } },
-                    scales: { y: { title: { display: true, text: 'Выручка (₽)' }, ticks: { callback: (v) => formatCurrency(v) } }, y1: { position: 'right', title: { display: true, text: 'Кумулятивная доля (%)' }, min: 0, max: 100, ticks: { callback: (v) => v + '%' } } }
-                }
-            });
+    // Отрисовка диаграммы Парето
+setTimeout(() => {
+    const sorted = [...products].sort((a,b) => b.totalAmount - a.totalAmount);
+    const labels = sorted.slice(0, 20).map(p => p.article || p.name.substring(0, 15));
+    const amounts = sorted.slice(0, 20).map(p => p.totalAmount);
+    const cumulative = [];
+    let sum = 0;
+    const total = amounts.reduce((a,b) => a+b, 0);
+    amounts.forEach(a => { sum += a; cumulative.push((sum / total) * 100); });
+    
+    const canvas = document.getElementById('paretoChart');
+    if (canvas) {
+        // ✅ ИСПРАВЛЕНО: проверяем тип перед вызовом destroy
+        if (window.paretoChart && typeof window.paretoChart.destroy === 'function') {
+            window.paretoChart.destroy();
         }
-    }, 100);
+        const ctx = canvas.getContext('2d');
+        window.paretoChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { 
+                        label: 'Выручка (₽)', 
+                        data: amounts, 
+                        type: 'bar', 
+                        backgroundColor: '#667eea', 
+                        borderRadius: 6, 
+                        yAxisID: 'y' 
+                    },
+                    { 
+                        label: 'Кумулятивная доля (%)', 
+                        data: cumulative, 
+                        type: 'line', 
+                        borderColor: '#f56565', 
+                        borderWidth: 3, 
+                        fill: false, 
+                        tension: 0.4, 
+                        yAxisID: 'y1', 
+                        pointRadius: 4, 
+                        pointBackgroundColor: '#f56565' 
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { 
+                    tooltip: { 
+                        callbacks: { 
+                            label: (ctx) => ctx.dataset.label === 'Выручка (₽)' ? formatCurrency(ctx.raw) : ctx.raw.toFixed(1) + '%' 
+                        } 
+                    } 
+                },
+                scales: { 
+                    y: { 
+                        title: { display: true, text: 'Выручка (₽)' }, 
+                        ticks: { callback: (v) => formatCurrency(v) } 
+                    }, 
+                    y1: { 
+                        position: 'right', 
+                        title: { display: true, text: 'Кумулятивная доля (%)' }, 
+                        min: 0, 
+                        max: 100, 
+                        ticks: { callback: (v) => v + '%' } 
+                    } 
+                }
+            }
+        });
+    }
+}, 100);
 }
 
     function initApp() {
