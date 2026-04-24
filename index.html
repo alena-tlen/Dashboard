@@ -1671,6 +1671,23 @@ body.dark .filter-modal .filter-group select {
     animation: pulse 2s infinite;
 }
 
+/* Пульсация для красной карточки убытка */
+@keyframes pulseRed {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245,101,101,0.4);
+        border-color: #f56565;
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(245,101,101,0);
+        border-color: #f56565;
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245,101,101,0);
+        border-color: #f56565;
+    }
+}
+
+
 </style>
 </head>
 <body>
@@ -5485,11 +5502,11 @@ function renderNdsToRevenueChart(labels, ndsValues, revenueValues) {
         window.ndsToRevenueChart.destroy();
     }
     
-    // Рассчитываем процент НДС от выручки
+    // Рассчитываем процент НДС от ЧИСТОЙ выручки (revenueValues - это уже чистая выручка)
     const ndsPercentages = ndsValues.map((nds, idx) => {
-        const revenue = revenueValues[idx];
-        if (revenue === 0 || revenue === undefined) return 0;
-        return (Math.abs(nds) / revenue) * 100;
+        const netRevenue = revenueValues[idx];
+        if (netRevenue === 0 || netRevenue === undefined) return 0;
+        return (Math.abs(nds) / netRevenue) * 100;
     });
     
     // Цвета в зависимости от процента
@@ -5505,13 +5522,14 @@ function renderNdsToRevenueChart(labels, ndsValues, revenueValues) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'НДС (% от выручки)',
+                label: 'НДС (% от чистой выручки)',
                 data: ndsPercentages,
                 backgroundColor: barColors,
+                borderColor: barColors,
                 borderRadius: 10,
                 barPercentage: 0.65,
                 categoryPercentage: 0.8,
-                borderWidth: 0
+                borderWidth: 1
             }]
         },
         options: {
@@ -5530,11 +5548,11 @@ function renderNdsToRevenueChart(labels, ndsValues, revenueValues) {
                             const idx = context.dataIndex;
                             const percent = context.parsed.y;
                             const nds = ndsValues[idx];
-                            const revenue = revenueValues[idx];
+                            const netRevenue = revenueValues[idx];
                             return [
-                                `📊 НДС: ${percent.toFixed(1)}% от выручки`,
+                                `📊 НДС: ${percent.toFixed(1)}% от чистой выручки`,
                                 `💰 НДС: ${formatCurrency(Math.abs(nds))}`,
-                                `📈 Выручка: ${formatCurrency(revenue)}`
+                                `📈 Чистая выручка: ${formatCurrency(netRevenue)}`
                             ];
                         }
                     }
@@ -5552,7 +5570,7 @@ function renderNdsToRevenueChart(labels, ndsValues, revenueValues) {
                 y: {
                     title: {
                         display: true,
-                        text: 'НДС (% от выручки)',
+                        text: 'НДС (% от чистой выручки)',
                         color: isDarkMode ? '#e2e8f0' : '#4a5568',
                         font: { size: 10 }
                     },
@@ -6081,15 +6099,6 @@ setTimeout(() => {
     renderProfitMiniChart();
 }, 100);
 
-setTimeout(() => {
-    renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
-}, 150);
-
-// Отрисовка основного графика - передаем данные как параметры
-setTimeout(() => {
-    renderMonthlyLineChart(monthlyLabels, monthlyRevenues);
-}, 150);
-
 // Анализ для рекомендаций
 let healthStatus = { color: '#48bb78', text: 'Отлично', icon: '🚀' };
 let recommendations = [];
@@ -6420,11 +6429,105 @@ console.log('costData:', costData);
             const revenueHtml = createCollapsibleBlock('Доходы по каналам', '💰', f.totalRevenue, revenueChange, revenueChannelsList, false, monthlyDataMap, monthlyLabels, monthlyRevenues, null);
             const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true, monthlyDataMap, monthlyLabels, monthlyExpensesArray, f.totalRevenue);
             
-            document.getElementById('dashboardMetrics').innerHTML = topPanelHtml + `
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
-        ${revenueHtml}
-        ${expensesHtml}
+            // Блок Выручка чистая (полная версия)
+const netRevenueBlock = `
+<div class="metric-card">
+    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📊</span>
+            <span>Выручка чистая</span>
+        </div>
+        <button class="toggle-breakdown-btn" data-type="netRevenue" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
+            <span>▶</span> Показать по каналам
+        </button>
     </div>
+    <div>
+        <div class="metric-value" id="mainNetRevenueValue">${formatCurrency(f.netRevenue)}</div>
+        ${netRevenueChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(netRevenueChange)}</span>` : ''}
+    </div>
+    
+    <!-- ГРАФИК -->
+    <div class="revenue-chart-wrapper" style="margin-top: 16px;">
+        <div class="chart-gradient-overlay"></div>
+        <canvas id="netRevenueMiniChart" style="height: 100px; width: 100%; display: block; margin: 0; padding: 0;"></canvas>
+    </div>
+    
+    <div class="netrevenue-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+        <div style="padding-top: 16px;">${generateChannelBreakdown('ВЫРУЧКА ЧИСТАЯ ПО КАНАЛАМ', 'value', calculateNetRevenueByChannel(currentData), true, '')}</div>
+    </div>
+</div>
+`;
+
+// Блок Продажи (полная версия)
+const salesBlock = `
+<div class="metric-card">
+    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📦</span>
+            <span>Продажи (шт)</span>
+        </div>
+        <button class="toggle-sales-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
+            <span>▶</span> Показать по каналам
+        </button>
+    </div>
+    <div>
+        <div class="metric-value" id="mainSalesValue">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
+        ${salesChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(salesChange)}</span>` : ''}
+    </div>
+    <canvas id="salesChart" style="height: 100px; width: 100%; margin-top: 8px; border-radius: 8px; cursor: pointer;"></canvas>
+    <div class="metric-sub">всего за период</div>
+    <div class="sales-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+        <div style="padding-top: 16px;">${generateSalesBreakdown(currentData)}</div>
+    </div>
+</div>
+`;
+
+// Блок Средний чек (полная версия)
+const avgCheckBlock = `
+<div class="metric-card">
+    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">💰</span>
+            <span>Средний чек</span>
+        </div>
+        <button class="toggle-avgcheck-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
+            <span>▶</span> Показать по каналам
+        </button>
+    </div>
+    <div>
+        <div class="metric-value" id="mainAvgCheckValue">${formatCurrency(avgCheck)}</div>
+        ${avgCheckChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(avgCheckChange)}</span>` : ''}
+    </div>
+    <div class="metric-sub">на 1 продажу</div>
+    <div class="avgcheck-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
+        <div style="padding-top: 16px;">${generateAverageCheckBreakdown(currentData)}</div>
+    </div>
+</div>
+`;
+
+document.getElementById('dashboardMetrics').innerHTML = topPanelHtml + `
+    <div style="display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap;">
+        <div style="flex: 1.5; min-width: 300px;">
+            ${revenueHtml}
+        </div>
+        <div style="flex: 1; min-width: 260px;">
+            <div style="margin-bottom: 16px;">
+                ${netRevenueBlock}
+            </div>
+            <div style="display: flex; gap: 16px;">
+                <div style="flex: 1;">
+                    ${salesBlock}
+                </div>
+                <div style="flex: 1;">
+                    ${avgCheckBlock}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Блок РАСХОДЫ ПО КАНАЛАМ (полная версия) -->
+    ${expensesHtml}
+    
     <div class="metrics-grid" style="margin-top: 24px;">
                     <div class="metric-card">
     <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
@@ -6461,43 +6564,19 @@ console.log('costData:', costData);
         <div style="padding-top: 16px;">${generateNDSBreakdown(currentData)}</div>
     </div>
 </div>
-                    <div class="metric-card">
+    <div class="metric-card" style="${f.profit < 0 ? 'border: 2px solid #f56565; box-shadow: 0 0 15px rgba(245,101,101,0.3); animation: pulseRed 1s ease-in-out infinite;' : ''}">
     <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 18px;">📊</span>
-            <span>Выручка чистая</span>
-        </div>
-        <button class="toggle-breakdown-btn" data-type="netRevenue" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-            <span>▶</span> Показать по каналам
-        </button>
-    </div>
-    <div>
-        <div class="metric-value" id="mainNetRevenueValue">${formatCurrency(f.netRevenue)}</div>
-        ${netRevenueChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(netRevenueChange)}</span>` : ''}
-    </div>
-    
-    <!-- ГРАФИК как в блоке расходов -->
-    <div class="revenue-chart-wrapper" style="margin-top: 16px;">
-        <div class="chart-gradient-overlay"></div>
-        <canvas id="netRevenueMiniChart" style="height: 100px; width: 100%; display: block; margin: 0; padding: 0;"></canvas>
-    </div>
-    
-    <div class="netrevenue-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
-        <div style="padding-top: 16px;">${generateChannelBreakdown('ВЫРУЧКА ЧИСТАЯ ПО КАНАЛАМ', 'value', calculateNetRevenueByChannel(currentData), true, '')}</div>
-    </div>
-</div>
-                    <div class="metric-card">
-    <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 18px;">📈</span>
+            <span style="font-size: 18px;">${f.profit < 0 ? '🔴' : '📈'}</span>
             <span>Маржинальная прибыль</span>
+            ${f.profit < 0 ? '<span style="background: #f56565; color: white; padding: 2px 8px; border-radius: 20px; font-size: 10px;">УБЫТОК!</span>' : ''}
         </div>
         <button class="toggle-channels-profit-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
             <span>▶</span> Показать по каналам
         </button>
     </div>
     <div>
-        <div class="metric-value ${f.profit >= 0 ? 'positive' : 'negative'}" id="mainProfitValue">${formatCurrency(f.profit)}</div>
+        <div class="metric-value ${f.profit >= 0 ? 'positive' : 'negative'}" id="mainProfitValue" style="${f.profit < 0 ? 'color: #f56565 !important; font-size: 42px;' : ''}">${formatCurrency(f.profit)}</div>
         ${profitChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(profitChange)}</span>` : ''}
     </div>
     <div class="metric-sub" style="margin-top: 4px;">
@@ -6515,45 +6594,7 @@ console.log('costData:', costData);
         <div style="padding-top: 16px;">${generateProfitByChannels(f, revenueChannelsList, expenseChannelsList, calculateNetRevenueByChannel(currentData))}</div>
     </div>
 </div>
-                    <div class="metric-card">
-                        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 18px;">📦</span>
-                                <span>Продажи (шт)</span>
-                            </div>
-                            <button class="toggle-sales-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-                                <span>▶</span> Показать по каналам
-                            </button>
-                        </div>
-                        <div>
-                            <div class="metric-value" id="mainSalesValue">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
-                            ${salesChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(salesChange)}</span>` : ''}
-                        </div>
-                        <canvas id="salesChart" style="height: 100px; width: 100%; margin-top: 8px; border-radius: 8px; cursor: pointer;"></canvas>
-                        <div class="metric-sub">всего за период</div>
-                        <div class="sales-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
-                            <div style="padding-top: 16px;">${generateSalesBreakdown(currentData)}</div>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 18px;">💰</span>
-                                <span>Средний чек</span>
-                            </div>
-                            <button class="toggle-avgcheck-breakdown-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;">
-                                <span>▶</span> Показать по каналам
-                            </button>
-                        </div>
-                        <div>
-                            <div class="metric-value" id="mainAvgCheckValue">${formatCurrency(avgCheck)}</div>
-                            ${avgCheckChange ? `<span style="font-size: 12px; margin-left: 8px;">${getChangeHtml(avgCheckChange)}</span>` : ''}
-                        </div>
-                        <div class="metric-sub">на 1 продажу</div>
-                        <div class="avgcheck-channels-container" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 16px; border-top: 1px solid rgba(102,126,234,0.2);">
-                            <div style="padding-top: 16px;">${generateAverageCheckBreakdown(currentData)}</div>
-                        </div>
-                    </div>
+                    
                     <div class="metric-card">
     <div class="metric-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -7322,15 +7363,17 @@ function renderProfitMiniChart() {
         const data = monthlyProfit[key];
         const netRevenue = data.revenue - data.ndsOut;
         const profit = netRevenue - data.expenses;
-        return profit / 1000; // в тысячах
+        return profit / 1000;
     });
     
     if (labels.length === 0 || profitData.length === 0) return;
     
     const ctx = canvas.getContext('2d');
     const isDarkMode = document.body.classList.contains('dark');
-    const areaColor = isDarkMode ? 'rgba(72,187,120,0.08)' : 'rgba(72,187,120,0.05)';
-    const lineColor = profitData[profitData.length - 1] >= profitData[0] ? '#48bb78' : '#f56565';
+    
+    // ✅ ИСПРАВЛЕНО: используем backgroundColor с массивом цветов
+    // borderColor оставляем одной строкой или вообще убираем
+    const barColors = profitData.map(value => value >= 0 ? '#48bb78' : '#f56565');
     
     if (profitMiniChart) {
         profitMiniChart.destroy();
@@ -7338,23 +7381,18 @@ function renderProfitMiniChart() {
     }
     
     profitMiniChart = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: '',
+                label: 'Прибыль (тыс. ₽)',
                 data: profitData,
-                borderColor: lineColor,
-                backgroundColor: areaColor,
-                borderWidth: 2,
-                pointRadius: 0,
-                pointHoverRadius: 5,
-                pointBackgroundColor: lineColor,
-                pointBorderColor: 'transparent',
-                pointBorderWidth: 0,
-                tension: 0.4,
-                fill: true,
-                cubicInterpolationMode: 'monotone'
+                backgroundColor: barColors,
+                borderColor: '#ffffff',  // ✅ строка, а не массив
+                borderWidth: 1,
+                borderRadius: 6,
+                barPercentage: 0.7,
+                categoryPercentage: 0.8
             }]
         },
         options: {
@@ -7363,12 +7401,10 @@ function renderProfitMiniChart() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    mode: 'index',
-                    intersect: false,
                     backgroundColor: isDarkMode ? '#1a1a2a' : '#ffffff',
                     titleColor: isDarkMode ? '#e2e8f0' : '#4a5568',
                     bodyColor: isDarkMode ? '#e2e8f0' : '#4a5568',
-                    borderColor: lineColor,
+                    borderColor: '#667eea',
                     borderWidth: 1,
                     callbacks: {
                         title: function(context) {
@@ -7376,46 +7412,40 @@ function renderProfitMiniChart() {
                         },
                         label: function(context) {
                             const value = context.parsed.y;
-                            const color = value >= 0 ? '#48bb78' : '#f56565';
                             return `${value >= 0 ? '+' : ''}${value.toFixed(0)} тыс. ₽`;
-                        },
-                        labelColor: function(context) {
-                            const value = context.parsed.y;
-                            return { 
-                                borderColor: value >= 0 ? '#48bb78' : '#f56565',
-                                backgroundColor: value >= 0 ? '#48bb78' : '#f56565'
-                            };
                         }
                     }
                 }
             },
             scales: {
-                x: { 
-                    display: false,
-                    grid: { display: false },
-                    ticks: { display: false }
+                x: {
+                    ticks: {
+                        color: isDarkMode ? '#e2e8f0' : '#4a5568',
+                        maxRotation: 45,
+                        minRotation: 45,
+                        font: { size: 10 }
+                    },
+                    grid: { display: false }
                 },
-                y: { 
-                    display: false,
-                    grid: { display: false },
-                    ticks: { display: false }
+                y: {
+                    ticks: {
+                        color: isDarkMode ? '#e2e8f0' : '#4a5568',
+                        callback: (value) => value.toFixed(0) + ' тыс.'
+                    },
+                    grid: { color: isDarkMode ? '#2d3748' : '#e2e8f0' },
+                    beginAtZero: false
                 }
             },
-            elements: {
-                line: { tension: 0.4 },
-                point: { hoverRadius: 6, radius: 0 }
-            },
             layout: {
-                padding: { top: 5, bottom: 5, left: 5, right: 5 }
+                padding: { top: 10, bottom: 10, left: 5, right: 5 }
             },
             interaction: {
-                mode: 'nearest',
-                axis: 'x',
+                mode: 'index',
                 intersect: false
             },
             animation: {
-                duration: 1000,
-                easing: 'easeInOutQuart'
+                duration: 800,
+                easing: 'easeOutQuart'
             }
         }
     });
@@ -7470,12 +7500,11 @@ function renderSalesChart(labels, salesData) {
                 label: 'Продажи (шт)',
                 data: salesData,
                 backgroundColor: gradients,
-                borderWidth: 0,
+                borderColor: '#ffffff',  // ✅ строка, не массив
+                borderWidth: 1,
                 borderRadius: 10,
                 barPercentage: 0.7,
-                categoryPercentage: 0.85,
-                hoverBackgroundColor: gradients,
-                hoverBorderWidth: 0
+                categoryPercentage: 0.85
             }]
         },
         options: {
@@ -7525,11 +7554,10 @@ function renderSalesChart(labels, salesData) {
                 }
             },
             elements: {
-                bar: {
-                    borderWidth: 0,
-                    borderRadius: 10
-                }
-            },
+    bar: {
+        borderRadius: 10
+    }
+},
             layout: {
                 padding: { top: 15, bottom: 5, left: 5, right: 5 }
             },
@@ -7751,22 +7779,20 @@ if (sidebarNav) {
 }
     
     const debouncedApply = () => {
-        if (realCompanyFilter) currentFilters.company = realCompanyFilter.value;
-        if (realYearFilter) currentFilters.year = realYearFilter.value;
-        if (realMonthFilter) currentFilters.month = Array.from(realMonthFilter.selectedOptions).map(o => o.value);
-        
-        currentData = originalData.filter(row => {
-            if (currentFilters.company && row.компания !== currentFilters.company) return false;
-            if (currentFilters.year && row.год != currentFilters.year) return false;
-            if (currentFilters.month.length > 0 && !currentFilters.month.includes(row.месяц)) return false;
-            return true;
-        });
-        renderDashboard();
-        renderCashBlock();
-        renderNetRevenueMiniChart();
-        renderProfitMiniChart();
-        if (currentChannel) renderChannelPage(currentChannel);
-    };
+    if (realCompanyFilter) currentFilters.company = realCompanyFilter.value;
+    if (realYearFilter) currentFilters.year = realYearFilter.value;
+    if (realMonthFilter) currentFilters.month = Array.from(realMonthFilter.selectedOptions).map(o => o.value);
+    
+    currentData = originalData.filter(row => {
+        if (currentFilters.company && row.компания !== currentFilters.company) return false;
+        if (currentFilters.year && row.год != currentFilters.year) return false;
+        if (currentFilters.month.length > 0 && !currentFilters.month.includes(row.месяц)) return false;
+        return true;
+    });
+    renderDashboard();  // <-- ЭТОТ ВЫЗОВ УЖЕ ПЕРЕРИСОВЫВАЕТ ВСЕ ГРАФИКИ
+    renderCashBlock();
+    if (currentChannel) renderChannelPage(currentChannel);
+};
     
     if (realCompanyFilter) realCompanyFilter.onchange = debouncedApply;
     if (realYearFilter) realYearFilter.onchange = debouncedApply;
@@ -7949,9 +7975,6 @@ if (sidebarNav) {
             if (realCompanyFilter) realCompanyFilter.value = '';
             if (realYearFilter) realYearFilter.value = '';
             if (realMonthFilter) Array.from(realMonthFilter.options).forEach(o => o.selected = false);
-            if (companyFilterHeader) companyFilterHeader.value = '';
-            if (yearFilterHeader) yearFilterHeader.value = '';
-            if (monthFilterHeader) Array.from(monthFilterHeader.options).forEach(o => o.selected = false);
             debouncedApply();
             closeModal();
         };
