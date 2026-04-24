@@ -1687,6 +1687,135 @@ body.dark .filter-modal .filter-group select {
     }
 }
 
+/* ========== СОВРЕМЕННАЯ КАРУСЕЛЬ ========== */
+.modern-carousel {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+}
+
+.modern-carousel-track {
+    display: flex;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-carousel-slide {
+    flex: 0 0 100%;
+    padding: 8px;
+}
+
+.modern-carousel-slide.active {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.carousel-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.carousel-indicator {
+    width: 30px;
+    height: 3px;
+    background: rgba(102,126,234,0.2);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.carousel-indicator.active {
+    background: #667eea;
+    width: 45px;
+}
+
+.carousel-indicator:hover {
+    background: #667eea;
+    opacity: 0.7;
+}
+
+.carousel-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(102,126,234,0.9);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+    z-index: 10;
+}
+
+.carousel-nav-btn:hover {
+    background: #667eea;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-nav-prev {
+    left: 8px;
+}
+
+.carousel-nav-next {
+    right: 8px;
+}
+
+.metric-card-mini {
+    text-align: center;
+    padding: 8px;
+}
+
+.metric-card-mini .metric-value {
+    font-size: 28px;
+    margin: 12px 0;
+}
+
+.metric-card-mini .metric-label {
+    font-size: 13px;
+    color: #667eea;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.metric-card-mini .mini-chart-container {
+    margin-top: 12px;
+    height: 80px;
+    position: relative;
+}
+
+/* Плавное появление графиков */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
 
 </style>
 </head>
@@ -5700,27 +5829,45 @@ function generateCarouselItems() {
     let salesFromReference = currentData.filter(d => d.тип === 'Справочная' && (d.статья?.toLowerCase().includes('продажи') || d.подканал?.toLowerCase().includes('продажи'))).reduce((sum, d) => sum + Math.abs(d.сумма || 0), 0);
     let totalSalesQuantity = salesFromArticle + salesFromReference;
     const avgCheck = totalSalesQuantity > 0 ? f.netRevenue / totalSalesQuantity : 0;
+    const efficiency = f.profit / (f.totalExpenses || 1);
     
     return `
-        <div class="carousel-item" style="display: none;">
-            <div style="text-align: center;">
-                <div style="font-size: 14px; color: #667eea; margin-bottom: 12px;">💰 Выручка чистая</div>
-                <div class="metric-value" style="font-size: 32px;">${formatCurrency(f.netRevenue)}</div>
-                <canvas id="carouselNetRevenueChart" style="height: 80px; width: 100%; margin-top: 16px;"></canvas>
+        <div class="modern-carousel-slide">
+            <div class="metric-card-mini">
+                <div class="metric-label">💰 ЧИСТАЯ ВЫРУЧКА</div>
+                <div class="metric-value" id="carouselNetRevenue">${formatCurrency(f.netRevenue)}</div>
+                <div class="mini-chart-container">
+                    <canvas id="carouselNetRevenueChart" style="height: 70px; width: 100%;"></canvas>
+                </div>
+                <div class="metric-sub" style="margin-top: 8px;">без НДС</div>
             </div>
         </div>
-        <div class="carousel-item" style="display: none;">
-    <div style="text-align: center;">
-        <div style="font-size: 14px; color: #667eea; margin-bottom: 12px;">📦 Продажи (шт)</div>
-        <div class="metric-value" style="font-size: 32px;">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
-        <canvas id="carouselSalesChart" style="height: 80px; width: 100%; margin-top: 16px;"></canvas>
-    </div>
-</div>
-        <div class="carousel-item" style="display: none;">
-            <div style="text-align: center;">
-                <div style="font-size: 14px; color: #667eea; margin-bottom: 12px;">💰 Средний чек</div>
-                <div class="metric-value" style="font-size: 32px;">${formatCurrency(avgCheck)}</div>
-                <div class="metric-sub" style="margin-top: 12px;">на 1 продажу</div>
+        <div class="modern-carousel-slide">
+            <div class="metric-card-mini">
+                <div class="metric-label">📦 ПРОДАЖИ</div>
+                <div class="metric-value" id="carouselSales">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
+                <div class="mini-chart-container">
+                    <canvas id="carouselSalesChart" style="height: 70px; width: 100%;"></canvas>
+                </div>
+                <div class="metric-sub" style="margin-top: 8px;">штук</div>
+            </div>
+        </div>
+        <div class="modern-carousel-slide">
+            <div class="metric-card-mini">
+                <div class="metric-label">💳 СРЕДНИЙ ЧЕК</div>
+                <div class="metric-value" id="carouselAvgCheck">${formatCurrency(avgCheck)}</div>
+                <div style="margin-top: 20px;">
+                    <div class="metric-sub">на 1 продажу</div>
+                </div>
+            </div>
+        </div>
+        <div class="modern-carousel-slide">
+            <div class="metric-card-mini">
+                <div class="metric-label">⚡ ЭФФЕКТИВНОСТЬ</div>
+                <div class="metric-value" id="carouselEfficiency">${efficiency.toFixed(2)} ₽</div>
+                <div style="margin-top: 20px;">
+                    <div class="metric-sub">прибыли на 1₽ расходов</div>
+                </div>
             </div>
         </div>
     `;
@@ -6475,15 +6622,17 @@ console.log('costData:', costData);
             ${revenueHtml}
         </div>
         
-        <!-- Правая колонка - Карусель -->
-<div class="metric-card" style="display: flex; flex-direction: column; padding: 20px; height: 100%;">
-    <div id="carouselContainer" style="flex: 1; position: relative;">
-        ${generateCarouselItems()}
-    </div>
-    <div class="carousel-dots" id="carouselDots" style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;"></div>
-    <div class="carousel-nav" style="display: flex; justify-content: center; gap: 12px; margin-top: 12px;">
-        <button class="carousel-prev" style="background: rgba(102,126,234,0.15); border: none; border-radius: 20px; padding: 6px 16px; cursor: pointer;">◀ Пред.</button>
-        <button class="carousel-next" style="background: rgba(102,126,234,0.15); border: none; border-radius: 20px; padding: 6px 16px; cursor: pointer;">След. ▶</button>
+        <!-- Правая колонка - Современная карусель -->
+<div class="metric-card" style="padding: 20px; height: 100%; display: flex; flex-direction: column;">
+    <div class="modern-carousel" style="flex: 1; position: relative;">
+        <div class="modern-carousel-track" id="carouselTrack">
+            ${generateCarouselItems()}
+        </div>
+        
+        <button class="carousel-nav-btn carousel-nav-prev" id="carouselPrevBtn">◀</button>
+        <button class="carousel-nav-btn carousel-nav-next" id="carouselNextBtn">▶</button>
+        
+        <div class="carousel-indicators" id="carouselIndicators"></div>
     </div>
 </div>
     </div>
@@ -7187,55 +7336,111 @@ setTimeout(() => {
 }, 150);
 
 function initCarousel() {
-    const items = document.querySelectorAll('#carouselContainer .carousel-item');
-    const dotsContainer = document.getElementById('carouselDots');
+    const track = document.querySelector('.modern-carousel-track');
+    const slides = document.querySelectorAll('.modern-carousel-slide');
+    const indicatorsContainer = document.getElementById('carouselIndicators');
     let currentIndex = 0;
+    let autoInterval = null;
+    let isAnimating = false;
     
-    if (items.length === 0) return;
+    if (!track || slides.length === 0) return;
     
-    function showItem(index) {
-        items.forEach((item, i) => {
-            item.style.display = i === index ? 'block' : 'none';
+    function updateCarousel(index) {
+        if (isAnimating) return;
+        isAnimating = true;
+        
+        currentIndex = (index + slides.length) % slides.length;
+        const offset = -currentIndex * 100;
+        track.style.transform = `translateX(${offset}%)`;
+        
+        // Обновляем индикаторы
+        document.querySelectorAll('.carousel-indicator').forEach((ind, i) => {
+            if (i === currentIndex) {
+                ind.classList.add('active');
+            } else {
+                ind.classList.remove('active');
+            }
         });
-        // Обновляем dots
-        document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
-            dot.classList.toggle('active', i === index);
+        
+        // Анимация для активного слайда
+        slides.forEach((slide, i) => {
+            if (i === currentIndex) {
+                slide.classList.add('active');
+                // Перерисовываем графики при смене слайда
+                setTimeout(() => renderCarouselCharts(), 100);
+            } else {
+                slide.classList.remove('active');
+            }
+        });
+        
+        setTimeout(() => { isAnimating = false; }, 500);
+    }
+    
+    function createIndicators() {
+        indicatorsContainer.innerHTML = '';
+        slides.forEach((_, i) => {
+            const indicator = document.createElement('div');
+            indicator.className = `carousel-indicator ${i === 0 ? 'active' : ''}`;
+            indicator.addEventListener('click', () => {
+                if (autoInterval) clearInterval(autoInterval);
+                updateCarousel(i);
+                startAutoPlay();
+            });
+            indicatorsContainer.appendChild(indicator);
         });
     }
     
-    function createDots() {
-        dotsContainer.innerHTML = '';
-        items.forEach((_, i) => {
-            const dot = document.createElement('div');
-            dot.className = 'carousel-dot';
-            dot.style.cssText = 'width: 8px; height: 8px; border-radius: 50%; background: rgba(102,126,234,0.3); cursor: pointer; transition: all 0.3s;';
-            if (i === 0) dot.style.background = '#667eea';
-            dot.onclick = () => { currentIndex = i; showItem(currentIndex); };
-            dotsContainer.appendChild(dot);
+    function startAutoPlay() {
+        if (autoInterval) clearInterval(autoInterval);
+        autoInterval = setInterval(() => {
+            updateCarousel(currentIndex + 1);
+        }, 5000);
+    }
+    
+    function stopAutoPlay() {
+        if (autoInterval) {
+            clearInterval(autoInterval);
+            autoInterval = null;
+        }
+    }
+    
+    // Кнопки навигации
+    const prevBtn = document.getElementById('carouselPrevBtn');
+    const nextBtn = document.getElementById('carouselNextBtn');
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            stopAutoPlay();
+            updateCarousel(currentIndex - 1);
+            startAutoPlay();
         });
     }
     
-    document.querySelector('.carousel-prev')?.addEventListener('click', () => {
-        currentIndex = (currentIndex - 1 + items.length) % items.length;
-        showItem(currentIndex);
-    });
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            stopAutoPlay();
+            updateCarousel(currentIndex + 1);
+            startAutoPlay();
+        });
+    }
     
-    document.querySelector('.carousel-next')?.addEventListener('click', () => {
-        currentIndex = (currentIndex + 1) % items.length;
-        showItem(currentIndex);
-    });
+    // Пауза при наведении
+    const carouselContainer = document.querySelector('.modern-carousel');
+    if (carouselContainer) {
+        carouselContainer.addEventListener('mouseenter', stopAutoPlay);
+        carouselContainer.addEventListener('mouseleave', startAutoPlay);
+    }
     
-    createDots();
-    showItem(0);
+    createIndicators();
+    updateCarousel(0);
+    startAutoPlay();
     
-    // Отрисовка графиков после показа
-    setTimeout(() => {
-        renderCarouselCharts();
-    }, 100);
+    // Отрисовка графиков
+    setTimeout(() => renderCarouselCharts(), 200);
 }
 
 function renderCarouselCharts() {
-    // Чистая выручка по месяцам для графика
+    // Данные для графика чистой выручки
     const monthlyNetRevenue = {};
     currentData.forEach(d => {
         if (d.месяц && d.год) {
@@ -7251,22 +7456,22 @@ function renderCarouselCharts() {
     });
     
     const sortedKeys = Object.keys(monthlyNetRevenue).sort();
-    const labels = sortedKeys.map(key => `${monthlyNetRevenue[key].month}`);
+    const netRevenueLabels = sortedKeys.map(key => monthlyNetRevenue[key].month);
     const netRevenueData = sortedKeys.map(key => (monthlyNetRevenue[key].revenue - monthlyNetRevenue[key].ndsOut) / 1000);
     
-    if (labels.length && netRevenueData.length) {
+    if (netRevenueLabels.length && netRevenueData.length) {
         const canvas = document.getElementById('carouselNetRevenueChart');
         if (canvas) {
-            renderMiniChartJS('carouselNetRevenueChart', labels, netRevenueData, '#667eea');
+            renderMiniChartJS('carouselNetRevenueChart', netRevenueLabels, netRevenueData, '#667eea');
         }
     }
     
-    // Продажи по месяцам для графика
+    // Данные для графика продаж
     const monthlySales = {};
     currentData.forEach(d => {
         if (d.месяц && d.год) {
-            const article = d.статья?.toLowerCase() || '';
-            if ((article.includes('продажи') && (article.includes('шт') || article.includes('штук'))) || d.статья === 'Продажи шт.') {
+            const subCategory = d.подканал?.toLowerCase() || '';
+            if (subCategory.includes('продажи') && (subCategory.includes('шт') || subCategory.includes('штук'))) {
                 const key = `${d.год}-${d.месяц}`;
                 monthlySales[key] = (monthlySales[key] || 0) + Math.abs(d.сумма || 0);
             }
