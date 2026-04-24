@@ -7321,42 +7321,61 @@ toggleAllSubChannelsBtns.forEach(btn => {
     btn.onclick = (e) => {
         e.stopPropagation();
         // Находим родительский контейнер каналов (ищем среди обоих типов)
-        const container = btn.closest('.metric-card').querySelector('.channels-revenue-container, .channels-expense-container');
+        const metricCard = btn.closest('.metric-card');
+        if (!metricCard) return;
+        
+        const container = metricCard.querySelector('.channels-revenue-container, .channels-expense-container');
         if (!container) return;
         
         const allChannelItems = container.querySelectorAll('.channel-item');
         const allDetailsDivs = container.querySelectorAll('.channel-details');
         const allExpandIcons = container.querySelectorAll('.expand-icon');
         
+        if (!allDetailsDivs.length) return; // добавляем проверку
+        
         const allOpen = Array.from(allDetailsDivs).every(details => details.style.maxHeight && details.style.maxHeight !== '0px');
         
         if (allOpen) {
             allDetailsDivs.forEach(details => details.style.maxHeight = '0');
-            allExpandIcons.forEach(icon => icon.style.transform = 'rotate(0deg)');
-            btn.innerHTML = '<span>▶</span> Раскрыть подканалы';
-            allChannelItems.forEach(item => { 
-                if (window._openChannels) window._openChannels[item.dataset.channelName] = false; 
+            allExpandIcons.forEach(icon => {
+                if (icon) icon.style.transform = 'rotate(0deg)';
             });
+            btn.innerHTML = '<span>▶</span> Раскрыть подканалы';
+            if (allChannelItems.length) {
+                allChannelItems.forEach(item => { 
+                    if (window._openChannels && item.dataset.channelName) 
+                        window._openChannels[item.dataset.channelName] = false; 
+                });
+            }
         } else {
-            allDetailsDivs.forEach(details => { details.style.maxHeight = details.scrollHeight + 'px'; });
-            allExpandIcons.forEach(icon => icon.style.transform = 'rotate(90deg)');
+            allDetailsDivs.forEach(details => { 
+                if (details) details.style.maxHeight = details.scrollHeight + 'px'; 
+            });
+            allExpandIcons.forEach(icon => {
+                if (icon) icon.style.transform = 'rotate(90deg)';
+            });
             btn.innerHTML = '<span>▼</span> Скрыть подканалы';
             allDetailsDivs.forEach((details, idx) => {
+                if (!details) return;
                 const items = details.querySelectorAll('.sub-item');
                 items.forEach((item, itemIdx) => {
                     setTimeout(() => { 
-                        item.style.opacity = '1'; 
-                        item.style.transform = 'translateX(0)'; 
+                        if (item) {
+                            item.style.opacity = '1'; 
+                            item.style.transform = 'translateX(0)'; 
+                        }
                     }, idx * 50 + itemIdx * 30);
                 });
             });
-            allChannelItems.forEach(item => { 
-                if (window._openChannels) window._openChannels[item.dataset.channelName] = true; 
-            });
+            if (allChannelItems.length) {
+                allChannelItems.forEach(item => { 
+                    if (window._openChannels && item.dataset.channelName) 
+                        window._openChannels[item.dataset.channelName] = true; 
+                });
+            }
         }
     };
 });
-
             }, 200);
             
             const monthlyRevenue = {};
