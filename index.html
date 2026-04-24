@@ -8295,91 +8295,169 @@ function formatPanelCurrency(value) {
 }
 
 // Генерация содержимого карточки
+// Генерация содержимого карточки (ПОЛНАЯ ВЕРСИЯ)
 function renderBreakdownCard(item) {
     const pinnedClass = item.pinned ? 'pinned' : '';
-    const total = item.channelData.reduce((sum, ch) => sum + Math.abs(ch.value), 0);
     
-    let valueSuffix = '';
-    let valuePrefix = '';
-    if (item.type === 'sales') {
-        valueSuffix = ' шт';
-        valuePrefix = '';
-    } else if (item.type === 'avgcheck') {
-        valuePrefix = '₽ ';
-        valueSuffix = '';
-    } else {
-        valuePrefix = '₽ ';
-        valueSuffix = '';
-    }
+    let icon = '📊';
+    let title = item.title;
+    let contentHtml = '';
     
-    const channelsHtml = item.channelData.map((ch, idx) => {
-        const percent = total > 0 ? (Math.abs(ch.value) / total) * 100 : 0;
-        let displayValue = ch.value;
-        if (item.type === 'sales') {
-            displayValue = Math.round(ch.value).toLocaleString('ru-RU');
-        } else if (item.type === 'avgcheck') {
-            displayValue = Math.round(ch.value).toLocaleString('ru-RU');
-        } else {
-            displayValue = formatPanelCurrency(ch.value);
-        }
-        
-        let sign = '';
-        let signColor = '';
-        if (item.type === 'nds') {
-            sign = ch.value >= 0 ? ' ↗' : ' ↘';
-            signColor = ch.value >= 0 ? '#f56565' : '#48bb78';
-        }
-        
-        return `
-            <div class="channel-item" style="margin-bottom: 12px; animation: slideInCard 0.2s ease; animation-delay: ${idx * 0.03}s;">
-                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
-                    <span style="font-weight: 500;">${ch.name}</span>
-                    <span>${valuePrefix}${displayValue}${valueSuffix}<span style="color: ${signColor}; font-size: 10px;">${sign}</span> (${percent.toFixed(1)}%)</span>
-                </div>
-                <div style="background: rgba(102,126,234,0.15); height: 6px; border-radius: 3px; overflow: hidden;">
-                    <div style="width: ${percent}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 3px; transition: width 0.5s ease;"></div>
+    // Используем существующие функции для генерации полного контента
+    if (item.type === 'revenue') {
+        icon = '💰';
+        // Генерируем полную разбивку как в блоке "Выручка чистая"
+        const channelData = item.channelData;
+        const total = channelData.reduce((sum, ch) => sum + Math.abs(ch.value), 0);
+        contentHtml = `
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #667eea;">РАСПРЕДЕЛЕНИЕ ПО КАНАЛАМ</div>
+                ${channelData.map(ch => {
+                    const percent = total > 0 ? (Math.abs(ch.value) / total) * 100 : 0;
+                    return `
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="font-weight: 600;">${ch.name}</span>
+                                <span>${formatPanelCurrency(ch.value)} (${percent.toFixed(1)}%)</span>
+                            </div>
+                            <div style="background: rgba(102,126,234,0.15); height: 8px; border-radius: 4px; overflow: hidden;">
+                                <div style="width: ${percent}%; height: 100%; background: linear-gradient(90deg, #48bb78, #667eea); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(102,126,234,0.1);">
+                <div style="font-size: 12px; font-weight: 600;">📊 Детальная аналитика</div>
+                <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">
+                    • Общая сумма: ${formatPanelCurrency(total)}<br>
+                    • Среднее по каналам: ${formatPanelCurrency(total / channelData.length)}<br>
+                    • Лидер: ${channelData[0]?.name || '—'} (${channelData[0] ? channelData[0].value.toFixed(0) + ' ₽' : '—'})
                 </div>
             </div>
         `;
-    }).join('');
-    
-    // Иконка для заголовка
-    let icon = '📊';
-    if (item.type === 'revenue') icon = '💰';
-    else if (item.type === 'sales') icon = '📦';
-    else if (item.type === 'avgcheck') icon = '💳';
-    else if (item.type === 'nds') icon = '💸';
-    else if (item.type === 'profit') icon = '📈';
-    
-    // Форматирование итоговой суммы
-    let totalDisplay = '';
-    if (item.type === 'sales') {
-        totalDisplay = `${Math.round(total).toLocaleString('ru-RU')} шт`;
-    } else if (item.type === 'avgcheck') {
-        totalDisplay = `${Math.round(total / item.channelData.length).toLocaleString('ru-RU')} ₽ (средний)`;
-    } else {
-        totalDisplay = formatPanelCurrency(total);
+    } 
+    else if (item.type === 'sales') {
+        icon = '📦';
+        const channelData = item.channelData;
+        const total = channelData.reduce((sum, ch) => sum + ch.value, 0);
+        contentHtml = `
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #667eea;">РАСПРЕДЕЛЕНИЕ ПО КАНАЛАМ</div>
+                ${channelData.map(ch => {
+                    const percent = total > 0 ? (ch.value / total) * 100 : 0;
+                    return `
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="font-weight: 600;">${ch.name}</span>
+                                <span>${Math.round(ch.value).toLocaleString('ru-RU')} шт (${percent.toFixed(1)}%)</span>
+                            </div>
+                            <div style="background: rgba(102,126,234,0.15); height: 8px; border-radius: 4px; overflow: hidden;">
+                                <div style="width: ${percent}%; height: 100%; background: linear-gradient(90deg, #4299e1, #667eea); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(102,126,234,0.1);">
+                <div style="font-size: 12px; font-weight: 600;">📊 Детальная аналитика</div>
+                <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">
+                    • Всего продаж: ${Math.round(total).toLocaleString('ru-RU')} шт<br>
+                    • Среднее по каналам: ${Math.round(total / channelData.length).toLocaleString('ru-RU')} шт<br>
+                    • Лидер продаж: ${channelData[0]?.name || '—'}
+                </div>
+            </div>
+        `;
+    }
+    else if (item.type === 'avgcheck') {
+        icon = '💳';
+        const channelData = item.channelData;
+        const total = channelData.reduce((sum, ch) => sum + ch.value, 0);
+        const avgTotal = total / channelData.length;
+        contentHtml = `
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #667eea;">СРЕДНИЙ ЧЕК ПО КАНАЛАМ</div>
+                ${channelData.map(ch => {
+                    const percent = (ch.value / avgTotal) * 100;
+                    return `
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="font-weight: 600;">${ch.name}</span>
+                                <span>${formatPanelCurrency(ch.value)} (${percent.toFixed(1)}% от среднего)</span>
+                            </div>
+                            <div style="background: rgba(102,126,234,0.15); height: 8px; border-radius: 4px; overflow: hidden;">
+                                <div style="width: ${Math.min(percent, 100)}%; height: 100%; background: linear-gradient(90deg, #9f7aea, #667eea); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(102,126,234,0.1);">
+                <div style="font-size: 12px; font-weight: 600;">💡 Рекомендации</div>
+                <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">
+                    • Средний чек по всем каналам: ${formatPanelCurrency(avgTotal)}<br>
+                    • Самый высокий чек: ${channelData[0]?.name || '—'} (${formatPanelCurrency(channelData[0]?.value || 0)})<br>
+                    • Потенциал роста: работайте над повышением чека в отстающих каналах
+                </div>
+            </div>
+        `;
+    }
+    else if (item.type === 'nds') {
+        icon = '💸';
+        const channelData = item.channelData;
+        const total = channelData.reduce((sum, ch) => sum + Math.abs(ch.value), 0);
+        contentHtml = `
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #667eea;">НДС ПО КАНАЛАМ</div>
+                ${channelData.map(ch => {
+                    const percent = total > 0 ? (Math.abs(ch.value) / total) * 100 : 0;
+                    const ndsClass = ch.value >= 0 ? 'negative' : 'positive';
+                    const ndsText = ch.value >= 0 ? 'к уплате' : 'к возмещению';
+                    return `
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="font-weight: 600;">${ch.name}</span>
+                                <span class="${ndsClass}">${formatPanelCurrency(Math.abs(ch.value))} ${ndsText} (${percent.toFixed(1)}%)</span>
+                            </div>
+                            <div style="background: rgba(102,126,234,0.15); height: 8px; border-radius: 4px; overflow: hidden;">
+                                <div style="width: ${percent}%; height: 100%; background: ${ch.value >= 0 ? '#f56565' : '#48bb78'}; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(102,126,234,0.1);">
+                <div style="font-size: 12px; font-weight: 600; ${total > 0 ? 'color: #f56565' : 'color: #48bb78'}">
+                    Итого НДС: ${formatPanelCurrency(total)} ${total > 0 ? 'к уплате' : 'к возмещению'}
+                </div>
+                <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">
+                    • НДС к уплате: ${formatPanelCurrency(channelData.filter(ch => ch.value > 0).reduce((s, ch) => s + ch.value, 0))}<br>
+                    • НДС к возмещению: ${formatPanelCurrency(Math.abs(channelData.filter(ch => ch.value < 0).reduce((s, ch) => s + ch.value, 0)))}
+                </div>
+            </div>
+        `;
     }
     
     return `
         <div class="breakdown-card ${pinnedClass}" data-id="${item.id}">
-            <div class="card-header">
+            <div class="card-header" style="cursor: move;">
                 <div class="card-title">
                     <span>${icon}</span>
-                    <span>${item.title}</span>
+                    <span style="font-weight: 600;">${title}</span>
                 </div>
                 <div class="card-actions">
-                    <button class="pin-btn" onclick="togglePinBreakdownItem(${item.id})" title="${item.pinned ? 'Открепить' : 'Закрепить'}">
+                    <button class="pin-btn" onclick="togglePinBreakdownItem(${item.id})" title="${item.pinned ? 'Открепить' : 'Закрепить'}" style="background: none; border: none; cursor: pointer; font-size: 16px;">
                         ${item.pinned ? '📌' : '📍'}
                     </button>
-                    <button class="close-btn" onclick="removeBreakdownItem(${item.id})" title="Удалить">✕</button>
+                    <button class="close-btn" onclick="removeBreakdownItem(${item.id})" title="Удалить" style="background: none; border: none; cursor: pointer; font-size: 16px; color: #f56565;">✕</button>
                 </div>
             </div>
-            <div class="card-content">
-                ${channelsHtml}
+            <div class="card-content" style="padding: 16px; max-height: 400px; overflow-y: auto;">
+                ${contentHtml}
             </div>
-            <div class="card-footer">
-                Итого: ${totalDisplay} • ${new Date(item.timestamp).toLocaleTimeString()}
+            <div class="card-footer" style="padding: 8px 16px; border-top: 1px solid rgba(102,126,234,0.1); font-size: 10px; color: rgba(102,126,234,0.5); display: flex; justify-content: space-between;">
+                <span>📅 ${new Date(item.timestamp).toLocaleString()}</span>
+                <span>${item.pinned ? '📌 Закреплено' : ''}</span>
             </div>
         </div>
     `;
