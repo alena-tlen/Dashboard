@@ -841,13 +841,7 @@ body.dark .article-card:hover {
 }
 
 .revenue-chart-wrapper canvas {
-    display: block;
-    width: 100%;
-    height: 100px;
-    opacity: 0.85;
-    transition: opacity 0.3s ease;
-    margin: 0 !important;
-    padding: 0 !important;
+    max-height: 80px !important;
 }
 
 .revenue-chart-wrapper:hover canvas {
@@ -950,7 +944,6 @@ body.dark .sub-item {
     min-height: auto !important;
     max-height: none !important;
     overflow: visible !important;
-    align-self: start !important; /* Важно: выравнивание по верхнему краю */
 }
 
 /* Контейнеры с каналами получают фиксированную максимальную высоту и прокрутку */
@@ -7255,107 +7248,12 @@ setTimeout(() => {
     renderCashBlock();
 }, 150);
 
-// ===== ПРИВЯЗКА ОБРАБОТЧИКОВ ДЛЯ КНОПОК В КАРУСЕЛИ =====
-setTimeout(() => {
-    // Кнопка "Показать по каналам" для Выручки чистой
-    const netRevenueBtn = document.querySelector('.toggle-breakdown-btn');
-    const netRevenueContainer = document.querySelector('.netrevenue-channels-container');
-    if (netRevenueBtn && netRevenueContainer) {
-        netRevenueBtn.onclick = () => {
-            if (netRevenueContainer.style.maxHeight && netRevenueContainer.style.maxHeight !== '0px') {
-                netRevenueContainer.style.maxHeight = '0';
-                netRevenueBtn.innerHTML = '<span>▶</span> Показать по каналам';
-            } else {
-                netRevenueContainer.style.maxHeight = netRevenueContainer.scrollHeight + 'px';
-                netRevenueBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-            }
-        };
-    }
-    
-    // Кнопка "Показать по каналам" для Продаж
-    const salesBtn = document.querySelector('.toggle-sales-breakdown-btn');
-    const salesContainer = document.querySelector('.sales-channels-container');
-    if (salesBtn && salesContainer) {
-        salesBtn.onclick = () => {
-            if (salesContainer.style.maxHeight && salesContainer.style.maxHeight !== '0px') {
-                salesContainer.style.maxHeight = '0';
-                salesBtn.innerHTML = '<span>▶</span> Показать по каналам';
-            } else {
-                salesContainer.style.maxHeight = salesContainer.scrollHeight + 'px';
-                salesBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-            }
-        };
-    }
-    
-    // Кнопка "Показать по каналам" для Среднего чека
-    const avgCheckBtn = document.querySelector('.toggle-avgcheck-breakdown-btn');
-    const avgCheckContainer = document.querySelector('.avgcheck-channels-container');
-    if (avgCheckBtn && avgCheckContainer) {
-        avgCheckBtn.onclick = () => {
-            if (avgCheckContainer.style.maxHeight && avgCheckContainer.style.maxHeight !== '0px') {
-                avgCheckContainer.style.maxHeight = '0';
-                avgCheckBtn.innerHTML = '<span>▶</span> Показать по каналам';
-            } else {
-                avgCheckContainer.style.maxHeight = avgCheckContainer.scrollHeight + 'px';
-                avgCheckBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
-            }
-        };
-    }
-}, 200);
-
-// ===== ПРИВЯЗКА ОБРАБОТЧИКОВ ДЛЯ КНОПОК В КАРУСЕЛИ =====
-setTimeout(() => {
-    // Кнопка "Показать по каналам" для Выручки чистой
-    const netRevenueBtns = document.querySelectorAll('.toggle-breakdown-btn');
-    netRevenueBtns.forEach(btn => {
-        const container = btn.closest('.carousel-slide').querySelector('.netrevenue-channels-container');
-        if (container) {
-            btn.onclick = () => {
-                if (container.style.maxHeight && container.style.maxHeight !== '0px') {
-                    container.style.maxHeight = '0';
-                    btn.innerHTML = '<span>▶</span> Показать по каналам';
-                } else {
-                    container.style.maxHeight = container.scrollHeight + 'px';
-                    btn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                }
-            };
-        }
-    });
-    
-    // Кнопка "Показать по каналам" для Продаж
-    const salesBtns = document.querySelectorAll('.toggle-sales-breakdown-btn');
-    salesBtns.forEach(btn => {
-        const container = btn.closest('.carousel-slide').querySelector('.sales-channels-container');
-        if (container) {
-            btn.onclick = () => {
-                if (container.style.maxHeight && container.style.maxHeight !== '0px') {
-                    container.style.maxHeight = '0';
-                    btn.innerHTML = '<span>▶</span> Показать по каналам';
-                } else {
-                    container.style.maxHeight = container.scrollHeight + 'px';
-                    btn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                }
-            };
-        }
-    });
-    
-    // Кнопка "Показать по каналам" для Среднего чека
-    const avgCheckBtns = document.querySelectorAll('.toggle-avgcheck-breakdown-btn');
-    avgCheckBtns.forEach(btn => {
-        const container = btn.closest('.carousel-slide').querySelector('.avgcheck-channels-container');
-        if (container) {
-            btn.onclick = () => {
-                if (container.style.maxHeight && container.style.maxHeight !== '0px') {
-                    container.style.maxHeight = '0';
-                    btn.innerHTML = '<span>▶</span> Показать по каналам';
-                } else {
-                    container.style.maxHeight = container.scrollHeight + 'px';
-                    btn.innerHTML = '<span>▼</span> Скрыть по каналам';
-                }
-            };
-        }
-    });
-}, 200);
+// ИНИЦИАЛИЗАЦИЯ КАРУСЕЛИ И ГРАФИКОВ - ВАЖНО: ждём 500ms чтобы DOM обновился
+        setTimeout(() => {
+            initCarousel();
+            initCarouselButtons();
+            initAllCharts();
+        }, 500);
 
         } finally {
             isRendering = false;
@@ -7365,6 +7263,7 @@ setTimeout(() => {
     }
     
 
+// ========== КАРУСЕЛЬ ==========
 // ========== КАРУСЕЛЬ ==========
 let currentSlide = 0;
 let carouselInterval = null;
@@ -7472,13 +7371,15 @@ function initCarouselButtons() {
         const slide = btn.closest('.carousel-slide');
         const container = slide?.querySelector('.netrevenue-channels-container');
         if (container) {
-            btn.onclick = () => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode?.replaceChild(newBtn, btn);
+            newBtn.onclick = () => {
                 if (container.style.maxHeight && container.style.maxHeight !== '0px') {
                     container.style.maxHeight = '0';
-                    btn.innerHTML = '<span>▶</span> Показать по каналам';
+                    newBtn.innerHTML = '<span>▶</span> Показать по каналам';
                 } else {
                     container.style.maxHeight = container.scrollHeight + 'px';
-                    btn.innerHTML = '<span>▼</span> Скрыть по каналам';
+                    newBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
                 }
             };
         }
@@ -7489,13 +7390,15 @@ function initCarouselButtons() {
         const slide = btn.closest('.carousel-slide');
         const container = slide?.querySelector('.sales-channels-container');
         if (container) {
-            btn.onclick = () => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode?.replaceChild(newBtn, btn);
+            newBtn.onclick = () => {
                 if (container.style.maxHeight && container.style.maxHeight !== '0px') {
                     container.style.maxHeight = '0';
-                    btn.innerHTML = '<span>▶</span> Показать по каналам';
+                    newBtn.innerHTML = '<span>▶</span> Показать по каналам';
                 } else {
                     container.style.maxHeight = container.scrollHeight + 'px';
-                    btn.innerHTML = '<span>▼</span> Скрыть по каналам';
+                    newBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
                 }
             };
         }
@@ -7506,13 +7409,15 @@ function initCarouselButtons() {
         const slide = btn.closest('.carousel-slide');
         const container = slide?.querySelector('.avgcheck-channels-container');
         if (container) {
-            btn.onclick = () => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode?.replaceChild(newBtn, btn);
+            newBtn.onclick = () => {
                 if (container.style.maxHeight && container.style.maxHeight !== '0px') {
                     container.style.maxHeight = '0';
-                    btn.innerHTML = '<span>▶</span> Показать по каналам';
+                    newBtn.innerHTML = '<span>▶</span> Показать по каналам';
                 } else {
                     container.style.maxHeight = container.scrollHeight + 'px';
-                    btn.innerHTML = '<span>▼</span> Скрыть по каналам';
+                    newBtn.innerHTML = '<span>▼</span> Скрыть по каналам';
                 }
             };
         }
@@ -7521,64 +7426,79 @@ function initCarouselButtons() {
 
 // ========== ИНИЦИАЛИЗАЦИЯ ВСЕХ ГРАФИКОВ ==========
 function initAllCharts() {
-    // График чистой выручки
-    const netRevenueCanvas = document.getElementById('netRevenueMiniChart');
-    if (netRevenueCanvas && typeof renderNetRevenueMiniChart === 'function') {
-        renderNetRevenueMiniChart();
-    }
-    
-    // График продаж
-    const salesCanvas = document.getElementById('salesChart');
-    if (salesCanvas && typeof renderSalesChart === 'function') {
-        const monthlySales = {};
-        monthsOrder.forEach(month => { monthlySales[month] = 0; });
-        currentData.forEach(d => {
-            if (d.месяц && monthsOrder.includes(d.месяц)) {
-                const subCategory = d.подканал?.toLowerCase() || '';
-                if (subCategory.includes('продажи') && (subCategory.includes('шт') || subCategory.includes('штук'))) {
-                    monthlySales[d.месяц] += Math.abs(d.сумма || 0);
+    setTimeout(() => {
+        // График чистой выручки
+        const netRevenueCanvas = document.getElementById('netRevenueMiniChart');
+        if (netRevenueCanvas && typeof renderNetRevenueMiniChart === 'function') {
+            renderNetRevenueMiniChart();
+        }
+        
+        // График продаж
+        const salesCanvas = document.getElementById('salesChart');
+        if (salesCanvas && typeof renderSalesChart === 'function') {
+            const monthlySales = {};
+            monthsOrder.forEach(month => { monthlySales[month] = 0; });
+            currentData.forEach(d => {
+                if (d.месяц && monthsOrder.includes(d.месяц)) {
+                    const subCategory = d.подканал?.toLowerCase() || '';
+                    if (subCategory.includes('продажи') && (subCategory.includes('шт') || subCategory.includes('штук'))) {
+                        monthlySales[d.месяц] += Math.abs(d.сумма || 0);
+                    }
                 }
-            }
-        });
-        const salesLabels = monthsOrder.filter(m => monthlySales[m] > 0);
-        const salesData = salesLabels.map(m => monthlySales[m]);
-        renderSalesChart(salesLabels, salesData);
-    }
-    
-    // График среднего чека
-    const avgCheckCanvas = document.getElementById('avgCheckMiniChart');
-    if (avgCheckCanvas && typeof renderAvgCheckMiniChart === 'function') {
-        renderAvgCheckMiniChart();
-    }
-    
-    // График НДС
-    const ndsCanvas = document.getElementById('ndsToRevenueChart');
-    if (ndsCanvas) {
-        const monthlyNds = {};
-        monthsOrder.forEach(month => { monthlyNds[month] = 0; });
-        currentData.forEach(d => {
-            if (d.месяц && monthsOrder.includes(d.месяц)) {
-                if (d.статья === 'НДС' && d.подканал === 'НДС исходящий') {
-                    monthlyNds[d.месяц] += d.сумма;
-                } else if (d.статья === 'НДС' && d.подканал === 'НДС входящий') {
-                    monthlyNds[d.месяц] -= d.сумма;
+            });
+            const salesLabels = monthsOrder.filter(m => monthlySales[m] > 0);
+            const salesData = salesLabels.map(m => monthlySales[m]);
+            renderSalesChart(salesLabels, salesData);
+        }
+        
+        // График среднего чека
+        const avgCheckCanvas = document.getElementById('avgCheckMiniChart');
+        if (avgCheckCanvas && typeof renderAvgCheckMiniChart === 'function') {
+            renderAvgCheckMiniChart();
+        }
+        
+        // График прибыли
+        const profitCanvas = document.getElementById('profitMiniChart');
+        if (profitCanvas && typeof renderProfitMiniChart === 'function') {
+            renderProfitMiniChart();
+        }
+        
+        // График НДС
+        const ndsCanvas = document.getElementById('ndsToRevenueChart');
+        if (ndsCanvas) {
+            const monthlyNds = {};
+            monthsOrder.forEach(month => { monthlyNds[month] = 0; });
+            currentData.forEach(d => {
+                if (d.месяц && monthsOrder.includes(d.месяц)) {
+                    if (d.статья === 'НДС' && d.подканал === 'НДС исходящий') {
+                        monthlyNds[d.месяц] += d.сумма;
+                    } else if (d.статья === 'НДС' && d.подканал === 'НДС входящий') {
+                        monthlyNds[d.месяц] -= d.сумма;
+                    }
                 }
+            });
+            const monthlyRevenueData = {};
+            monthsOrder.forEach(month => { monthlyRevenueData[month] = 0; });
+            currentData.forEach(d => {
+                if (d.месяц && monthsOrder.includes(d.месяц) && d.тип === 'Доход') {
+                    monthlyRevenueData[d.месяц] += d.сумма;
+                }
+            });
+            const ndsLabels = monthsOrder.filter(m => monthlyRevenueData[m] > 0);
+            const ndsValues = ndsLabels.map(m => monthlyNds[m] || 0);
+            const revenueForNds = ndsLabels.map(m => monthlyRevenueData[m]);
+            renderNdsToRevenueChart(ndsLabels, ndsValues, revenueForNds);
+            if (typeof renderNdsStatsCard === 'function') {
+                const f = calculateFinancials(currentData);
+                renderNdsStatsCard(f.totalNDS, f.totalNDS, f.totalRevenue);
             }
-        });
-        const monthlyRevenueData = {};
-        monthsOrder.forEach(month => { monthlyRevenueData[month] = 0; });
-        currentData.forEach(d => {
-            if (d.месяц && monthsOrder.includes(d.месяц) && d.тип === 'Доход') {
-                monthlyRevenueData[d.месяц] += d.сумма;
-            }
-        });
-        const ndsLabels = monthsOrder.filter(m => monthlyRevenueData[m] > 0);
-        const ndsValues = ndsLabels.map(m => monthlyNds[m] || 0);
-        const revenueForNds = ndsLabels.map(m => monthlyRevenueData[m]);
-        renderNdsToRevenueChart(ndsLabels, ndsValues, revenueForNds);
-        renderNdsStatsCard(f.totalNDS, f.totalNDS, f.totalRevenue);
-    }
+        }
+    }, 500);
 }
+
+
+
+
 
     function renderChannelPage(channelKey) {
         const channel = channelMapping[channelKey];
