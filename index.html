@@ -7674,7 +7674,6 @@ function renderCarouselCharts() {
     if (netRevenueLabels.length && netRevenueData.length) {
         const canvas = document.getElementById('carouselNetRevenueChart');
         if (canvas) {
-            // Уничтожаем старый график если есть
             if (window.carouselNetChart) window.carouselNetChart.destroy();
             
             const ctx = canvas.getContext('2d');
@@ -7703,65 +7702,65 @@ function renderCarouselCharts() {
                 }
             });
         }
+    }
     
     // ========== ГРАФИК ДЛЯ ПРОДАЖ ==========
-const monthlySales = {};
-currentData.forEach(d => {
-    if (d.месяц && d.год) {
-        // Ищем в подканале
-        const subCategory = d.подканал?.toLowerCase() || '';
-        const article = d.статья?.toLowerCase() || '';
-        if ((subCategory.includes('продажи') && (subCategory.includes('шт') || subCategory.includes('штук'))) ||
-            (article.includes('продажи') && (article.includes('шт') || article.includes('штук')))) {
-            const key = `${d.год}-${d.месяц}`;
-            monthlySales[key] = (monthlySales[key] || 0) + Math.abs(d.сумма || 0);
+    const monthlySales = {};
+    currentData.forEach(d => {
+        if (d.месяц && d.год) {
+            const subCategory = d.подканал?.toLowerCase() || '';
+            const article = d.статья?.toLowerCase() || '';
+            if ((subCategory.includes('продажи') && (subCategory.includes('шт') || subCategory.includes('штук'))) ||
+                (article.includes('продажи') && (article.includes('шт') || article.includes('штук')))) {
+                const key = `${d.год}-${d.месяц}`;
+                monthlySales[key] = (monthlySales[key] || 0) + Math.abs(d.сумма || 0);
+            }
+        }
+    });
+    
+    const salesLabels = Object.keys(monthlySales).sort();
+    const salesData = salesLabels.map(key => monthlySales[key]);
+    
+    if (salesLabels.length && salesData.length) {
+        const canvas = document.getElementById('carouselSalesChart');
+        if (canvas) {
+            if (window.carouselSalesChart) window.carouselSalesChart.destroy();
+            
+            const ctx = canvas.getContext('2d');
+            const maxSales = Math.max(...salesData);
+            const minSales = Math.min(...salesData);
+            
+            const gradients = salesData.map(value => {
+                if (value === maxSales && maxSales > 0) {
+                    return 'linear-gradient(180deg, #6ee7b7, #48bb78)';
+                } else if (value === minSales && salesData.length > 1 && minSales !== maxSales) {
+                    return 'linear-gradient(180deg, #fc8181, #f56565)';
+                } else {
+                    return 'linear-gradient(180deg, #93c5fd, #60a5fa)';
+                }
+            });
+            
+            window.carouselSalesChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: salesLabels,
+                    datasets: [{
+                        data: salesData,
+                        backgroundColor: gradients,
+                        borderRadius: 6,
+                        barPercentage: 0.7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: { x: { display: false }, y: { display: false } }
+                }
+            });
         }
     }
-});
-
-const salesLabels = Object.keys(monthlySales).sort();
-const salesData = salesLabels.map(key => monthlySales[key]);
-
-if (salesLabels.length && salesData.length) {
-    const canvas = document.getElementById('carouselSalesChart');
-    if (canvas) {
-        if (window.carouselSalesChart) window.carouselSalesChart.destroy();
-        
-        const ctx = canvas.getContext('2d');
-        const maxSales = Math.max(...salesData);
-        const minSales = Math.min(...salesData);
-        
-        const gradients = salesData.map(value => {
-            if (value === maxSales && maxSales > 0) {
-                return 'linear-gradient(180deg, #6ee7b7, #48bb78)';
-            } else if (value === minSales && salesData.length > 1 && minSales !== maxSales) {
-                return 'linear-gradient(180deg, #fc8181, #f56565)';
-            } else {
-                return 'linear-gradient(180deg, #93c5fd, #60a5fa)';
-            }
-        });
-        
-        window.carouselSalesChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: salesLabels,
-                datasets: [{
-                    data: salesData,
-                    backgroundColor: gradients,
-                    borderRadius: 6,
-                    barPercentage: 0.7
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                scales: { x: { display: false }, y: { display: false } }
-            }
-        });
-    }
 }
-
 initCarousel();
 
 // Принудительная отрисовка графиков в блоках доходов и расходов
