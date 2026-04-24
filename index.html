@@ -7753,10 +7753,12 @@ function renderCarouselCharts() {
     if (netRevenueLabels.length && netRevenueData.length) {
         const canvas = document.getElementById('carouselNetRevenueChart');
         if (canvas) {
-            if (window.carouselNetChart) window.carouselNetChart.destroy();
+            // ✅ ИСПРАВЛЕНО: проверяем тип перед вызовом destroy
+            if (window.carouselNetChart && typeof window.carouselNetChart.destroy === 'function') {
+                window.carouselNetChart.destroy();
+            }
             
             const ctx = canvas.getContext('2d');
-            const isDarkMode = document.body.classList.contains('dark');
             window.carouselNetChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -7803,29 +7805,19 @@ function renderCarouselCharts() {
     if (salesLabels.length && salesData.length) {
         const canvas = document.getElementById('carouselSalesChart');
         if (canvas) {
-            if (window.carouselSalesChart) window.carouselSalesChart.destroy();
+            // ✅ ИСПРАВЛЕНО: проверяем тип перед вызовом destroy
+            if (window.carouselSalesChart && typeof window.carouselSalesChart.destroy === 'function') {
+                window.carouselSalesChart.destroy();
+            }
             
             const ctx = canvas.getContext('2d');
-            const maxSales = Math.max(...salesData);
-            const minSales = Math.min(...salesData);
-            
-            const gradients = salesData.map(value => {
-                if (value === maxSales && maxSales > 0) {
-                    return 'linear-gradient(180deg, #6ee7b7, #48bb78)';
-                } else if (value === minSales && salesData.length > 1 && minSales !== maxSales) {
-                    return 'linear-gradient(180deg, #fc8181, #f56565)';
-                } else {
-                    return 'linear-gradient(180deg, #93c5fd, #60a5fa)';
-                }
-            });
-            
             window.carouselSalesChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: salesLabels,
                     datasets: [{
                         data: salesData,
-                        backgroundColor: gradients,
+                        backgroundColor: '#60a5fa',
                         borderRadius: 6,
                         barPercentage: 0.7
                     }]
