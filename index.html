@@ -5710,12 +5710,12 @@ function generateCarouselItems() {
             </div>
         </div>
         <div class="carousel-item" style="display: none;">
-            <div style="text-align: center;">
-                <div style="font-size: 14px; color: #667eea; margin-bottom: 12px;">📦 Продажи (шт)</div>
-                <div class="metric-value" style="font-size: 32px;">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
-                <canvas id="carouselSalesChart" style="height: 80px; width: 100%; margin-top: 16px;"></canvas>
-            </div>
-        </div>
+    <div style="text-align: center;">
+        <div style="font-size: 14px; color: #667eea; margin-bottom: 12px;">📦 Продажи (шт)</div>
+        <div class="metric-value" style="font-size: 32px;">${new Intl.NumberFormat('ru-RU').format(totalSalesQuantity)}</div>
+        <canvas id="carouselSalesChart" style="height: 80px; width: 100%; margin-top: 16px;"></canvas>
+    </div>
+</div>
         <div class="carousel-item" style="display: none;">
             <div style="text-align: center;">
                 <div style="font-size: 14px; color: #667eea; margin-bottom: 12px;">💰 Средний чек</div>
@@ -6476,22 +6476,16 @@ console.log('costData:', costData);
         </div>
         
         <!-- Правая колонка - Карусель -->
-        <div class="metric-card" style="display: flex; flex-direction: column; padding: 20px; height: 100%;">
-            <div class="metric-title" style="margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 18px;">📊</span>
-                    <span>КЛЮЧЕВЫЕ МЕТРИКИ</span>
-                </div>
-            </div>
-            <div id="carouselContainer" style="flex: 1; position: relative;">
-                ${generateCarouselItems()}
-            </div>
-            <div class="carousel-dots" id="carouselDots" style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;"></div>
-            <div class="carousel-nav" style="display: flex; justify-content: center; gap: 12px; margin-top: 12px;">
-                <button class="carousel-prev" style="background: rgba(102,126,234,0.15); border: none; border-radius: 20px; padding: 6px 16px; cursor: pointer;">◀ Пред.</button>
-                <button class="carousel-next" style="background: rgba(102,126,234,0.15); border: none; border-radius: 20px; padding: 6px 16px; cursor: pointer;">След. ▶</button>
-            </div>
-        </div>
+<div class="metric-card" style="display: flex; flex-direction: column; padding: 20px; height: 100%;">
+    <div id="carouselContainer" style="flex: 1; position: relative;">
+        ${generateCarouselItems()}
+    </div>
+    <div class="carousel-dots" id="carouselDots" style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;"></div>
+    <div class="carousel-nav" style="display: flex; justify-content: center; gap: 12px; margin-top: 12px;">
+        <button class="carousel-prev" style="background: rgba(102,126,234,0.15); border: none; border-radius: 20px; padding: 6px 16px; cursor: pointer;">◀ Пред.</button>
+        <button class="carousel-next" style="background: rgba(102,126,234,0.15); border: none; border-radius: 20px; padding: 6px 16px; cursor: pointer;">След. ▶</button>
+    </div>
+</div>
     </div>
     
     <!-- РЯД 3: РАСХОДЫ ПО КАНАЛАМ (полная ширина) -->
