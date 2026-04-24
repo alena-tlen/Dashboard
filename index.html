@@ -8373,25 +8373,88 @@ function parseABCXYZExcel(file) {
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
                 
+                console.log('Всего строк в файле:', jsonData.length);
+                
                 if (!jsonData || jsonData.length < 3) {
-                    reject(new Error('Неверный формат файла'));
+                    reject(new Error('Неверный формат файла: недостаточно строк'));
                     return;
                 }
                 
-                // Определяем заголовки (даты)
-                const headers = jsonData[1] || [];
-                const dates = [];
-                for (let i = 2; i < headers.length; i += 2) {
-                    if (headers[i] && typeof headers[i] === 'string' && headers[i].match(/\d{2}\.\d{2}\.\d{2}/)) {
-                        dates.push({ colIndex: i, date: headers[i], amountCol: i + 1 });
+                // Находим строку с заголовками (ищем строку, где есть "Количество" и "Сумма")
+                let headerRowIndex = -1;
+                let dataStartRow = -1;
+                
+                for (let i = 0; i < Math.min(jsonData.length, 10); i++) {
+                    const row = jsonData[i];
+                    if (!row) continue;
+                    const rowStr = JSON.stringify(row).toLowerCase();
+                    if (rowStr.includes('количество') && rowStr.includes('сумма')) {
+                        headerRowIndex = i;
+                        dataStartRow = i + 1;
+                        console.log('Найдена строка заголовков на индексе:', i);
+                        break;
                     }
+                }
+                
+                if (headerRowIndex === -1) {
+                    reject(new Error('Не найдена строка с заголовками "Количество" и "Сумма"'));
+                    return;
+                }
+                
+                const headers = jsonData[headerRowIndex];
+                console.log('Заголовки:', headers);
+                
+                // Собираем даты (столбцы где есть "Количество" и "Сумма")
+                const dates = [];
+                for (let i = 0; i < headers.length; i++) {
+                    const cell = headers[i];
+                    if (cell && typeof cell === 'string') {
+                        const lowerCell = cell.toLowerCase();
+                        // Если это Количество или Сумма - пропускаем, ищем даты в предыдущих/следующих?
+                        if (lowerCell.includes('количество')) {
+                            // Ищем дату в предыдущей ячейке или в этой?
+                            if (i > 0 && headers[i-1] && typeof headers[i-1] === 'string' && headers[i-1].match(/\d{2}\.\d{2}\.\d{2}/)) {
+                                dates.push({ 
+                                    colIndex: i - 1,  // индекс столбца с датой
+                                    amountCol: i,     // индекс столбца с суммой
+                                    date: headers[i-1],
+                                    qtyCol: i
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // Альтернативный способ: ищем даты напрямую
+                if (dates.length === 0) {
+                    for (let i = 0; i < headers.length; i++) {
+                        const cell = headers[i];
+                        if (cell && typeof cell === 'string' && cell.match(/\d{2}\.\d{2}\.\d{2}/)) {
+                            // Нашли ячейку с датой
+                            if (i + 1 < headers.length) {
+                                dates.push({ 
+                                    colIndex: i,
+                                    amountCol: i + 1,
+                                    date: cell,
+                                    qtyCol: i
+                                });
+                                console.log('Найдена дата:', cell, 'на индексе', i);
+                            }
+                        }
+                    }
+                }
+                
+                console.log('Найдено дат:', dates.length);
+                
+                if (dates.length === 0) {
+                    reject(new Error('Не найдены столбцы с датами в файле'));
+                    return;
                 }
                 
                 // Парсим данные по товарам
                 const sales = [];
-                const productMap = new Map();
                 
-                for (let rowIdx = 2; rowIdx < jsonData.length; rowIdx++) {
+                for (let rowIdx = dataStartRow; rowIdx < jsonData.length; rowIdx++) {
                     const row = jsonData[rowIdx];
                     if (!row || row.length < 2) continue;
                     
@@ -8399,13 +8462,25 @@ function parseABCXYZExcel(file) {
                     const article = row[1] ? String(row[1]).trim() : '';
                     
                     if (!productName && !article) continue;
-                    if (productName === 'Итого' || productName === 'ИТОГО') break;
+                    if (productName === 'Итого' || productName === 'ИТОГО' || productName === 'Итого:' || productName === 'ИТОГО:') break;
                     
-                    const key = article || productName;
+                    const key = (article && article !== '') ? article : productName;
                     
                     for (const d of dates) {
-                        const qty = parseFloat(row[d.colIndex]) || 0;
-                        const amount = parseFloat(row[d.amountCol]) || 0;
+                        let qty = 0;
+                        let amount = 0;
+                        
+                        if (d.qtyCol !== undefined && row[d.qtyCol] !== undefined) {
+                            qty = parseFloat(row[d.qtyCol]) || 0;
+                        }
+                        if (d.amountCol !== undefined && row[d.amountCol] !== undefined) {
+                            amount = parseFloat(row[d.amountCol]) || 0;
+                        }
+                        
+                        // Также пробуем взять количество из столбца с датой, если он есть
+                        if (qty === 0 && d.colIndex !== undefined && row[d.colIndex] !== undefined) {
+                            qty = parseFloat(row[d.colIndex]) || 0;
+                        }
                         
                         if (qty !== 0 && amount !== 0) {
                             sales.push({
@@ -8420,9 +8495,15 @@ function parseABCXYZExcel(file) {
                     }
                 }
                 
-                if (sales.length === 0) reject(new Error('Нет данных о продажах'));
-                else resolve(sales);
+                console.log('Всего продаж найдено:', sales.length);
+                
+                if (sales.length === 0) {
+                    reject(new Error('Нет данных о продажах. Проверьте формат файла.'));
+                } else {
+                    resolve(sales);
+                }
             } catch (error) {
+                console.error('Ошибка парсинга:', error);
                 reject(error);
             }
         };
@@ -9135,4 +9216,3 @@ if (abcxyzUploadArea) {
 
 </body>
 </html>
-
