@@ -6430,8 +6430,13 @@ console.log('costData:', costData);
             const expensesHtml = createCollapsibleBlock('Расходы по каналам', '📉', f.totalExpenses, expensesChange, expenseChannelsList, true, monthlyDataMap, monthlyLabels, monthlyExpensesArray, f.totalRevenue);
             
             document.getElementById('dashboardMetrics').innerHTML = topPanelHtml + `
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+    <!-- РЯД 2: ДОХОДЫ ПО КАНАЛАМ -->
+    <div style="margin-bottom: 24px;">
         ${revenueHtml}
+    </div>
+    
+    <!-- РЯД 3: РАСХОДЫ ПО КАНАЛАМ -->
+    <div style="margin-bottom: 24px;">
         ${expensesHtml}
     </div>
     <div class="metrics-grid" style="margin-top: 24px;">
