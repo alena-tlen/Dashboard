@@ -9339,75 +9339,49 @@ if (abcxyzUploadArea) {
 let oddsDateRange = { startDate: null, endDate: null };
 let oddsOperations = [];
 
-// Функция для парсинга даты - универсальная версия
+
+// Функция для парсинга даты из строки (год, месяц, число)
 function parseOperationDate(row) {
-    // Пробуем найти день в разных полях
-    let year = row.год;
-    let month = row.месяц;
-    let day = row.число;
+    const year = row.год;
+    const month = row.месяц;
+    // ВАЖНО: день может быть в поле 'число' ИЛИ 'день' ИЛИ 'day'
+    let day = row.число || row.день || row.День || row.day;
     
-    // Если число не найдено, пробуем другие названия
-    if (!day) {
-        day = row.день || row.День || row.число || row.Число || row.day;
-    }
+    console.log('parseOperationDate вход:', { year, month, day, rowKeys: Object.keys(row) });
     
     if (!year || !month) {
-        // Пробуем получить дату из других полей
-        if (row.дата || row.Дата) {
-            const dateStr = row.дата || row.Дата;
-            // Пробуем распарсить дату в формате DD.MM.YYYY или YYYY-MM-DD
-            const parts = dateStr.toString().match(/(\d{1,4})[.\/-](\d{1,2})[.\/-](\d{1,4})/);
-            if (parts) {
-                let d, m, y;
-                if (parts[1].length === 4) {
-                    y = parts[1];
-                    m = parts[2];
-                    d = parts[3];
-                } else {
-                    d = parts[1];
-                    m = parts[2];
-                    y = parts[3];
-                }
-                year = y;
-                month = monthsOrder[parseInt(m) - 1];
-                day = d;
-            }
-        }
+        console.log('Нет года или месяца');
+        return null;
     }
     
-    if (!year || !month) return null;
+    if (!day || day === '') {
+        console.log('Нет дня, использую 1-е число месяца');
+        day = '1';
+    }
     
-    // Нормализуем месяц
-    let monthLower = month.toLowerCase().trim();
-    let monthIndex = monthsOrder.indexOf(monthLower);
-    
-    // Если месяц не найден по русскому названию, пробуем как число
+    const monthIndex = monthsOrder.indexOf(month.toLowerCase());
     if (monthIndex === -1) {
-        const monthNum = parseInt(month);
-        if (!isNaN(monthNum) && monthNum >= 1 && monthNum <= 12) {
-            monthIndex = monthNum - 1;
-            monthLower = monthsOrder[monthIndex];
-        }
+        console.log('Месяц не найден:', month);
+        return null;
     }
     
-    if (monthIndex === -1) return null;
-    
-    // Нормализуем день
-    let dayNum = 1;
-    if (day) {
-        dayNum = parseInt(day);
-        if (isNaN(dayNum)) {
-            // Пробуем извлечь число из строки
-            const dayMatch = String(day).match(/\d+/);
-            if (dayMatch) dayNum = parseInt(dayMatch[0]);
-            else dayNum = 1;
-        }
+    const dayNum = parseInt(day);
+    if (isNaN(dayNum)) {
+        console.log('День не число:', day);
+        return null;
     }
     
-    // Создаем дату
-    const date = new Date(parseInt(year), monthIndex, dayNum);
+    const yearNum = parseInt(year);
+    if (isNaN(yearNum)) {
+        console.log('Год не число:', year);
+        return null;
+    }
+    
+    const date = new Date(yearNum, monthIndex, dayNum);
+    console.log('Создана дата:', date);
+    
     if (isNaN(date.getTime())) {
-        console.warn('Не удалось создать дату для:', { year, month: monthLower, day: dayNum });
+        console.log('Невалидная дата');
         return null;
     }
     
@@ -9417,6 +9391,29 @@ function parseOperationDate(row) {
 // Сбор всех операций по счетам
 function collectOddsOperations() {
     const operations = [];
+
+    console.log('=== collectOddsOperations: НАЧАЛО ===');
+    console.log('Всего записей в currentData:', currentData.length);
+    
+    // Выводим пример первой записи, чтобы увидеть её структуру
+    if (currentData.length > 0) {
+        console.log('Пример первой записи:', currentData[0]);
+        console.log('Ключи записи:', Object.keys(currentData[0]));
+    }
+    
+    // Считаем записи с банковскими операциями
+    const bankRows = currentData.filter(row => {
+        const article = row.статья || '';
+        return article === 'Поступление на расчетный счет' || article === 'Списание с расчетного счета';
+    });
+    console.log('Банковских операций в currentData:', bankRows.length);
+    
+    if (bankRows.length > 0) {
+        console.log('Пример банковской операции:', bankRows[0]);
+        console.log('  год:', bankRows[0].год);
+        console.log('  месяц:', bankRows[0].месяц);
+        console.log('  число:', bankRows[0].число);
+    }
     
     console.log('collectOddsOperations: Начинаем сбор, всего записей:', currentData.length);
     
