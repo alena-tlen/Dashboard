@@ -9430,6 +9430,10 @@ function collectOddsOperations() {
         else if (amount < 0) type = 'expense';
         
         if (type && date) {
+            // ДОБАВЬТЕ ЛОГИРОВАНИЕ ДЛЯ ПЕРВОГО ЧИСЛА
+            if (date.getDate() === 1 && date.getMonth() === 0 && date.getFullYear() === 2026) {
+                console.log(`Операция за 1 января: ${article}, сумма: ${amount}, тип: ${type}, дата: ${date}`);
+            }
             operations.push({
                 date: date, amount: Math.abs(amount), type: type,
                 article: article, category: row.канал || row.подканал || article,
@@ -9439,6 +9443,7 @@ function collectOddsOperations() {
         }
     });
     
+    console.log(`Всего операций собрано: ${operations.length}`);
     return operations;
 }
 
@@ -9851,6 +9856,15 @@ function renderOddsPage() {
     
     // Собираем все операции
     oddsOperations = collectOddsOperations();
+
+    // === ВСТАВЬТЕ ДИАГНОСТИКУ ПРЯМО ЗДЕСЬ, ПОСЛЕ ЭТОЙ СТРОКИ ===
+    console.log(`=== ВСЕ ОПЕРАЦИИ ЗА 1 ЯНВАРЯ ===`);
+    oddsOperations.filter(op => {
+        return op.date && op.date.getMonth() === 0 && op.date.getDate() === 1 && op.date.getFullYear() === 2026;
+    }).forEach(op => {
+        console.log(`${op.date}: ${op.article}, ${op.amount} ${op.type}, ${op.currency}`);
+    });
+    console.log(`================================`);
     
     // Фильтрация по датам для отображения
     let filteredOps = oddsOperations;
@@ -9888,11 +9902,19 @@ function renderOddsPage() {
     let cumulativeBalance = initialBalance;
     let opsBeforeStartCount = 0;
     
-    if (startDate) {
+        if (startDate) {
         // Все операции до startDate (не включая startDate)
         const opsBeforeStart = oddsOperations.filter(op => {
             if (op.currency !== currentCurrency) return false;
             return op.date < startDate;
+        });
+        
+        // Логируем операции до startDate для диагностики
+        console.log(`=== ДИАГНОСТИКА НАЧАЛЬНОГО ОСТАТКА ===`);
+        console.log(`startDate: ${startDate}`);
+        console.log(`Операций ДО ${startDate}: ${opsBeforeStart.length}`);
+        opsBeforeStart.slice(0, 20).forEach(op => {
+            console.log(`  ${op.date.toISOString().split('T')[0]}: ${op.article}, ${op.amount} ${op.type}, ${op.currency}`);
         });
         
         opsBeforeStartCount = opsBeforeStart.length;
@@ -9902,6 +9924,9 @@ function renderOddsPage() {
             if (op.type === 'income') cumulativeBalance += op.amount;
             else if (op.type === 'expense') cumulativeBalance -= op.amount;
         });
+        
+        console.log(`Накопленный остаток после учёта операций ДО периода: ${cumulativeBalance}`);
+        console.log(`====================================`);
     }
     
     // Это и есть правильный остаток на НАЧАЛО выбранного периода
