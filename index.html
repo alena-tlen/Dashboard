@@ -9409,7 +9409,6 @@ function parseOddsDate(row) {
     return isNaN(date.getTime()) ? null : date;
 }
 
-// Сбор операций
 function collectOddsOperations() {
     const operations = [];
     
@@ -9432,20 +9431,21 @@ function collectOddsOperations() {
         else if (amount < 0) type = 'expense';
         
         if (type && date) {
-            // ДОБАВЬТЕ ЛОГИРОВАНИЕ ДЛЯ ПЕРВОГО ЧИСЛА
-            if (date.getDate() === 1 && date.getMonth() === 0 && date.getFullYear() === 2026) {
-                console.log(`Операция за 1 января: ${article}, сумма: ${amount}, тип: ${type}, дата: ${date}`);
-            }
             operations.push({
-                date: date, amount: Math.abs(amount), type: type,
-                article: article, category: row.канал || row.подканал || article,
-                year: row.год, month: row.месяц, account: account,
-                currency: currency, isExcluded: isExcluded
+                date: date, 
+                amount: Math.abs(amount), 
+                type: type,
+                article: article, 
+                category: row.канал || row.подканал || article,
+                year: row.год, 
+                month: row.месяц, 
+                account: account,
+                currency: currency, 
+                isExcluded: isExcluded  // ← этот флаг теперь будет использоваться для фильтрации
             });
         }
     });
     
-    console.log(`Всего операций собрано: ${operations.length}`);
     return operations;
 }
 
@@ -9477,7 +9477,7 @@ function calculateCumulativeBalance(operations, startBalance, currency = 'RUB') 
 
 // Разделение расходов на постоянные и переменные
 function splitExpensesByType(operations, currency = 'RUB') {
-    const filtered = operations.filter(op => op.type === 'expense' && op.currency === currency);
+    const filtered = operations.filter(op => op.type === 'expense' && op.currency === currency && !op.isExcluded);
     
     const fixedKeywords = ['аренд', 'фот', 'зарплат', 'оклад', 'бухгалтер', 'юр сопровожд', 'связ', 'подписк', 'страхован', 'лиценз'];
     const variableKeywords = ['закупк', 'товар', 'себестоим', 'логистик', 'доставк', 'комисс', 'маркетинг', 'реклам', 'wb', 'ozon', 'маркетплейс'];
@@ -9876,8 +9876,8 @@ function renderOddsPage() {
     
     // Фильтр по валюте
     const currencyFiltered = filteredOps.filter(op => op.currency === currentCurrency);
-    const incomes = currencyFiltered.filter(op => op.type === 'income');
-    const expenses = currencyFiltered.filter(op => op.type === 'expense');
+    const incomes = currencyFiltered.filter(op => op.type === 'income' && !op.isExcluded);
+    const expenses = currencyFiltered.filter(op => op.type === 'expense' && !op.isExcluded);
     
     // ИСКЛЮЧАЕМ технические операции из ТОП-списков
     const topIncomes = incomes.filter(op => !op.isExcluded).slice(0, 5);
@@ -9905,11 +9905,12 @@ function renderOddsPage() {
     let opsBeforeStartCount = 0;
     
         if (startDate) {
-        // Все операции до startDate (не включая startDate)
-        const opsBeforeStart = oddsOperations.filter(op => {
-            if (op.currency !== currentCurrency) return false;
-            return op.date < startDate;
-        });
+    // Исключаем технические операции из расчёта начального остатка
+    const opsBeforeStart = oddsOperations.filter(op => {
+        if (op.currency !== currentCurrency) return false;
+        if (op.isExcluded) return false;  // ← добавляем эту строку
+        return op.date < startDate;
+    });
         
         // Логируем операции до startDate для диагностики
         console.log(`=== ДИАГНОСТИКА НАЧАЛЬНОГО ОСТАТКА ===`);
@@ -9940,7 +9941,7 @@ function renderOddsPage() {
     console.log(`Остаток на начало периода: ${startBalance}`);
     
     // ========== РАСЧЁТ НАКОПИТЕЛЬНОГО ОСТАТКА ПО ДНЯМ ==========
-    const sortedOps = [...currencyFiltered].sort((a, b) => a.date - b.date);
+    const sortedOps = [...currencyFiltered].filter(op => !op.isExcluded).sort((a, b) => a.date - b.date);
     
     const dailyMap = new Map();
     sortedOps.forEach(op => {
@@ -9982,15 +9983,16 @@ function renderOddsPage() {
     
     // Разбивка по счетам
     const accountsMap = new Map();
-    currencyFiltered.forEach(op => {
-        if (!accountsMap.has(op.account)) {
-            accountsMap.set(op.account, { income: 0, expense: 0, operations: [] });
-        }
-        const acc = accountsMap.get(op.account);
-        if (op.type === 'income') acc.income += op.amount;
-        else acc.expense += op.amount;
-        acc.operations.push(op);
-    });
+currencyFilteredAll = filteredOps.filter(op => op.currency === currentCurrency); // без фильтра isExcluded
+currencyFilteredAll.forEach(op => {
+    if (!accountsMap.has(op.account)) {
+        accountsMap.set(op.account, { income: 0, expense: 0, operations: [] });
+    }
+    const acc = accountsMap.get(op.account);
+    if (op.type === 'income') acc.income += op.amount;
+    else acc.expense += op.amount;
+    acc.operations.push(op);
+});
     
     // Форматирование
     const formatDateRange = (date) => date ? `${date.getDate()}.${date.getMonth()+1}.${date.getFullYear()}` : '';
