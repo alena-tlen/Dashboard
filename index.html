@@ -9477,7 +9477,7 @@ function calculateCumulativeBalance(operations, startBalance, currency = 'RUB') 
 
 // Разделение расходов на постоянные и переменные
 function splitExpensesByType(operations, currency = 'RUB') {
-    const filtered = operations.filter(op => op.type === 'expense' && op.currency === currency && !op.isExcluded);
+    const filtered = operations.filter(op => op.type === 'expense' && op.currency === currency && !op.isTechnical);
     
     const fixedKeywords = ['аренд', 'фот', 'зарплат', 'оклад', 'бухгалтер', 'юр сопровожд', 'связ', 'подписк', 'страхован', 'лиценз'];
     const variableKeywords = ['закупк', 'товар', 'себестоим', 'логистик', 'доставк', 'комисс', 'маркетинг', 'реклам', 'wb', 'ozon', 'маркетплейс'];
@@ -9881,8 +9881,8 @@ const incomes = currencyFiltered.filter(op => op.type === 'income');
 const expenses = currencyFiltered.filter(op => op.type === 'expense');
 
     // ИСКЛЮЧАЕМ технические операции из ТОП-списков
-    const topIncomes = incomes.filter(op => !op.isExcluded).slice(0, 5);
-    const topExpenses = expenses.filter(op => !op.isExcluded).slice(0, 5);
+    const topIncomes = incomes.slice(0, 5);
+    const topExpenses = expenses.slice(0, 5);
     
     const totalIncome = incomes.reduce((s, o) => s + o.amount, 0);
     const totalExpense = expenses.reduce((s, o) => s + o.amount, 0);
@@ -9908,10 +9908,10 @@ const expenses = currencyFiltered.filter(op => op.type === 'expense');
         if (startDate) {
     // Исключаем технические операции из расчёта начального остатка
     const opsBeforeStart = oddsOperations.filter(op => {
-        if (op.currency !== currentCurrency) return false;
-        if (op.isExcluded) return false;  // ← добавляем эту строку
-        return op.date < startDate;
-    });
+    if (op.currency !== currentCurrency) return false;
+    if (op.isTechnical) return false;  // ← ИСПРАВЛЕНО
+    return op.date < startDate;
+});
         
         // Логируем операции до startDate для диагностики
         console.log(`=== ДИАГНОСТИКА НАЧАЛЬНОГО ОСТАТКА ===`);
@@ -9942,7 +9942,7 @@ const expenses = currencyFiltered.filter(op => op.type === 'expense');
     console.log(`Остаток на начало периода: ${startBalance}`);
     
     // ========== РАСЧЁТ НАКОПИТЕЛЬНОГО ОСТАТКА ПО ДНЯМ ==========
-    const sortedOps = [...currencyFiltered].filter(op => !op.isExcluded).sort((a, b) => a.date - b.date);
+    const sortedOps = [...currencyFiltered].sort((a, b) => a.date - b.date);
     
     const dailyMap = new Map();
     sortedOps.forEach(op => {
