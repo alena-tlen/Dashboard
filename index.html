@@ -9413,38 +9413,41 @@ function collectOddsOperations() {
     const operations = [];
     
     currentData.forEach(row => {
-        const account = row.Счет || row.счет || row['Счет'] || '';
-        const article = row.статья || '';
-        if (article === 'Начальный остаток' || !account) return;
-        
-        const amount = parseFloat(row.сумма) || 0;
-        if (amount === 0) return;
-        
-        const date = parseOddsDate(row);
-        const currency = detectCurrency(account);
-        const isTechnical = EXCLUDED_FROM_TOP.some(ex => channel.includes(ex));
-        
-        let type = '';
-        if (article === 'Поступление на расчетный счет') type = 'income';
-        else if (article === 'Списание с расчетного счета') type = 'expense';
-        else if (amount > 0) type = 'income';
-        else if (amount < 0) type = 'expense';
-        
-        if (type && date) {
-            operations.push({
-                date: date, 
-                amount: Math.abs(amount), 
-                type: type,
-                article: article, 
-                category: row.канал || row.подканал || article,
-                year: row.год, 
-                month: row.месяц, 
-                account: account,
-                currency: currency, 
-                isTechnical: isTechnical  // ← этот флаг теперь будет использоваться для фильтрации
-            });
-        }
-    });
+    const account = row.Счет || row.счет || row['Счет'] || '';
+    const article = row.статья || '';
+    if (article === 'Начальный остаток' || !account) return;
+    
+    const amount = parseFloat(row.сумма) || 0;
+    if (amount === 0) return;
+    
+    const date = parseOddsDate(row);
+    const currency = detectCurrency(account);
+    
+    // ← ВАЖНО: channel должен быть определён ДО использования!
+    const channel = row.канал || row.Канал || '';
+    const isTechnical = EXCLUDED_FROM_TOP.some(ex => channel.includes(ex));
+    
+    let type = '';
+    if (article === 'Поступление на расчетный счет') type = 'income';
+    else if (article === 'Списание с расчетного счета') type = 'expense';
+    else if (amount > 0) type = 'income';
+    else if (amount < 0) type = 'expense';
+    
+    if (type && date) {
+        operations.push({
+            date: date, 
+            amount: Math.abs(amount), 
+            type: type,
+            article: article, 
+            category: row.канал || row.подканал || article,
+            year: row.год, 
+            month: row.месяц, 
+            account: account,
+            currency: currency, 
+            isTechnical: isTechnical
+        });
+    }
+});
     
     return operations;
 }
