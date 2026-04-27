@@ -10154,12 +10154,12 @@ currencyFilteredAll.forEach(op => {
                         <div class="account-details" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; margin-top: 12px;">
                             ${data.operations.slice(0, 10).map(op => {
                                 const isTechnicalFlag = op.isTechnical ? ' (техническая)' : '';
-                                return `
-                                    <div style="font-size: 11px; padding: 4px 0; border-bottom: 1px solid rgba(102,126,234,0.1); display: flex; justify-content: space-between;">
-                                        <span>${op.date.getDate()}.${op.date.getMonth()+1}: ${op.article.substring(0, 25)}${isExcluded}</span>
-                                        <span style="${op.type === 'income' ? 'color: #48bb78;' : 'color: #f56565;'}">${op.type === 'income' ? '+' : '-'}${formatCurrencyWithCurrency(op.amount, currentCurrency)}</span>
-                                    </div>
-                                `;
+return `
+    <div style="font-size: 11px; padding: 4px 0; border-bottom: 1px solid rgba(102,126,234,0.1); display: flex; justify-content: space-between;">
+        <span>${op.date.getDate()}.${op.date.getMonth()+1}: ${op.article.substring(0, 25)}${isTechnicalFlag}</span>
+        <span style="${op.type === 'income' ? 'color: #48bb78;' : 'color: #f56565;'}">${op.type === 'income' ? '+' : '-'}${formatCurrencyWithCurrency(op.amount, currentCurrency)}</span>
+    </div>
+`;
                             }).join('')}
                             ${data.operations.length > 10 ? '<div style="font-size: 10px; opacity: 0.6; padding: 4px;">и ещё ' + (data.operations.length - 10) + ' операций...</div>' : ''}
                         </div>
