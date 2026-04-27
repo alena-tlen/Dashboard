@@ -2740,6 +2740,11 @@ function renderAnimatedMiniChart(elementId, data, color) {
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: true, blankrows: false });
                     
                     for (const row of jsonData) {
+                        console.log('=== АНАЛИЗ СТРОКИ БАНКА ===');
+                        console.log('Все ключи строки:', Object.keys(row));
+                        console.log('Значение "число":', row['число']);
+                        console.log('Значение "день":', row['день']);
+                        console.log('Значение "Дата":', row['Дата']);
                         let company = row['компания'] || row['Компания'] || '';
                         let year = row['год'] || row['Год'] || '';
                         let month = row['месяц'] || row['Месяц'] || '';
@@ -2804,6 +2809,15 @@ function renderAnimatedMiniChart(elementId, data, color) {
                             сумма: amount,
                             Счет: account
                         });
+                        if (type === 'Поступление на расчетный счет' || type === 'Списание с расчетного счета') {
+    console.log('Добавлена банковская операция:', { 
+        год: year, 
+        месяц: month, 
+        число: day, 
+        статья: type, 
+        сумма: amount 
+    });
+}
                     }
                 }
                 
