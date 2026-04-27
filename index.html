@@ -9847,10 +9847,10 @@ function renderOddsPage() {
         return;
     }
     
-    // Собираем операции (инициализируем глобальную переменную)
+    // Собираем все операции
     oddsOperations = collectOddsOperations();
     
-    // Фильтрация по датам
+    // Фильтрация по датам для отображения
     let filteredOps = oddsOperations;
     if (oddsDateRange.startDate && oddsDateRange.endDate) {
         filteredOps = oddsOperations.filter(op => op.date >= oddsDateRange.startDate && op.date <= oddsDateRange.endDate);
@@ -9870,21 +9870,42 @@ function renderOddsPage() {
     const netFlow = totalIncome - totalExpense;
     
     // ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА ==========
-    // Начальный остаток из справочника "Начальный остаток" (ВСЕГДА, независимо от фильтрации по датам)
-    let startBalance = 0;
+    // 1. Берём начальные остатки из справочника (только для выбранной валюты)
+    let initialBalance = 0;
     currentData.forEach(row => {
         if (row.статья === 'Начальный остаток') {
             const account = row.Счет || row['Счет'] || '';
             if (detectCurrency(account) === currentCurrency) {
-                const amount = parseFloat(row.сумма) || 0;
-                startBalance += amount;
-                console.log(`Начальный остаток по счету ${account}: ${amount} ${currentCurrency}`);
+                initialBalance += parseFloat(row.сумма) || 0;
             }
         }
     });
     
-    // НЕ прибавляем операции ДО начальной даты, потому что начальный остаток уже включает их
-    // Начальный остаток - это остаток на 31.12.2025 (до начала 2026 года)
+    // 2. Собираем ВСЕ операции ДО начала выбранного периода (для расчёта накопленного остатка)
+    const startDate = oddsDateRange.startDate;
+    let cumulativeBalance = initialBalance;
+    
+    if (startDate) {
+        // Все операции до startDate (не включая startDate)
+        const opsBeforeStart = oddsOperations.filter(op => {
+            if (op.currency !== currentCurrency) return false;
+            return op.date < startDate;
+        });
+        
+        // Накопить остаток на начало периода
+        opsBeforeStart.forEach(op => {
+            if (op.type === 'income') cumulativeBalance += op.amount;
+            else if (op.type === 'expense') cumulativeBalance -= op.amount;
+        });
+    }
+    
+    // Это и есть правильный остаток на НАЧАЛО выбранного периода
+    let startBalance = cumulativeBalance;
+    
+    console.log(`Период: с ${startDate} по ${oddsDateRange.endDate}`);
+    console.log(`Начальный остаток по справочнику: ${initialBalance}`);
+    console.log(`Операций до начала периода: ${opsBeforeStart?.length || 0}`);
+    console.log(`Остаток на начало периода: ${startBalance}`);
     
     // ========== РАСЧЁТ НАКОПИТЕЛЬНОГО ОСТАТКА ПО ДНЯМ ==========
     const sortedOps = [...currencyFiltered].sort((a, b) => a.date - b.date);
@@ -9911,7 +9932,7 @@ function renderOddsPage() {
     // Текущий остаток на конец периода
     currentBalance = dailyData.length > 0 ? dailyData[dailyData.length - 1].balance : startBalance;
     
-    console.log(`Начальный остаток: ${startBalance}, конечный: ${currentBalance}, чистый поток: ${netFlow}`);
+    console.log(`Конечный остаток: ${currentBalance}, чистый поток за период: ${netFlow}`);
     
     // Данные для графика
     const balanceChartData = dailyData.map(d => ({ date: d.date, balance: d.balance / 1000 }));
