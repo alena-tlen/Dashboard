@@ -9422,7 +9422,7 @@ function collectOddsOperations() {
         
         const date = parseOddsDate(row);
         const currency = detectCurrency(account);
-        const isExcluded = EXCLUDED_FROM_TOP.some(ex => article.includes(ex));
+        const isTechnical = EXCLUDED_FROM_TOP.some(ex => article.includes(ex));
         
         let type = '';
         if (article === 'Поступление на расчетный счет') type = 'income';
@@ -9441,7 +9441,7 @@ function collectOddsOperations() {
                 month: row.месяц, 
                 account: account,
                 currency: currency, 
-                isExcluded: isExcluded  // ← этот флаг теперь будет использоваться для фильтрации
+                isTechnical: isTechnical  // ← этот флаг теперь будет использоваться для фильтрации
             });
         }
     });
@@ -9875,10 +9875,11 @@ function renderOddsPage() {
     }
     
     // Фильтр по валюте
-    const currencyFiltered = filteredOps.filter(op => op.currency === currentCurrency);
-    const incomes = currencyFiltered.filter(op => op.type === 'income' && !op.isExcluded);
-    const expenses = currencyFiltered.filter(op => op.type === 'expense' && !op.isExcluded);
-    
+    // СТАЛО: полностью исключаем технические операции из расчётов
+const currencyFiltered = filteredOps.filter(op => op.currency === currentCurrency && !op.isTechnical);
+const incomes = currencyFiltered.filter(op => op.type === 'income');
+const expenses = currencyFiltered.filter(op => op.type === 'expense');
+
     // ИСКЛЮЧАЕМ технические операции из ТОП-списков
     const topIncomes = incomes.filter(op => !op.isExcluded).slice(0, 5);
     const topExpenses = expenses.filter(op => !op.isExcluded).slice(0, 5);
@@ -9983,7 +9984,7 @@ function renderOddsPage() {
     
     // Разбивка по счетам
     const accountsMap = new Map();
-currencyFilteredAll = filteredOps.filter(op => op.currency === currentCurrency); // без фильтра isExcluded
+const currencyFilteredAll = oddsOperations.filter(op => op.currency === currentCurrency); // без фильтра isExcluded
 currencyFilteredAll.forEach(op => {
     if (!accountsMap.has(op.account)) {
         accountsMap.set(op.account, { income: 0, expense: 0, operations: [] });
@@ -10152,7 +10153,7 @@ currencyFilteredAll.forEach(op => {
                         </div>
                         <div class="account-details" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; margin-top: 12px;">
                             ${data.operations.slice(0, 10).map(op => {
-                                const isExcluded = op.isExcluded ? ' (техническая)' : '';
+                                const isTechnicalFlag = op.isTechnical ? ' (техническая)' : '';
                                 return `
                                     <div style="font-size: 11px; padding: 4px 0; border-bottom: 1px solid rgba(102,126,234,0.1); display: flex; justify-content: space-between;">
                                         <span>${op.date.getDate()}.${op.date.getMonth()+1}: ${op.article.substring(0, 25)}${isExcluded}</span>
