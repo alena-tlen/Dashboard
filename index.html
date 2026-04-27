@@ -2085,7 +2085,6 @@ body.dark .odds-section-card {
                 </div>
             </div>
         </div>
-        
         <!-- Основной контент ОДДС -->
         <div id="oddsMainContent"></div>
         <div style="display: flex; gap: 10px;">
@@ -2852,6 +2851,30 @@ function renderAnimatedMiniChart(elementId, data, color) {
                             console.log(`  [БЕЗ ДАТЫ] ${r.статья}, сумма: ${r.сумма}`);
                         }
                     });
+
+                    // ===== ДИАГНОСТИКА ДАТ =====
+console.log('=== ДИАГНОСТИКА ДАТ В ЗАГРУЖЕННОМ ФАЙЛЕ ===');
+const sampleRows = allProcessed.slice(0, 20);
+console.log('Первые 20 записей:');
+sampleRows.forEach((row, idx) => {
+    console.log(`${idx + 1}. год=${row.год}, месяц=${row.месяц}, число=${row.число}, статья=${row.статья}, сумма=${row.сумма}, счет=${row.Счет?.substring(0, 30)}`);
+});
+
+// Проверяем уникальные значения дат
+const uniqueDates = new Set();
+allProcessed.forEach(row => {
+    if (row.год && row.месяц && row.число) {
+        uniqueDates.add(`${row.год}-${row.месяц}-${row.число}`);
+    }
+});
+console.log('Уникальные даты в данных:', Array.from(uniqueDates).slice(0, 20));
+
+// Проверяем операции по банку
+const bankOps = allProcessed.filter(r => r.Счет && (r.статья === 'Поступление на расчетный счет' || r.статья === 'Списание с расчетного счета'));
+console.log('Банковских операций:', bankOps.length);
+bankOps.slice(0, 10).forEach(op => {
+    console.log(`  ${op.год} ${op.месяц} ${op.число}: ${op.статья}, сумма: ${op.сумма}, счет: ${op.Счет?.substring(0, 30)}`);
+});
                     
                     resolve(allProcessed);
                 }
@@ -9316,32 +9339,78 @@ if (abcxyzUploadArea) {
 let oddsDateRange = { startDate: null, endDate: null };
 let oddsOperations = [];
 
-// Функция для парсинга даты из строки (год, месяц, число)
-// Функция для парсинга даты из строки (год, месяц, число)
+// Функция для парсинга даты - универсальная версия
 function parseOperationDate(row) {
-    const year = row.год;
-    const month = row.месяц;
+    // Пробуем найти день в разных полях
+    let year = row.год;
+    let month = row.месяц;
     let day = row.число;
     
-    if (!year || !month) return null;
+    // Если число не найдено, пробуем другие названия
     if (!day) {
-        // Если нет числа, пробуем взять 1-е число месяца
-        day = '1';
+        day = row.день || row.День || row.число || row.Число || row.day;
     }
     
-    const monthIndex = monthsOrder.indexOf(month.toLowerCase());
+    if (!year || !month) {
+        // Пробуем получить дату из других полей
+        if (row.дата || row.Дата) {
+            const dateStr = row.дата || row.Дата;
+            // Пробуем распарсить дату в формате DD.MM.YYYY или YYYY-MM-DD
+            const parts = dateStr.toString().match(/(\d{1,4})[.\/-](\d{1,2})[.\/-](\d{1,4})/);
+            if (parts) {
+                let d, m, y;
+                if (parts[1].length === 4) {
+                    y = parts[1];
+                    m = parts[2];
+                    d = parts[3];
+                } else {
+                    d = parts[1];
+                    m = parts[2];
+                    y = parts[3];
+                }
+                year = y;
+                month = monthsOrder[parseInt(m) - 1];
+                day = d;
+            }
+        }
+    }
+    
+    if (!year || !month) return null;
+    
+    // Нормализуем месяц
+    let monthLower = month.toLowerCase().trim();
+    let monthIndex = monthsOrder.indexOf(monthLower);
+    
+    // Если месяц не найден по русскому названию, пробуем как число
+    if (monthIndex === -1) {
+        const monthNum = parseInt(month);
+        if (!isNaN(monthNum) && monthNum >= 1 && monthNum <= 12) {
+            monthIndex = monthNum - 1;
+            monthLower = monthsOrder[monthIndex];
+        }
+    }
+    
     if (monthIndex === -1) return null;
     
-    // Преобразуем день в число
-    let dayNum = parseInt(day);
-    if (isNaN(dayNum)) {
-        // Если день не число (например, "31" как строка работает, но проверим)
-        dayNum = 1;
+    // Нормализуем день
+    let dayNum = 1;
+    if (day) {
+        dayNum = parseInt(day);
+        if (isNaN(dayNum)) {
+            // Пробуем извлечь число из строки
+            const dayMatch = String(day).match(/\d+/);
+            if (dayMatch) dayNum = parseInt(dayMatch[0]);
+            else dayNum = 1;
+        }
     }
     
-    // Создаем дату (месяцы в JS от 0 до 11)
+    // Создаем дату
     const date = new Date(parseInt(year), monthIndex, dayNum);
-    if (isNaN(date.getTime())) return null;
+    if (isNaN(date.getTime())) {
+        console.warn('Не удалось создать дату для:', { year, month: monthLower, day: dayNum });
+        return null;
+    }
+    
     return date;
 }
 
