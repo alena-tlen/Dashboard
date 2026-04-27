@@ -2088,6 +2088,9 @@ body.dark .odds-section-card {
         
         <!-- Основной контент ОДДС -->
         <div id="oddsMainContent"></div>
+        <div style="display: flex; gap: 10px;">
+    <button id="oddsForceRefreshBtn" class="btn btn-info" style="padding: 10px 24px;">🔄 Принудительно обновить</button>
+</div>
     </div>
 </div>
                 <div id="page-abcxyz" class="page-content">
@@ -8424,6 +8427,7 @@ function renderSalesChart(labels, salesData) {
     });
 }
 
+
     // Добавьте этот код в консоль браузера после загрузки файла
 function diagnoseSberbank() {
     console.log('=== ДИАГНОСТИКА СБЕРБАНКА ===');
@@ -9313,18 +9317,30 @@ let oddsDateRange = { startDate: null, endDate: null };
 let oddsOperations = [];
 
 // Функция для парсинга даты из строки (год, месяц, число)
+// Функция для парсинга даты из строки (год, месяц, число)
 function parseOperationDate(row) {
     const year = row.год;
     const month = row.месяц;
-    const day = row.число;
+    let day = row.число;
     
-    if (!year || !month || !day) return null;
+    if (!year || !month) return null;
+    if (!day) {
+        // Если нет числа, пробуем взять 1-е число месяца
+        day = '1';
+    }
     
     const monthIndex = monthsOrder.indexOf(month.toLowerCase());
     if (monthIndex === -1) return null;
     
+    // Преобразуем день в число
+    let dayNum = parseInt(day);
+    if (isNaN(dayNum)) {
+        // Если день не число (например, "31" как строка работает, но проверим)
+        dayNum = 1;
+    }
+    
     // Создаем дату (месяцы в JS от 0 до 11)
-    const date = new Date(parseInt(year), monthIndex, parseInt(day));
+    const date = new Date(parseInt(year), monthIndex, dayNum);
     if (isNaN(date.getTime())) return null;
     return date;
 }
@@ -9332,6 +9348,8 @@ function parseOperationDate(row) {
 // Сбор всех операций по счетам
 function collectOddsOperations() {
     const operations = [];
+    
+    console.log('collectOddsOperations: Начинаем сбор, всего записей:', currentData.length);
     
     currentData.forEach(row => {
         const account = row.Счет || row.счет || row['Счет'] || '';
@@ -9342,6 +9360,8 @@ function collectOddsOperations() {
         if (!account) return;
         
         const amount = parseFloat(row.сумма) || 0;
+        if (amount === 0) return;
+        
         const date = parseOperationDate(row);
         
         // Определяем тип операции
@@ -9367,8 +9387,19 @@ function collectOddsOperations() {
                 month: row.месяц,
                 day: row.число
             });
+        } else if (type && !date) {
+            // Логируем операции без даты
+            console.log('Операция без даты (пропущена):', { article, year: row.год, month: row.месяц, day: row.число, amount });
         }
     });
+    
+    console.log('collectOddsOperations: Собрано операций с датами:', operations.length);
+    console.log('  Из них доходов:', operations.filter(o => o.type === 'income').length);
+    console.log('  Из них расходов:', operations.filter(o => o.type === 'expense').length);
+    
+    if (operations.length > 0) {
+        console.log('  Пример первой операции:', operations[0]);
+    }
     
     return operations;
 }
@@ -9640,6 +9671,7 @@ function initOddsFilters() {
     const endDateInput = document.getElementById('oddsEndDate');
     const applyBtn = document.getElementById('oddsApplyDatesBtn');
     const resetBtn = document.getElementById('oddsResetDatesBtn');
+    const forceRefreshBtn = document.getElementById('oddsForceRefreshBtn');  // ДОБАВИТЬ ЭТУ СТРОКУ
     const quickBtns = document.querySelectorAll('.odds-quick-btn');
     
     if (!startDateInput || !endDateInput) return;
@@ -9668,6 +9700,16 @@ function initOddsFilters() {
             oddsDateRange.startDate = thirtyDaysAgo;
             oddsDateRange.endDate = today;
             renderOddsPage();
+        };
+    }
+
+    // Принудительное обновление
+    if (forceRefreshBtn) {
+        forceRefreshBtn.onclick = () => {
+            console.log('Принудительное обновление ОДДС');
+            oddsOperations = collectOddsOperations();
+            renderOddsPage();
+            showNotification('Данные ОДДС обновлены', 'success');
         };
     }
     
@@ -9705,7 +9747,7 @@ function initOddsFilters() {
         };
     });
 }
-    
+
     // Инициализация ОДДС
     initOddsDates();
     initOddsFilters();
