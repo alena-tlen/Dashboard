@@ -9422,7 +9422,7 @@ function collectOddsOperations() {
         
         const date = parseOddsDate(row);
         const currency = detectCurrency(account);
-        const isTechnical = EXCLUDED_FROM_TOP.some(ex => article.includes(ex));
+        const isTechnical = EXCLUDED_FROM_TOP.some(ex => channel.includes(ex));
         
         let type = '';
         if (article === 'Поступление на расчетный счет') type = 'income';
@@ -9984,7 +9984,7 @@ const expenses = currencyFiltered.filter(op => op.type === 'expense');
     
     // Разбивка по счетам
     const accountsMap = new Map();
-const currencyFilteredAll = oddsOperations.filter(op => op.currency === currentCurrency); // без фильтра isExcluded
+const currencyFilteredAll = oddsOperations.filter(op => op.currency === currentCurrency);
 currencyFilteredAll.forEach(op => {
     if (!accountsMap.has(op.account)) {
         accountsMap.set(op.account, { income: 0, expense: 0, operations: [] });
