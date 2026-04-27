@@ -9354,83 +9354,37 @@ if (abcxyzUploadArea) {
 let oddsDateRange = { startDate: null, endDate: null };
 let oddsOperations = [];
 
-
-// Функция для парсинга даты из строки (год, месяц, число)
+// Функция для парсинга даты из строки
 function parseOperationDate(row) {
     const year = row.год;
     const month = row.месяц;
-    // ВАЖНО: день может быть в поле 'число' ИЛИ 'день' ИЛИ 'day'
     let day = row.число || row.день || row.День || row.day;
     
-    console.log('parseOperationDate вход:', { year, month, day, rowKeys: Object.keys(row) });
-    
-    if (!year || !month) {
-        console.log('Нет года или месяца');
-        return null;
-    }
-    
-    if (!day || day === '') {
-        console.log('Нет дня, использую 1-е число месяца');
-        day = '1';
-    }
+    if (!year || !month) return null;
+    if (!day || day === '') day = '1';
     
     const monthIndex = monthsOrder.indexOf(month.toLowerCase());
-    if (monthIndex === -1) {
-        console.log('Месяц не найден:', month);
-        return null;
-    }
+    if (monthIndex === -1) return null;
     
     const dayNum = parseInt(day);
-    if (isNaN(dayNum)) {
-        console.log('День не число:', day);
-        return null;
-    }
-    
     const yearNum = parseInt(year);
-    if (isNaN(yearNum)) {
-        console.log('Год не число:', year);
-        return null;
-    }
+    if (isNaN(dayNum) || isNaN(yearNum)) return null;
     
     const date = new Date(yearNum, monthIndex, dayNum);
-    console.log('Создана дата:', date);
-    
-    if (isNaN(date.getTime())) {
-        console.log('Невалидная дата');
-        return null;
-    }
-    
-    return date;
+    return isNaN(date.getTime()) ? null : date;
 }
 
-// Сбор всех операций по счетам
+// Сбор всех операций по счетам (ИСКЛЮЧАЯ технические переводы)
 function collectOddsOperations() {
     const operations = [];
-
-    console.log('=== collectOddsOperations: НАЧАЛО ===');
-    console.log('Всего записей в currentData:', currentData.length);
-    
-    // Выводим пример первой записи, чтобы увидеть её структуру
-    if (currentData.length > 0) {
-        console.log('Пример первой записи:', currentData[0]);
-        console.log('Ключи записи:', Object.keys(currentData[0]));
-    }
-    
-    // Считаем записи с банковскими операциями
-    const bankRows = currentData.filter(row => {
-        const article = row.статья || '';
-        return article === 'Поступление на расчетный счет' || article === 'Списание с расчетного счета';
-    });
-    console.log('Банковских операций в currentData:', bankRows.length);
-    
-    if (bankRows.length > 0) {
-        console.log('Пример банковской операции:', bankRows[0]);
-        console.log('  год:', bankRows[0].год);
-        console.log('  месяц:', bankRows[0].месяц);
-        console.log('  число:', bankRows[0].число);
-    }
-    
-    console.log('collectOddsOperations: Начинаем сбор, всего записей:', currentData.length);
+    const excludedArticles = [
+        'Перевод с другого счета',
+        'Перевод на другой счет организации',
+        'Перевод на другой счет',
+        'Депозит',
+        'Проценты по депозиту',
+        'Возврат депозита'
+    ];
     
     currentData.forEach(row => {
         const account = row.Счет || row.счет || row['Счет'] || '';
@@ -9439,6 +9393,9 @@ function collectOddsOperations() {
         // Пропускаем начальные остатки
         if (article === 'Начальный остаток') return;
         if (!account) return;
+        
+        // ИСКЛЮЧАЕМ технические переводы из ТОП-списаний/поступлений
+        const isExcluded = excludedArticles.some(ex => article.includes(ex));
         
         const amount = parseFloat(row.сумма) || 0;
         if (amount === 0) return;
@@ -9466,23 +9423,21 @@ function collectOddsOperations() {
                 category: row.канал || row.подканал || article,
                 year: row.год,
                 month: row.месяц,
-                day: row.число
+                day: row.число,
+                account: account,
+                currency: row.валюта || 'RUB',
+                isExcluded: isExcluded
             });
-        } else if (type && !date) {
-            // Логируем операции без даты
-            console.log('Операция без даты (пропущена):', { article, year: row.год, month: row.месяц, day: row.число, amount });
         }
     });
     
-    console.log('collectOddsOperations: Собрано операций с датами:', operations.length);
-    console.log('  Из них доходов:', operations.filter(o => o.type === 'income').length);
-    console.log('  Из них расходов:', operations.filter(o => o.type === 'expense').length);
-    
-    if (operations.length > 0) {
-        console.log('  Пример первой операции:', operations[0]);
-    }
-    
     return operations;
+}
+
+// Фильтрация операций по датам
+function filterOperationsByDate(operations, startDate, endDate) {
+    if (!startDate || !endDate) return operations;
+    return operations.filter(op => op.date >= startDate && op.date <= endDate);
 }
 
 // Инициализация дат (по умолчанию - последние 30 дней)
@@ -9492,12 +9447,10 @@ function initOddsDates() {
     
     if (!startDateInput || !endDateInput) return;
     
-    // По умолчанию - последние 30 дней от сегодня
     const today = new Date();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(today.getDate() - 30);
     
-    // Форматируем для input date (YYYY-MM-DD)
     startDateInput.value = formatDateForInput(thirtyDaysAgo);
     endDateInput.value = formatDateForInput(today);
     
@@ -9512,13 +9465,23 @@ function formatDateForInput(date) {
     return `${year}-${month}-${day}`;
 }
 
-// Фильтрация операций по датам
-function filterOperationsByDate(operations, startDate, endDate) {
-    if (!startDate || !endDate) return operations;
-    
-    return operations.filter(op => {
-        return op.date >= startDate && op.date <= endDate;
+// Разбивка по валютам
+function groupByCurrency(operations) {
+    const currencyGroups = {};
+    operations.forEach(op => {
+        const currency = op.currency || 'RUB';
+        if (!currencyGroups[currency]) {
+            currencyGroups[currency] = { incomes: [], expenses: [], totalIncome: 0, totalExpense: 0 };
+        }
+        if (op.type === 'income') {
+            currencyGroups[currency].incomes.push(op);
+            currencyGroups[currency].totalIncome += op.amount;
+        } else {
+            currencyGroups[currency].expenses.push(op);
+            currencyGroups[currency].totalExpense += op.amount;
+        }
     });
+    return currencyGroups;
 }
 
 // Основная функция рендеринга страницы ОДДС
@@ -9537,37 +9500,54 @@ function renderOddsPage() {
     // Применяем фильтр по датам
     let filteredOps = filterOperationsByDate(oddsOperations, oddsDateRange.startDate, oddsDateRange.endDate);
     
-    // Разделяем на доходы и расходы
-    let incomes = filteredOps.filter(op => op.type === 'income');
-    let expenses = filteredOps.filter(op => op.type === 'expense');
+    // Разделяем на доходы и расходы (ИСКЛЮЧАЯ технические переводы из ТОП-списков)
+    let allIncomes = filteredOps.filter(op => op.type === 'income');
+    let allExpenses = filteredOps.filter(op => op.type === 'expense');
     
-    let totalIncome = incomes.reduce((sum, op) => sum + op.amount, 0);
-    let totalExpense = expenses.reduce((sum, op) => sum + op.amount, 0);
+    // Для ТОП-списков исключаем технические переводы
+    let topIncomes = allIncomes.filter(op => !op.isExcluded);
+    let topExpenses = allExpenses.filter(op => !op.isExcluded);
+    
+    let totalIncome = allIncomes.reduce((sum, op) => sum + op.amount, 0);
+    let totalExpense = allExpenses.reduce((sum, op) => sum + op.amount, 0);
     let netCashFlow = totalIncome - totalExpense;
     
-    // Начальный остаток (берем все начальные остатки из данных)
-    let startBalance = 0;
+    // Группировка по валютам
+    const currencyGroups = groupByCurrency(filteredOps);
+    
+    // Начальный остаток (с разбивкой по валютам)
+    let startBalance = { RUB: 0, USD: 0, EUR: 0, CNY: 0 };
     currentData.forEach(row => {
         if (row.статья === 'Начальный остаток') {
             const amount = parseFloat(row.сумма) || 0;
-            startBalance += amount;
+            const account = row.Счет || '';
+            let currency = 'RUB';
+            if (account.includes('USD')) currency = 'USD';
+            else if (account.includes('EUR')) currency = 'EUR';
+            else if (account.includes('CNY')) currency = 'CNY';
+            startBalance[currency] = (startBalance[currency] || 0) + amount;
         }
     });
     
-    // Остаток на конец периода
-    const endBalance = startBalance + netCashFlow;
+    // Остаток на конец периода по валютам
+    const endBalance = {};
+    Object.keys(startBalance).forEach(curr => {
+        const currencyIncome = currencyGroups[curr]?.totalIncome || 0;
+        const currencyExpense = currencyGroups[curr]?.totalExpense || 0;
+        endBalance[curr] = (startBalance[curr] || 0) + currencyIncome - currencyExpense;
+    });
     
-    // Группировка по категориям для доходов
+    // Группировка по категориям для доходов (исключая технические переводы)
     const incomeByCategory = {};
-    incomes.forEach(inc => {
+    topIncomes.forEach(inc => {
         const cat = inc.category;
         if (!incomeByCategory[cat]) incomeByCategory[cat] = 0;
         incomeByCategory[cat] += inc.amount;
     });
     
-    // Группировка по категориям для расходов
+    // Группировка по категориям для расходов (исключая технические переводы)
     const expenseByCategory = {};
-    expenses.forEach(exp => {
+    topExpenses.forEach(exp => {
         const cat = exp.category;
         if (!expenseByCategory[cat]) expenseByCategory[cat] = 0;
         expenseByCategory[cat] += exp.amount;
@@ -9590,38 +9570,62 @@ function renderOddsPage() {
     });
     
     const sortedDays = Array.from(dailyData.values()).sort((a, b) => a.date - b.date);
-    const chartLabels = sortedDays.map(d => {
-        return `${d.date.getDate()}.${d.date.getMonth()+1}`;
-    });
+    const chartLabels = sortedDays.map(d => `${d.date.getDate()}.${d.date.getMonth()+1}`);
     const chartIncomeData = sortedDays.map(d => d.income / 1000);
     const chartExpenseData = sortedDays.map(d => d.expense / 1000);
     
-    // Форматирование дат для отображения
+    // Форматирование дат
     const formatDate = (date) => {
         if (!date) return '—';
         return `${date.getDate()}.${date.getMonth()+1}.${date.getFullYear()}`;
     };
     
-    // Генерируем HTML
+    const formatCurrencyWithCurrency = (amount, currency = 'RUB') => {
+        const symbol = currency === 'RUB' ? '₽' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '¥';
+        const formatter = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        return `${formatter.format(Math.abs(amount))} ${symbol}`;
+    };
+    
+    // Генерация HTML с разбивкой по валютам
+    const currencyHtml = Object.entries(endBalance)
+        .filter(([_, balance]) => balance !== 0)
+        .map(([currency, balance]) => `
+            <div style="background: rgba(102,126,234,0.08); border-radius: 12px; padding: 12px; text-align: center;">
+                <div style="font-size: 11px; opacity: 0.7;">Остаток в ${currency}</div>
+                <div style="font-size: 20px; font-weight: 700; color: ${balance >= 0 ? '#48bb78' : '#f56565'}">
+                    ${formatCurrencyWithCurrency(balance, currency)}
+                </div>
+                <div style="font-size: 10px; opacity: 0.5;">
+                    +${formatCurrencyWithCurrency(currencyGroups[currency]?.totalIncome || 0, currency)} / 
+                    -${formatCurrencyWithCurrency(currencyGroups[currency]?.totalExpense || 0, currency)}
+                </div>
+            </div>
+        `).join('');
+    
     const html = `
+        <!-- Разбивка по валютам -->
+        <div class="metrics-grid" style="margin-bottom: 24px;">
+            ${currencyHtml || '<div class="metric-card"><div class="metric-title">💰 Нет данных по валютам</div></div>'}
+        </div>
+        
         <!-- Ключевые показатели -->
         <div class="metrics-grid" style="margin-bottom: 24px;">
             <div class="metric-card">
-                <div class="metric-title">💰 Остаток на ${formatDate(oddsDateRange.endDate)}</div>
-                <div class="metric-value" style="color: ${endBalance >= 0 ? '#48bb78' : '#f56565'}">${formatCurrency(endBalance)}</div>
-                <div class="metric-sub">${formatCurrency(startBalance)} на начало периода</div>
+                <div class="metric-title">💰 Общий остаток (RUB экв.)</div>
+                <div class="metric-value" style="color: ${endBalance.RUB >= 0 ? '#48bb78' : '#f56565'}">${formatCurrency(endBalance.RUB)}</div>
+                <div class="metric-sub">${formatCurrency(startBalance.RUB)} на начало периода</div>
             </div>
             <div class="metric-card">
                 <div class="metric-title">📥 Поступления</div>
                 <div class="metric-value" style="color: #48bb78">${formatCurrency(totalIncome)}</div>
-                <div class="metric-sub">${incomes.length} операций</div>
+                <div class="metric-sub">${allIncomes.length} операций</div>
             </div>
             <div class="metric-card">
                 <div class="metric-title">📤 Списания</div>
                 <div class="metric-value" style="color: #f56565">${formatCurrency(totalExpense)}</div>
-                <div class="metric-sub">${expenses.length} операций</div>
+                <div class="metric-sub">${allExpenses.length} операций</div>
             </div>
-            <div class="metric-card ${netCashFlow >= 0 ? '' : 'negative-bg'}" style="${netCashFlow < 0 ? 'border: 2px solid #f56565;' : ''}">
+            <div class="metric-card ${netCashFlow < 0 ? 'negative-bg' : ''}" style="${netCashFlow < 0 ? 'border: 2px solid #f56565;' : ''}">
                 <div class="metric-title">📊 Чистый поток</div>
                 <div class="metric-value" style="color: ${netCashFlow >= 0 ? '#48bb78' : '#f56565'}">${netCashFlow >= 0 ? '+' : ''}${formatCurrency(Math.abs(netCashFlow))}</div>
                 <div class="metric-sub">за выбранный период</div>
@@ -9635,23 +9639,23 @@ function renderOddsPage() {
         </div>
         
         <div class="metrics-grid" style="margin-bottom: 24px;">
-            <!-- ТОП доходов -->
+            <!-- ТОП доходов (без технических переводов) -->
             <div class="metric-card">
                 <div class="metric-title" style="margin-bottom: 16px;">🏆 ТОП-5 поступлений</div>
                 ${topIncomeCategories.map(([cat, amount], idx) => `
                     <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding: 8px; background: rgba(72,187,120,0.1); border-radius: 8px;">
-                        <span>${idx+1}. ${cat}</span>
+                        <span>${idx+1}. ${cat.length > 30 ? cat.substring(0,30)+'...' : cat}</span>
                         <span style="font-weight: 700; color: #48bb78;">+${formatCurrency(amount)}</span>
                     </div>
                 `).join('') || '<div style="text-align: center; padding: 20px;">Нет данных</div>'}
             </div>
             
-            <!-- ТОП расходов -->
+            <!-- ТОП расходов (без технических переводов) -->
             <div class="metric-card">
                 <div class="metric-title" style="margin-bottom: 16px;">⚠️ ТОП-5 списаний</div>
                 ${topExpenseCategories.map(([cat, amount], idx) => `
                     <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding: 8px; background: rgba(245,101,101,0.1); border-radius: 8px;">
-                        <span>${idx+1}. ${cat}</span>
+                        <span>${idx+1}. ${cat.length > 30 ? cat.substring(0,30)+'...' : cat}</span>
                         <span style="font-weight: 700; color: #f56565;">-${formatCurrency(amount)}</span>
                     </div>
                 `).join('') || '<div style="text-align: center; padding: 20px;">Нет данных</div>'}
@@ -9671,22 +9675,26 @@ function renderOddsPage() {
                             <th style="padding: 10px;">Дата</th>
                             <th style="padding: 10px;">Операция</th>
                             <th style="padding: 10px;">Категория</th>
+                            <th style="padding: 10px;">Счет</th>
                             <th style="padding: 10px; text-align: right;">Сумма</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${filteredOps.sort((a,b) => b.date - a.date).slice(0, 50).map(op => `
+                        ${filteredOps.sort((a,b) => b.date - a.date).slice(0, 100).map(op => `
                             <tr style="border-bottom: 1px solid rgba(102,126,234,0.1);">
                                 <td style="padding: 8px;">${op.date.getDate()}.${op.date.getMonth()+1}.${op.date.getFullYear()}</td>
                                 <td style="padding: 8px;">${op.article}</td>
                                 <td style="padding: 8px;">${op.category}</td>
-                                <td style="padding: 8px; text-align: right; ${op.type === 'income' ? 'color: #48bb78;' : 'color: #f56565;'}">${op.type === 'income' ? '+' : '-'}${formatCurrency(op.amount)}</td>
-                             </tr>
+                                <td style="padding: 8px; font-size: 10px;">${op.account?.substring(0, 25) || '—'}</td>
+                                <td style="padding: 8px; text-align: right; ${op.type === 'income' ? 'color: #48bb78;' : 'color: #f56565;'}">
+                                    ${op.type === 'income' ? '+' : '-'}${formatCurrencyWithCurrency(op.amount, op.currency)}
+                                </td>
+                              </tr>
                         `).join('')}
                     </tbody>
                 </table>
             </div>
-            ${filteredOps.length > 50 ? '<div style="text-align: center; padding: 12px; font-size: 11px; opacity: 0.6;">Показаны первые 50 операций</div>' : ''}
+            ${filteredOps.length > 100 ? '<div style="text-align: center; padding: 12px; font-size: 11px; opacity: 0.6;">Показаны первые 100 операций</div>' : ''}
         </div>
     `;
     
@@ -9696,7 +9704,9 @@ function renderOddsPage() {
     setTimeout(() => {
         const canvas = document.getElementById('oddsDailyChart');
         if (canvas && chartLabels.length > 0) {
-            if (window.oddsDailyChartObj) window.oddsDailyChartObj.destroy();
+            if (window.oddsDailyChartObj && typeof window.oddsDailyChartObj.destroy === 'function') {
+                window.oddsDailyChartObj.destroy();
+            }
             const ctx = canvas.getContext('2d');
             const isDarkMode = document.body.classList.contains('dark');
             
@@ -9752,25 +9762,19 @@ function initOddsFilters() {
     const endDateInput = document.getElementById('oddsEndDate');
     const applyBtn = document.getElementById('oddsApplyDatesBtn');
     const resetBtn = document.getElementById('oddsResetDatesBtn');
-    const forceRefreshBtn = document.getElementById('oddsForceRefreshBtn');  // ДОБАВИТЬ ЭТУ СТРОКУ
+    const forceRefreshBtn = document.getElementById('oddsForceRefreshBtn');
     const quickBtns = document.querySelectorAll('.odds-quick-btn');
     
     if (!startDateInput || !endDateInput) return;
     
-    // Применить фильтр
     if (applyBtn) {
         applyBtn.onclick = () => {
-            if (startDateInput.value) {
-                oddsDateRange.startDate = new Date(startDateInput.value);
-            }
-            if (endDateInput.value) {
-                oddsDateRange.endDate = new Date(endDateInput.value);
-            }
+            if (startDateInput.value) oddsDateRange.startDate = new Date(startDateInput.value);
+            if (endDateInput.value) oddsDateRange.endDate = new Date(endDateInput.value);
             renderOddsPage();
         };
     }
     
-    // Сбросить фильтр (последние 30 дней)
     if (resetBtn) {
         resetBtn.onclick = () => {
             const today = new Date();
@@ -9783,18 +9787,15 @@ function initOddsFilters() {
             renderOddsPage();
         };
     }
-
-    // Принудительное обновление
+    
     if (forceRefreshBtn) {
         forceRefreshBtn.onclick = () => {
-            console.log('Принудительное обновление ОДДС');
             oddsOperations = collectOddsOperations();
             renderOddsPage();
             showNotification('Данные ОДДС обновлены', 'success');
         };
     }
     
-    // Быстрые кнопки
     quickBtns.forEach(btn => {
         btn.onclick = () => {
             const today = new Date();
@@ -9823,7 +9824,6 @@ function initOddsFilters() {
                 endDateInput.value = formatDateForInput(today);
                 oddsDateRange.endDate = today;
             }
-            
             renderOddsPage();
         };
     });
