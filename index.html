@@ -9403,7 +9403,9 @@ function parseOddsDate(row) {
     const monthIndex = monthsOrder.indexOf(month.toLowerCase());
     if (monthIndex === -1) return null;
     
-    const date = new Date(parseInt(year), monthIndex, parseInt(day));
+    // Нормализуем дату к UTC (полночь)
+    const date = new Date(Date.UTC(parseInt(year), monthIndex, parseInt(day)));
+    
     return isNaN(date.getTime()) ? null : date;
 }
 
@@ -10299,10 +10301,12 @@ function initOddsDates() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(today.getDate() - 30);
     
+    // Нормализуем к UTC
     startDateInput.value = formatDateForInput(thirtyDaysAgo);
     endDateInput.value = formatDateForInput(today);
-    oddsDateRange.startDate = thirtyDaysAgo;
-    oddsDateRange.endDate = today;
+    
+    oddsDateRange.startDate = new Date(Date.UTC(thirtyDaysAgo.getFullYear(), thirtyDaysAgo.getMonth(), thirtyDaysAgo.getDate()));
+    oddsDateRange.endDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
 }
 
 function initOddsFilters() {
@@ -10317,21 +10321,32 @@ function initOddsFilters() {
     
     if (applyBtn) {
         applyBtn.onclick = () => {
-            if (startDateInput.value) oddsDateRange.startDate = new Date(startDateInput.value);
-            if (endDateInput.value) oddsDateRange.endDate = new Date(endDateInput.value);
+            if (startDateInput.value) {
+                const [year, month, day] = startDateInput.value.split('-');
+                oddsDateRange.startDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+            }
+            if (endDateInput.value) {
+                const [year, month, day] = endDateInput.value.split('-');
+                oddsDateRange.endDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+            }
             renderOddsPage();
         };
     }
     
-    if (resetBtn) {
+        if (resetBtn) {
         resetBtn.onclick = () => {
             const today = new Date();
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(today.getDate() - 30);
-            startDateInput.value = formatDateForInput(thirtyDaysAgo);
-            endDateInput.value = formatDateForInput(today);
-            oddsDateRange.startDate = thirtyDaysAgo;
-            oddsDateRange.endDate = today;
+            
+            // Используем UTC
+            const startUTC = new Date(Date.UTC(thirtyDaysAgo.getFullYear(), thirtyDaysAgo.getMonth(), thirtyDaysAgo.getDate()));
+            const endUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+            
+            startDateInput.value = formatDateForInput(startUTC);
+            endDateInput.value = formatDateForInput(endUTC);
+            oddsDateRange.startDate = startUTC;
+            oddsDateRange.endDate = endUTC;
             renderOddsPage();
         };
     }
@@ -10344,19 +10359,20 @@ function initOddsFilters() {
         };
     }
     
-    quickBtns.forEach(btn => {
+        quickBtns.forEach(btn => {
         btn.onclick = () => {
             const today = new Date();
             const days = btn.dataset.days;
             if (days === 'thisMonth') {
-                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                const firstDayOfMonth = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1));
+                const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
                 startDateInput.value = formatDateForInput(firstDayOfMonth);
                 oddsDateRange.startDate = firstDayOfMonth;
-                endDateInput.value = formatDateForInput(today);
-                oddsDateRange.endDate = today;
+                endDateInput.value = formatDateForInput(todayUTC);
+                oddsDateRange.endDate = todayUTC;
             } else if (days === 'lastMonth') {
-                const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-                const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                const firstDayLastMonth = new Date(Date.UTC(today.getFullYear(), today.getMonth() - 1, 1));
+                const lastDayLastMonth = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 0));
                 startDateInput.value = formatDateForInput(firstDayLastMonth);
                 oddsDateRange.startDate = firstDayLastMonth;
                 endDateInput.value = formatDateForInput(lastDayLastMonth);
@@ -10364,10 +10380,12 @@ function initOddsFilters() {
             } else if (days) {
                 const pastDate = new Date();
                 pastDate.setDate(today.getDate() - parseInt(days));
-                startDateInput.value = formatDateForInput(pastDate);
-                oddsDateRange.startDate = pastDate;
-                endDateInput.value = formatDateForInput(today);
-                oddsDateRange.endDate = today;
+                const pastUTC = new Date(Date.UTC(pastDate.getFullYear(), pastDate.getMonth(), pastDate.getDate()));
+                const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+                startDateInput.value = formatDateForInput(pastUTC);
+                oddsDateRange.startDate = pastUTC;
+                endDateInput.value = formatDateForInput(todayUTC);
+                oddsDateRange.endDate = todayUTC;
             }
             renderOddsPage();
         };
