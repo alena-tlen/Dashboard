@@ -9884,6 +9884,7 @@ function renderOddsPage() {
     // 2. Собираем ВСЕ операции ДО начала выбранного периода (для расчёта накопленного остатка)
     const startDate = oddsDateRange.startDate;
     let cumulativeBalance = initialBalance;
+    let opsBeforeStartCount = 0;
     
     if (startDate) {
         // Все операции до startDate (не включая startDate)
@@ -9891,6 +9892,8 @@ function renderOddsPage() {
             if (op.currency !== currentCurrency) return false;
             return op.date < startDate;
         });
+        
+        opsBeforeStartCount = opsBeforeStart.length;
         
         // Накопить остаток на начало периода
         opsBeforeStart.forEach(op => {
@@ -9904,7 +9907,7 @@ function renderOddsPage() {
     
     console.log(`Период: с ${startDate} по ${oddsDateRange.endDate}`);
     console.log(`Начальный остаток по справочнику: ${initialBalance}`);
-    console.log(`Операций до начала периода: ${opsBeforeStart?.length || 0}`);
+    console.log(`Операций до начала периода: ${opsBeforeStartCount}`);
     console.log(`Остаток на начало периода: ${startBalance}`);
     
     // ========== РАСЧЁТ НАКОПИТЕЛЬНОГО ОСТАТКА ПО ДНЯМ ==========
@@ -10236,7 +10239,6 @@ function renderBalanceTrendChart(data) {
     });
 }
 
-let activeOddsTab = 0;
 
 function formatDateForInput(date) {
     if (!date) return '';
@@ -10382,6 +10384,9 @@ loadOddsPlans();
     document.getElementById('logoutBtn')?.addEventListener('click', logout);
     
     initAuth();
+//document.getElementById('mainApp').style.display = 'block';
+//document.getElementById('authContainer').style.display = 'none';
+//initApp();
     </script>
 
 <!-- Плавающая кнопка фильтров -->
