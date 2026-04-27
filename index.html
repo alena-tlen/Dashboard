@@ -1882,6 +1882,81 @@ body.dark .filter-modal .filter-group select {
     max-height: 300px;
 }
 
+/* Стили для страницы ОДДС */
+#oddsPageContainer input[type="date"] {
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+body.light #oddsPageContainer input[type="date"] {
+    background: white;
+    border-color: #e2e8f0;
+    color: #1a1a2e;
+}
+
+body.dark #oddsPageContainer input[type="date"] {
+    background: #0f0f1a;
+    border-color: #2d2d3a;
+    color: #e2e8f0;
+}
+
+#oddsPageContainer input[type="date"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+}
+
+.odds-quick-btn {
+    transition: all 0.2s ease;
+}
+
+.odds-quick-btn:hover {
+    background: rgba(102,126,234,0.3) !important;
+    transform: translateY(-1px);
+}
+
+/* Карточки ОДДС на странице */
+.odds-section-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
+}
+
+body.dark .odds-section-card {
+    background: #1a1a2a;
+    border: 1px solid #2d2d3a;
+}
+
+.odds-section-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.odds-stat-item {
+    background: rgba(102,126,234,0.08);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.odds-stat-item:hover {
+    transform: scale(1.02);
+    background: rgba(102,126,234,0.15);
+}
+
+.odds-cashflow-positive {
+    animation: pulseCashflow 1s ease-in-out;
+}
+
+@keyframes pulseCashflow {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
 
 </style>
 </head>
@@ -1947,6 +2022,7 @@ body.dark .filter-modal .filter-group select {
         <div class="nav-subitem" data-channel="detsky-mir"><span class="nav-icon">🧸</span><span>Детский мир</span></div>
         <div class="nav-subitem" data-channel="lamoda"><span class="nav-icon">👗</span><span>Lamoda</span></div>
     </div>
+    <div class="nav-item" data-page="odds"><span class="nav-icon">💰</span><span>ОДДС</span></div>
     <div class="nav-item" data-page="abcxyz"><span class="nav-icon">📊</span><span>ABC/XYZ анализ</span></div>
     <div class="nav-item" data-page="ai"><span class="nav-icon">🤖</span><span>AI Аналитик</span></div>
     
@@ -1973,6 +2049,47 @@ body.dark .filter-modal .filter-group select {
                 <div id="page-channel-ozon" class="page-content"><div id="channelOzonMetrics"></div></div>
                 <div id="page-channel-detsky-mir" class="page-content"><div id="channelDetskyMirMetrics"></div></div>
                 <div id="page-channel-lamoda" class="page-content"><div id="channelLamodaMetrics"></div></div>
+                <div id="page-odds" class="page-content">
+    <div id="oddsPageContainer">
+        <div class="metrics-grid" style="margin-bottom: 24px;">
+            <!-- Фильтры с календарем -->
+            <div class="metric-card" style="grid-column: span 4; padding: 20px;">
+                <div class="metric-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                    <span style="font-size: 20px;">📅</span>
+                    <span>Период анализа</span>
+                    <span style="font-size: 11px; color: #a0aec0; margin-left: auto;">выберите даты для анализа движения денежных средств</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end;">
+                    <div style="flex: 1; min-width: 180px;">
+                        <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #667eea;">📅 С даты</label>
+                        <input type="date" id="oddsStartDate" style="width: 100%; padding: 10px 12px; border: 1px solid rgba(102,126,234,0.3); border-radius: 10px; background: transparent; font-size: 14px;">
+                    </div>
+                    <div style="flex: 1; min-width: 180px;">
+                        <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #667eea;">📅 По дату</label>
+                        <input type="date" id="oddsEndDate" style="width: 100%; padding: 10px 12px; border: 1px solid rgba(102,126,234,0.3); border-radius: 10px; background: transparent; font-size: 14px;">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="oddsApplyDatesBtn" class="btn btn-primary" style="padding: 10px 24px;">📊 Применить</button>
+                        <button id="oddsResetDatesBtn" class="btn btn-secondary" style="padding: 10px 24px; background: #a0aec0;">🔄 Сбросить</button>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div style="font-size: 11px; opacity: 0.6; margin-bottom: 4px;">📌 Быстрые периоды</div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button class="odds-quick-btn" data-days="7" style="padding: 4px 12px; font-size: 11px; background: rgba(102,126,234,0.1); border: none; border-radius: 20px; cursor: pointer;">7 дней</button>
+                            <button class="odds-quick-btn" data-days="30" style="padding: 4px 12px; font-size: 11px; background: rgba(102,126,234,0.1); border: none; border-radius: 20px; cursor: pointer;">30 дней</button>
+                            <button class="odds-quick-btn" data-days="90" style="padding: 4px 12px; font-size: 11px; background: rgba(102,126,234,0.1); border: none; border-radius: 20px; cursor: pointer;">90 дней</button>
+                            <button class="odds-quick-btn" data-days="thisMonth" style="padding: 4px 12px; font-size: 11px; background: rgba(102,126,234,0.1); border: none; border-radius: 20px; cursor: pointer;">Этот месяц</button>
+                            <button class="odds-quick-btn" data-days="lastMonth" style="padding: 4px 12px; font-size: 11px; background: rgba(102,126,234,0.1); border: none; border-radius: 20px; cursor: pointer;">Прошлый месяц</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Основной контент ОДДС -->
+        <div id="oddsMainContent"></div>
+    </div>
+</div>
                 <div id="page-abcxyz" class="page-content">
     <div class="abcxyz-container" id="abcxyzContainer">
         <div class="upload-card" id="abcxyzUploadArea" style="margin-bottom: 24px; cursor: pointer;">
@@ -8791,6 +8908,25 @@ setTimeout(() => {
         newFilter.style.display = 'none';
         document.body.appendChild(newFilter);
     }
+
+    // Навигация на страницу ОДДС
+const oddsNavItem = document.querySelector('.nav-item[data-page="odds"]');
+if (oddsNavItem) {
+    oddsNavItem.onclick = () => {
+        currentChannel = null;
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
+        oddsNavItem.classList.add('active');
+        if (channelsSubmenu) channelsSubmenu.classList.remove('show');
+        if (arrow) arrow.classList.remove('open');
+        document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('page-odds').classList.add('active');
+        
+        // Инициализируем даты при первом открытии
+        initOddsDates();
+        renderOddsPage();
+    };
+}
     
     const realCompanyFilter = document.getElementById('companyFilter');
     const realYearFilter = document.getElementById('yearFilter');
@@ -9171,7 +9307,410 @@ if (abcxyzFileInput) {
 if (abcxyzUploadArea) {
     abcxyzUploadArea.onclick = () => abcxyzFileInput?.click();
 }
+
+// ========== ОДДС С ФИЛЬТРАЦИЕЙ ПО ДАТАМ ==========
+let oddsDateRange = { startDate: null, endDate: null };
+let oddsOperations = [];
+
+// Функция для парсинга даты из строки (год, месяц, число)
+function parseOperationDate(row) {
+    const year = row.год;
+    const month = row.месяц;
+    const day = row.число;
     
+    if (!year || !month || !day) return null;
+    
+    const monthIndex = monthsOrder.indexOf(month.toLowerCase());
+    if (monthIndex === -1) return null;
+    
+    // Создаем дату (месяцы в JS от 0 до 11)
+    const date = new Date(parseInt(year), monthIndex, parseInt(day));
+    if (isNaN(date.getTime())) return null;
+    return date;
+}
+
+// Сбор всех операций по счетам
+function collectOddsOperations() {
+    const operations = [];
+    
+    currentData.forEach(row => {
+        const account = row.Счет || row.счет || row['Счет'] || '';
+        const article = row.статья || '';
+        
+        // Пропускаем начальные остатки
+        if (article === 'Начальный остаток') return;
+        if (!account) return;
+        
+        const amount = parseFloat(row.сумма) || 0;
+        const date = parseOperationDate(row);
+        
+        // Определяем тип операции
+        let type = '';
+        if (article === 'Поступление на расчетный счет') {
+            type = 'income';
+        } else if (article === 'Списание с расчетного счета') {
+            type = 'expense';
+        } else if (amount > 0) {
+            type = 'income';
+        } else if (amount < 0) {
+            type = 'expense';
+        }
+        
+        if (type && date) {
+            operations.push({
+                date: date,
+                amount: Math.abs(amount),
+                type: type,
+                article: article,
+                category: row.канал || row.подканал || article,
+                year: row.год,
+                month: row.месяц,
+                day: row.число
+            });
+        }
+    });
+    
+    return operations;
+}
+
+// Инициализация дат (по умолчанию - последние 30 дней)
+function initOddsDates() {
+    const startDateInput = document.getElementById('oddsStartDate');
+    const endDateInput = document.getElementById('oddsEndDate');
+    
+    if (!startDateInput || !endDateInput) return;
+    
+    // По умолчанию - последние 30 дней от сегодня
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    // Форматируем для input date (YYYY-MM-DD)
+    startDateInput.value = formatDateForInput(thirtyDaysAgo);
+    endDateInput.value = formatDateForInput(today);
+    
+    oddsDateRange.startDate = thirtyDaysAgo;
+    oddsDateRange.endDate = today;
+}
+
+function formatDateForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Фильтрация операций по датам
+function filterOperationsByDate(operations, startDate, endDate) {
+    if (!startDate || !endDate) return operations;
+    
+    return operations.filter(op => {
+        return op.date >= startDate && op.date <= endDate;
+    });
+}
+
+// Основная функция рендеринга страницы ОДДС
+function renderOddsPage() {
+    const container = document.getElementById('oddsMainContent');
+    if (!container) return;
+    
+    if (!currentData || currentData.length === 0) {
+        container.innerHTML = '<div class="loading" style="text-align: center; padding: 60px;">📊 Загрузите данные для отображения ОДДС</div>';
+        return;
+    }
+    
+    // Собираем все операции
+    oddsOperations = collectOddsOperations();
+    
+    // Применяем фильтр по датам
+    let filteredOps = filterOperationsByDate(oddsOperations, oddsDateRange.startDate, oddsDateRange.endDate);
+    
+    // Разделяем на доходы и расходы
+    let incomes = filteredOps.filter(op => op.type === 'income');
+    let expenses = filteredOps.filter(op => op.type === 'expense');
+    
+    let totalIncome = incomes.reduce((sum, op) => sum + op.amount, 0);
+    let totalExpense = expenses.reduce((sum, op) => sum + op.amount, 0);
+    let netCashFlow = totalIncome - totalExpense;
+    
+    // Начальный остаток (берем все начальные остатки из данных)
+    let startBalance = 0;
+    currentData.forEach(row => {
+        if (row.статья === 'Начальный остаток') {
+            const amount = parseFloat(row.сумма) || 0;
+            startBalance += amount;
+        }
+    });
+    
+    // Остаток на конец периода
+    const endBalance = startBalance + netCashFlow;
+    
+    // Группировка по категориям для доходов
+    const incomeByCategory = {};
+    incomes.forEach(inc => {
+        const cat = inc.category;
+        if (!incomeByCategory[cat]) incomeByCategory[cat] = 0;
+        incomeByCategory[cat] += inc.amount;
+    });
+    
+    // Группировка по категориям для расходов
+    const expenseByCategory = {};
+    expenses.forEach(exp => {
+        const cat = exp.category;
+        if (!expenseByCategory[cat]) expenseByCategory[cat] = 0;
+        expenseByCategory[cat] += exp.amount;
+    });
+    
+    // Сортируем
+    const topIncomeCategories = Object.entries(incomeByCategory).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const topExpenseCategories = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    
+    // Группировка по дням для графика
+    const dailyData = new Map();
+    filteredOps.forEach(op => {
+        const dateKey = op.date.toISOString().split('T')[0];
+        if (!dailyData.has(dateKey)) {
+            dailyData.set(dateKey, { date: op.date, income: 0, expense: 0 });
+        }
+        const dayData = dailyData.get(dateKey);
+        if (op.type === 'income') dayData.income += op.amount;
+        else dayData.expense += op.amount;
+    });
+    
+    const sortedDays = Array.from(dailyData.values()).sort((a, b) => a.date - b.date);
+    const chartLabels = sortedDays.map(d => {
+        return `${d.date.getDate()}.${d.date.getMonth()+1}`;
+    });
+    const chartIncomeData = sortedDays.map(d => d.income / 1000);
+    const chartExpenseData = sortedDays.map(d => d.expense / 1000);
+    
+    // Форматирование дат для отображения
+    const formatDate = (date) => {
+        if (!date) return '—';
+        return `${date.getDate()}.${date.getMonth()+1}.${date.getFullYear()}`;
+    };
+    
+    // Генерируем HTML
+    const html = `
+        <!-- Ключевые показатели -->
+        <div class="metrics-grid" style="margin-bottom: 24px;">
+            <div class="metric-card">
+                <div class="metric-title">💰 Остаток на ${formatDate(oddsDateRange.endDate)}</div>
+                <div class="metric-value" style="color: ${endBalance >= 0 ? '#48bb78' : '#f56565'}">${formatCurrency(endBalance)}</div>
+                <div class="metric-sub">${formatCurrency(startBalance)} на начало периода</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">📥 Поступления</div>
+                <div class="metric-value" style="color: #48bb78">${formatCurrency(totalIncome)}</div>
+                <div class="metric-sub">${incomes.length} операций</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">📤 Списания</div>
+                <div class="metric-value" style="color: #f56565">${formatCurrency(totalExpense)}</div>
+                <div class="metric-sub">${expenses.length} операций</div>
+            </div>
+            <div class="metric-card ${netCashFlow >= 0 ? '' : 'negative-bg'}" style="${netCashFlow < 0 ? 'border: 2px solid #f56565;' : ''}">
+                <div class="metric-title">📊 Чистый поток</div>
+                <div class="metric-value" style="color: ${netCashFlow >= 0 ? '#48bb78' : '#f56565'}">${netCashFlow >= 0 ? '+' : ''}${formatCurrency(Math.abs(netCashFlow))}</div>
+                <div class="metric-sub">за выбранный период</div>
+            </div>
+        </div>
+        
+        <!-- Динамика по дням -->
+        <div class="odds-section-card">
+            <div class="metric-title" style="margin-bottom: 16px;">📈 Дневная динамика (${chartLabels.length} дней)</div>
+            <canvas id="oddsDailyChart" style="height: 300px; width: 100%;"></canvas>
+        </div>
+        
+        <div class="metrics-grid" style="margin-bottom: 24px;">
+            <!-- ТОП доходов -->
+            <div class="metric-card">
+                <div class="metric-title" style="margin-bottom: 16px;">🏆 ТОП-5 поступлений</div>
+                ${topIncomeCategories.map(([cat, amount], idx) => `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding: 8px; background: rgba(72,187,120,0.1); border-radius: 8px;">
+                        <span>${idx+1}. ${cat}</span>
+                        <span style="font-weight: 700; color: #48bb78;">+${formatCurrency(amount)}</span>
+                    </div>
+                `).join('') || '<div style="text-align: center; padding: 20px;">Нет данных</div>'}
+            </div>
+            
+            <!-- ТОП расходов -->
+            <div class="metric-card">
+                <div class="metric-title" style="margin-bottom: 16px;">⚠️ ТОП-5 списаний</div>
+                ${topExpenseCategories.map(([cat, amount], idx) => `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding: 8px; background: rgba(245,101,101,0.1); border-radius: 8px;">
+                        <span>${idx+1}. ${cat}</span>
+                        <span style="font-weight: 700; color: #f56565;">-${formatCurrency(amount)}</span>
+                    </div>
+                `).join('') || '<div style="text-align: center; padding: 20px;">Нет данных</div>'}
+            </div>
+        </div>
+        
+        <!-- Детальная таблица операций -->
+        <div class="odds-section-card">
+            <div class="metric-title" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <span>📋 Детальный отчет по операциям</span>
+                <span style="font-size: 11px; color: #a0aec0;">${filteredOps.length} операций</span>
+            </div>
+            <div style="overflow-x: auto; max-height: 400px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <thead>
+                        <tr style="background: rgba(102,126,234,0.1); position: sticky; top: 0;">
+                            <th style="padding: 10px;">Дата</th>
+                            <th style="padding: 10px;">Операция</th>
+                            <th style="padding: 10px;">Категория</th>
+                            <th style="padding: 10px; text-align: right;">Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredOps.sort((a,b) => b.date - a.date).slice(0, 50).map(op => `
+                            <tr style="border-bottom: 1px solid rgba(102,126,234,0.1);">
+                                <td style="padding: 8px;">${op.date.getDate()}.${op.date.getMonth()+1}.${op.date.getFullYear()}</td>
+                                <td style="padding: 8px;">${op.article}</td>
+                                <td style="padding: 8px;">${op.category}</td>
+                                <td style="padding: 8px; text-align: right; ${op.type === 'income' ? 'color: #48bb78;' : 'color: #f56565;'}">${op.type === 'income' ? '+' : '-'}${formatCurrency(op.amount)}</td>
+                             </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            ${filteredOps.length > 50 ? '<div style="text-align: center; padding: 12px; font-size: 11px; opacity: 0.6;">Показаны первые 50 операций</div>' : ''}
+        </div>
+    `;
+    
+    container.innerHTML = html;
+    
+    // Отрисовка графика
+    setTimeout(() => {
+        const canvas = document.getElementById('oddsDailyChart');
+        if (canvas && chartLabels.length > 0) {
+            if (window.oddsDailyChartObj) window.oddsDailyChartObj.destroy();
+            const ctx = canvas.getContext('2d');
+            const isDarkMode = document.body.classList.contains('dark');
+            
+            window.oddsDailyChartObj = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [
+                        {
+                            label: 'Поступления',
+                            data: chartIncomeData,
+                            borderColor: '#48bb78',
+                            backgroundColor: 'rgba(72, 187, 120, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Списания',
+                            data: chartExpenseData,
+                            borderColor: '#f56565',
+                            backgroundColor: 'rgba(245, 101, 101, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 11 } } },
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toFixed(0)} тыс. ₽` } }
+                    },
+                    scales: {
+                        x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 45, color: isDarkMode ? '#e2e8f0' : '#4a5568' } },
+                        y: { title: { display: true, text: 'тыс. ₽', font: { size: 10 } }, ticks: { font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+    }, 100);
+}
+
+// Обработчики для фильтров ОДДС
+function initOddsFilters() {
+    const startDateInput = document.getElementById('oddsStartDate');
+    const endDateInput = document.getElementById('oddsEndDate');
+    const applyBtn = document.getElementById('oddsApplyDatesBtn');
+    const resetBtn = document.getElementById('oddsResetDatesBtn');
+    const quickBtns = document.querySelectorAll('.odds-quick-btn');
+    
+    if (!startDateInput || !endDateInput) return;
+    
+    // Применить фильтр
+    if (applyBtn) {
+        applyBtn.onclick = () => {
+            if (startDateInput.value) {
+                oddsDateRange.startDate = new Date(startDateInput.value);
+            }
+            if (endDateInput.value) {
+                oddsDateRange.endDate = new Date(endDateInput.value);
+            }
+            renderOddsPage();
+        };
+    }
+    
+    // Сбросить фильтр (последние 30 дней)
+    if (resetBtn) {
+        resetBtn.onclick = () => {
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            startDateInput.value = formatDateForInput(thirtyDaysAgo);
+            endDateInput.value = formatDateForInput(today);
+            oddsDateRange.startDate = thirtyDaysAgo;
+            oddsDateRange.endDate = today;
+            renderOddsPage();
+        };
+    }
+    
+    // Быстрые кнопки
+    quickBtns.forEach(btn => {
+        btn.onclick = () => {
+            const today = new Date();
+            const days = btn.dataset.days;
+            
+            if (days === 'thisMonth') {
+                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                startDateInput.value = formatDateForInput(firstDayOfMonth);
+                oddsDateRange.startDate = firstDayOfMonth;
+                endDateInput.value = formatDateForInput(today);
+                oddsDateRange.endDate = today;
+            } 
+            else if (days === 'lastMonth') {
+                const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                startDateInput.value = formatDateForInput(firstDayLastMonth);
+                oddsDateRange.startDate = firstDayLastMonth;
+                endDateInput.value = formatDateForInput(lastDayLastMonth);
+                oddsDateRange.endDate = lastDayLastMonth;
+            }
+            else if (days) {
+                const pastDate = new Date();
+                pastDate.setDate(today.getDate() - parseInt(days));
+                startDateInput.value = formatDateForInput(pastDate);
+                oddsDateRange.startDate = pastDate;
+                endDateInput.value = formatDateForInput(today);
+                oddsDateRange.endDate = today;
+            }
+            
+            renderOddsPage();
+        };
+    });
+}
+    
+    // Инициализация ОДДС
+    initOddsDates();
+    initOddsFilters();
+    
+
 } // <--- ЭТО ЗАКРЫВАЮЩАЯ СКОБКА ФУНКЦИИ initApp
         
     
