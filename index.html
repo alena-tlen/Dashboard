@@ -9838,6 +9838,7 @@ function calculateForecast() {
 // Основной рендер страницы ОДДС
 let currentBalance = 0;
 
+// Основной рендер страницы ОДДС
 function renderOddsPage() {
     const container = document.getElementById('oddsMainContent');
     if (!container) return;
@@ -9864,22 +9865,9 @@ function renderOddsPage() {
     const totalExpense = expenses.reduce((s, o) => s + o.amount, 0);
     const netFlow = totalIncome - totalExpense;
     
-    // ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАКОПИТЕЛЬНОГО ОСТАТКА ==========
-    // Сортируем операции по дате
-    const sortedOps = [...currencyFiltered].sort((a, b) => a.date - b.date);
-    
-    // Начальный остаток на выбранную дату (до начала периода)
+    // ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА ==========
+    // Начальный остаток из справочника "Начальный остаток" (только для выбранной валюты)
     let startBalance = 0;
-    const startDate = oddsDateRange.startDate;
-    
-    // Собираем ВСЕ операции ДО начала выбранного периода (для правильного начального остатка)
-    const allOpsForStartBalance = oddsOperations.filter(op => {
-        if (op.currency !== currentCurrency) return false;
-        if (!startDate) return false;
-        return op.date < startDate;
-    });
-    
-    // Начальные остатки из справочников (только для выбранной валюты)
     currentData.forEach(row => {
         if (row.статья === 'Начальный остаток') {
             const account = row.Счет || '';
@@ -9889,13 +9877,23 @@ function renderOddsPage() {
         }
     });
     
-    // Прибавляем все операции ДО startDate
-    allOpsForStartBalance.forEach(op => {
-        if (op.type === 'income') startBalance += op.amount;
-        else if (op.type === 'expense') startBalance -= op.amount;
-    });
+    // Прибавляем операции ДО начала выбранной даты (НО не включаем начальный остаток повторно)
+    const startDate = oddsDateRange.startDate;
+    if (startDate) {
+        const opsBeforeStart = oddsOperations.filter(op => {
+            if (op.currency !== currentCurrency) return false;
+            return op.date < startDate;
+        });
+        
+        opsBeforeStart.forEach(op => {
+            if (op.type === 'income') startBalance += op.amount;
+            else if (op.type === 'expense') startBalance -= op.amount;
+        });
+    }
     
-    // Рассчитываем накопительный остаток по дням (по операциям в периоде)
+    // ========== РАСЧЁТ НАКОПИТЕЛЬНОГО ОСТАТКА ПО ДНЯМ ==========
+    const sortedOps = [...currencyFiltered].sort((a, b) => a.date - b.date);
+    
     const dailyMap = new Map();
     sortedOps.forEach(op => {
         const key = op.date.toISOString().split('T')[0];
@@ -9945,7 +9943,6 @@ function renderOddsPage() {
     });
     
     // Форматирование
-    const formatDateShort = (date) => date ? `${date.getDate()}.${date.getMonth()+1}` : '';
     const formatDateRange = (date) => date ? `${date.getDate()}.${date.getMonth()+1}.${date.getFullYear()}` : '';
     
     const html = `
@@ -10090,7 +10087,7 @@ function renderOddsPage() {
             <div id="creditCalculator"></div>
         </div>
         
-        <!-- Вкладка 4: Детали по счетам (ТЕХНИЧЕСКИЕ ОПЕРАЦИИ ВИДНЫ ЗДЕСЬ) -->
+        <!-- Вкладка 4: Детали по счетам -->
         <div id="oddsTab3" class="odds-tab-content" style="${activeOddsTab === 3 ? '' : 'display: none;'}">
             <div class="metrics-grid" style="margin-bottom: 20px;">
                 ${Array.from(accountsMap.entries()).map(([account, data]) => `
