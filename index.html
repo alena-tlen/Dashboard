@@ -10009,7 +10009,7 @@ function renderOddsPage() {
         return;
     }
     
-    // Собираем все операции
+    // ВСЕГДА ОБНОВЛЯЕМ ОПЕРАЦИИ ПЕРЕД РЕНДЕРОМ!
     oddsOperations = collectOddsOperations();
 
     // === ВСТАВЬТЕ ДИАГНОСТИКУ ПРЯМО ЗДЕСЬ, ПОСЛЕ ЭТОЙ СТРОКИ ===
@@ -10502,6 +10502,9 @@ function initOddsFilters() {
     
     if (applyBtn) {
         applyBtn.onclick = () => {
+            // ОБНОВЛЯЕМ ДАННЫЕ ПЕРЕД ФИЛЬТРАЦИЕЙ!
+            oddsOperations = collectOddsOperations();
+            
             if (startDateInput.value) {
                 const [year, month, day] = startDateInput.value.split('-');
                 oddsDateRange.startDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
@@ -10514,34 +10517,61 @@ function initOddsFilters() {
         };
     }
     
-        if (resetBtn) {
+    if (resetBtn) {
         resetBtn.onclick = () => {
-            const today = new Date();
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(today.getDate() - 30);
+            // ОБНОВЛЯЕМ ДАННЫЕ ПЕРЕД СБРОСОМ!
+            oddsOperations = collectOddsOperations();
             
-            // Используем UTC
-            const startUTC = new Date(Date.UTC(thirtyDaysAgo.getFullYear(), thirtyDaysAgo.getMonth(), thirtyDaysAgo.getDate()));
-            const endUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+            // Находим минимальную и максимальную дату в данных
+            let minDate = null;
+            let maxDate = null;
             
-            startDateInput.value = formatDateForInput(startUTC);
-            endDateInput.value = formatDateForInput(endUTC);
-            oddsDateRange.startDate = startUTC;
-            oddsDateRange.endDate = endUTC;
+            oddsOperations.forEach(op => {
+                if (op.date) {
+                    if (!minDate || op.date < minDate) minDate = op.date;
+                    if (!maxDate || op.date > maxDate) maxDate = op.date;
+                }
+            });
+            
+            if (minDate && maxDate) {
+                const defaultStart = new Date(maxDate);
+                defaultStart.setDate(maxDate.getDate() - 30);
+                const start = defaultStart > minDate ? defaultStart : minDate;
+                
+                startDateInput.value = formatDateForInput(start);
+                endDateInput.value = formatDateForInput(maxDate);
+                
+                oddsDateRange.startDate = new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate()));
+                oddsDateRange.endDate = new Date(Date.UTC(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate()));
+            } else {
+                const today = new Date();
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(today.getDate() - 30);
+                
+                startDateInput.value = formatDateForInput(thirtyDaysAgo);
+                endDateInput.value = formatDateForInput(today);
+                
+                oddsDateRange.startDate = new Date(Date.UTC(thirtyDaysAgo.getFullYear(), thirtyDaysAgo.getMonth(), thirtyDaysAgo.getDate()));
+                oddsDateRange.endDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+            }
             renderOddsPage();
         };
     }
     
     if (forceRefreshBtn) {
         forceRefreshBtn.onclick = () => {
+            // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ
             oddsOperations = collectOddsOperations();
             renderOddsPage();
             showNotification('Данные ОДДС обновлены', 'success');
         };
     }
     
-        quickBtns.forEach(btn => {
+    quickBtns.forEach(btn => {
         btn.onclick = () => {
+            // ОБНОВЛЯЕМ ДАННЫЕ ПЕРЕД БЫСТРЫМ ПЕРИОДОМ!
+            oddsOperations = collectOddsOperations();
+            
             const today = new Date();
             const days = btn.dataset.days;
             if (days === 'thisMonth') {
@@ -10667,5 +10697,3 @@ loadOddsPlans();
 
 </body>
 </html>
-
-    
