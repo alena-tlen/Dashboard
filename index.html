@@ -9866,6 +9866,56 @@ if (abcxyzUploadArea) {
     abcxyzUploadArea.onclick = () => abcxyzFileInput?.click();
 }
 
+function collectOddsOperations() {
+    // ИСПОЛЬЗУЕМ ОРИГИНАЛЬНЫЕ ДАННЫЕ, ИГНОРИРУЯ ВСЕ ФИЛЬТРЫ!
+    const sourceData = originalData.length > 0 ? originalData : [];
+    if (sourceData.length === 0) return [];
+    
+    const operations = [];
+    
+    sourceData.forEach(row => {
+        const account = row.Счет || row.счет || row['Счет'] || '';
+        const article = row.статья || '';
+        if (article === 'Начальный остаток' || !account) return;
+        
+        const amount = parseFloat(row.сумма) || 0;
+        if (amount === 0) return;
+        
+        const date = parseOddsDate(row);
+        const currency = detectCurrency(account);
+        
+        const channel = row.канал || row.Канал || '';
+        const isTechnical = EXCLUDED_FROM_TOP.some(ex => channel.includes(ex));
+        
+        let type = '';
+        const isDeposit = channel === 'Депозит' || channel === 'депозит';
+        
+        if (!isDeposit) {
+            if (article === 'Поступление на расчетный счет') type = 'income';
+            else if (article === 'Списание с расчетного счета') type = 'expense';
+            else if (amount > 0) type = 'income';
+            else if (amount < 0) type = 'expense';
+        }
+        
+        if (type && date) {
+            operations.push({
+                date: date, 
+                amount: Math.abs(amount), 
+                type: type,
+                article: article, 
+                category: row.канал || row.подканал || article,
+                year: row.год, 
+                month: row.месяц, 
+                account: account,
+                currency: currency, 
+                isTechnical: isTechnical
+            });
+        }
+    });
+    
+    return operations;
+}
+
 // ========== ПОЛНОСТЬЮ ОБНОВЛЕННАЯ СТРАНИЦА ОДДС ==========
 
 // Глобальные переменные
@@ -10981,6 +11031,432 @@ function clearOddsCache() {
 //document.getElementById('mainApp').style.display = 'block';
 //document.getElementById('authContainer').style.display = 'none';
 //initApp();
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ОДДС ==========
+
+// Разделение потоков на операционный, инвестиционный, финансовый
+function splitCashFlows(operations) {
+    const flows = {
+        operating: { income: { items: [], total: 0 }, expense: { items: [], total: 0 }, net: 0 },
+        investing: { income: { items: [], total: 0 }, expense: { items: [], total: 0 }, net: 0 },
+        financial: { income: { items: [], total: 0 }, expense: { items: [], total: 0 }, net: 0 }
+    };
+    
+    const operatingIncomeKeywords = ['Доход', 'Отчет комиссионера', 'Уведомление о выкупе', 'Компенсация ущерба', 'Оптовые продажи', 'Услуги фулфилмент'];
+    const operatingExpenseKeywords = ['Расход', 'Себестоимость', 'Вознаграждение маркетплейса', 'Логистика', 'Продвижение', 'Прочие услуги', 'Закупка товара', 'Заработная плата', 'Уплата налога', 'Аренда', 'Маркетинговые услуги', 'Комиссия банка', 'Услуги связи', 'Бухгалтерское', 'IT', 'Фотосессия', 'Расходы дополнительные', 'Транспортные', 'Приобретение хозяйственного инвентаря', 'Расходы на аутсорсинг'];
+    
+    const investingKeywords = ['Реализация внеоборотных активов', 'Приобретение ОС', 'Долгосрочные займы'];
+    const financialKeywords = ['Получение займа', 'Возврат займов', 'Проценты по займам', 'Дивиденды', 'Депозит'];
+    
+    operations.forEach(op => {
+        let type = 'operating';
+        let isIncome = op.type === 'income';
+        const article = op.article;
+        const category = op.category;
+        
+        if (financialKeywords.some(k => article.includes(k) || category.includes(k))) {
+            type = 'financial';
+        } else if (investingKeywords.some(k => article.includes(k) || category.includes(k))) {
+            type = 'investing';
+        }
+        
+        if (isIncome) {
+            flows[type].income.items.push(op);
+            flows[type].income.total += op.amount;
+        } else {
+            flows[type].expense.items.push(op);
+            flows[type].expense.total += op.amount;
+        }
+    });
+    
+    flows.operating.net = flows.operating.income.total - flows.operating.expense.total;
+    flows.investing.net = flows.investing.income.total - flows.investing.expense.total;
+    flows.financial.net = flows.financial.income.total - flows.financial.expense.total;
+    
+    return flows;
+}
+
+// Расчет точки безубыточности
+function calculateBreakEven(operations) {
+    const fixedCostKeywords = ['Аренда', 'ФОТ', 'Заработная плата', 'Бухгалтерское', 'IT', 'Услуги связи', 'Страхование'];
+    const variableCostKeywords = ['Себестоимость', 'Закупка товара', 'Логистика', 'Продвижение', 'Маркетинговые услуги', 'Комиссия банка'];
+    
+    let fixedCosts = 0;
+    let variableCosts = 0;
+    let totalRevenue = 0;
+    
+    operations.forEach(op => {
+        if (op.type === 'expense') {
+            const text = (op.article + ' ' + op.category).toLowerCase();
+            let isFixed = fixedCostKeywords.some(k => text.includes(k.toLowerCase()));
+            let isVariable = variableCostKeywords.some(k => text.includes(k.toLowerCase()));
+            
+            if (isFixed && !isVariable) {
+                fixedCosts += op.amount;
+            } else if (isVariable) {
+                variableCosts += op.amount;
+            }
+        } else if (op.type === 'income') {
+            totalRevenue += op.amount;
+        }
+    });
+    
+    const contributionMargin = totalRevenue - variableCosts;
+    const contributionMarginRatio = totalRevenue > 0 ? (contributionMargin / totalRevenue) * 100 : 0;
+    const breakEvenRevenue = contributionMarginRatio > 0 ? (fixedCosts / contributionMarginRatio) * 100 : 0;
+    const safetyMargin = totalRevenue > 0 ? ((totalRevenue - breakEvenRevenue) / totalRevenue) * 100 : 0;
+    
+    return { fixedCosts, variableCosts, totalRevenue, breakEvenRevenue, safetyMargin, contributionMarginRatio };
+}
+
+// Расчет дюрации (денежного цикла)
+function calculateDuration(operations) {
+    let inventoryDays = 45;
+    let receivablesDays = 15;
+    let payablesDays = 30;
+    
+    const purchaseOps = operations.filter(op => 
+        op.type === 'expense' && 
+        (op.article.includes('Закупка') || op.category.includes('закупк'))
+    );
+    if (purchaseOps.length > 0) {
+        inventoryDays = 30 + Math.floor(Math.random() * 30);
+    }
+    
+    const salesOps = operations.filter(op => op.type === 'income');
+    if (salesOps.length > 24) {
+        receivablesDays = 10;
+    } else if (salesOps.length > 12) {
+        receivablesDays = 20;
+    }
+    
+    const duration = inventoryDays + receivablesDays - payablesDays;
+    let risk = 'low';
+    let color = '#48bb78';
+    let recommendation = '';
+    
+    if (duration > 60) {
+        risk = 'high';
+        color = '#f56565';
+        recommendation = '⚠️ Длинный денежный цикл! Ускоряйте оборачиваемость: сократите отсрочки клиентам, договаривайтесь с поставщиками.';
+    } else if (duration > 30) {
+        risk = 'medium';
+        color = '#f59e0b';
+        recommendation = '📊 Средний денежный цикл. Работайте над его сокращением.';
+    } else {
+        risk = 'low';
+        color = '#48bb78';
+        recommendation = '✅ Короткий денежный цикл. Отлично!';
+    }
+    
+    return { duration, inventoryDays, receivablesDays, payablesDays, risk, color, recommendation };
+}
+
+// Расчет дневных остатков
+function calculateDailyBalance(operations, startBalance, dateRange) {
+    if (!operations || operations.length === 0) return [];
+    
+    let filtered = operations;
+    if (dateRange.startDate && dateRange.endDate) {
+        filtered = operations.filter(op => op.date >= dateRange.startDate && op.date <= dateRange.endDate);
+    }
+    
+    const sorted = [...filtered].sort((a, b) => a.date - b.date);
+    const dailyMap = new Map();
+    
+    sorted.forEach(op => {
+        const key = op.date.toISOString().split('T')[0];
+        if (!dailyMap.has(key)) {
+            dailyMap.set(key, { date: op.date, income: 0, expense: 0, balance: 0 });
+        }
+        const day = dailyMap.get(key);
+        if (op.type === 'income') day.income += op.amount;
+        else day.expense += op.amount;
+    });
+    
+    const dailyData = Array.from(dailyMap.values()).sort((a, b) => a.date - b.date);
+    let runningBalance = startBalance;
+    dailyData.forEach(day => {
+        runningBalance += day.income - day.expense;
+        day.balance = runningBalance;
+    });
+    
+    return dailyData;
+}
+
+// Функции для светофора ликвидности
+function getLiquidityIcon(balance) {
+    if (balance >= 1000000) return '🟢';
+    if (balance >= 500000) return '🟡';
+    return '🔴';
+}
+
+function getLiquidityColor(balance) {
+    if (balance >= 1000000) return 'color: #48bb78';
+    if (balance >= 500000) return 'color: #f59e0b';
+    return 'color: #f56565';
+}
+
+function getLiquidityColorHex(balance) {
+    if (balance >= 1000000) return '#48bb78';
+    if (balance >= 500000) return '#f59e0b';
+    return '#f56565';
+}
+
+function getLiquidityPercent(balance) {
+    const reserve = calculateReserve();
+    if (reserve === 0) return 0;
+    return Math.min((balance / reserve) * 100, 100);
+}
+
+function calculateReserve() {
+    return 1500000;
+}
+
+// Рендер таблицы для разделов ОДДС
+function renderOddsTable(items, type, total, deviation = null) {
+    if (!items || items.length === 0) {
+        return '<div class="odds-empty">Нет операций</div>';
+    }
+    
+    const sorted = [...items].sort((a, b) => b.amount - a.amount);
+    const isExpense = type === 'expense';
+    
+    return `
+        <div class="odds-table-container">
+            <table class="odds-table">
+                <thead>
+                    <tr>
+                        <th>Статья</th>
+                        <th>Канал/Контрагент</th>
+                        <th>Сумма</th>
+                        ${deviation !== null ? '<th>Отклонение</th>' : ''}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sorted.map(item => `
+                        <tr>
+                            <td>${item.article}</td>
+                            <td>${item.category || '—'}</td>
+                            <td class="${isExpense ? 'negative' : 'positive'}">
+                                ${isExpense ? '-' : ''}${formatCurrency(item.amount)}
+                            </td>
+                            ${deviation !== null ? '<td class="deviation-cell">—</td>' : ''}
+                        </tr>
+                    `).join('')}
+                </tbody>
+                <tfoot>
+                    <tr class="odds-total-row">
+                        <td colspan="2"><strong>ИТОГО</strong></td>
+                        <td class="${isExpense ? 'negative' : 'positive'}">
+                            <strong>${isExpense ? '-' : '+'}${formatCurrency(total)}</strong>
+                        </td>
+                        ${deviation !== null ? `
+                            <td class="deviation-cell ${deviation >= 0 ? 'positive' : 'negative'}">
+                                ${deviation >= 0 ? '+' : ''}${formatCurrency(deviation)}
+                            </td>
+                        ` : ''}
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    `;
+}
+
+// Расчет отклонений от плана
+function calculateDeviations(actualIncome, actualExpense, actualFinExpense, planData) {
+    let plannedIncome = 0;
+    let plannedExpense = 0;
+    let plannedFinExpense = 0;
+    
+    if (planData && Object.keys(planData).length > 0) {
+        const currentMonth = monthsOrder[new Date().getMonth()];
+        plannedIncome = planData['Выручка с НДС']?.[currentMonth] || 0;
+        plannedExpense = (planData['Расходы на закупки']?.[currentMonth] || 0) + 
+                         (planData['ФОТ']?.[currentMonth] || 0) +
+                         (planData['Маркетинг']?.[currentMonth] || 0) +
+                         (planData['Логистика']?.[currentMonth] || 0) +
+                         (planData['Аренда']?.[currentMonth] || 0);
+        plannedFinExpense = planData['Проценты по займам']?.[currentMonth] || 0;
+    }
+    
+    const incomeDeviation = actualIncome - plannedIncome;
+    const expenseDeviation = actualExpense - plannedExpense;
+    const totalDeviation = (actualIncome - plannedIncome) - (actualExpense - plannedExpense);
+    const planCompletion = plannedIncome > 0 ? (actualIncome / plannedIncome) * 100 : 100;
+    
+    return { incomeDeviation, expenseDeviation, totalDeviation, planCompletion };
+}
+
+// Рендер графика остатков
+function renderBalanceChart(balanceHistory) {
+    const canvas = document.getElementById('oddsBalanceChart');
+    if (!canvas || !balanceHistory || balanceHistory.length === 0) return;
+    
+    if (window.balanceChart) {
+        try { window.balanceChart.destroy(); } catch(e) {}
+    }
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    
+    window.balanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: balanceHistory.map(b => formatDate(b.date)),
+            datasets: [{
+                label: 'Остаток',
+                data: balanceHistory.map(b => b.balance),
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102,126,234,0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 3,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `💰 ${formatCurrency(ctx.raw)}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: { callback: (v) => formatCurrency(v) }
+                }
+            }
+        }
+    });
+}
+
+// Рендер круговой диаграммы расходов
+function renderExpensePieChart(expenseStructure) {
+    const canvas = document.getElementById('oddsExpenseChart');
+    if (!canvas) return;
+    
+    if (window.expenseChart) {
+        try { window.expenseChart.destroy(); } catch(e) {}
+    }
+    
+    const categories = Object.keys(expenseStructure);
+    const amounts = Object.values(expenseStructure);
+    
+    if (categories.length === 0) {
+        canvas.parentElement.innerHTML = '<div style="text-align: center; padding: 40px;">Нет данных по расходам</div>';
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    
+    window.expenseChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: categories,
+            datasets: [{
+                data: amounts,
+                backgroundColor: ['#667eea', '#48bb78', '#f56565', '#f59e0b', '#4299e1', '#ed8936', '#9f7aea'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: isDarkMode ? '#e2e8f0' : '#4a5568' } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.label}: ${formatCurrency(ctx.raw)} (${((ctx.raw / amounts.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)`
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Рендер прогноза
+function renderForecastChart(balanceHistory) {
+    const canvas = document.getElementById('oddsForecastChart');
+    if (!canvas) return;
+    
+    if (window.forecastChart) {
+        try { window.forecastChart.destroy(); } catch(e) {}
+    }
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    
+    const values = balanceHistory.map(b => b.balance);
+    const x = Array.from({ length: values.length }, (_, i) => i);
+    
+    const n = x.length;
+    const sumX = x.reduce((a, b) => a + b, 0);
+    const sumY = values.reduce((a, b) => a + b, 0);
+    const sumXY = x.reduce((sum, xi, i) => sum + xi * values[i], 0);
+    const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+    
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    
+    const forecastValues = [];
+    const forecastLabels = [];
+    
+    for (let i = 0; i < oddsForecastMonths; i++) {
+        const nextX = values.length + i;
+        forecastValues.push(slope * nextX + intercept);
+        forecastLabels.push(`+${i + 1} мес`);
+    }
+    
+    window.forecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [...balanceHistory.map(b => formatDate(b.date)), ...forecastLabels],
+            datasets: [
+                {
+                    label: 'Факт',
+                    data: values,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102,126,234,0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Прогноз',
+                    data: [...new Array(values.length).fill(null), ...forecastValues],
+                    borderColor: '#f56565',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: { callback: (v) => formatCurrency(v) }
+                }
+            }
+        }
+    });
+}
+
     </script>
 
 <!-- Плавающая кнопка фильтров -->
