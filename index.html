@@ -3028,43 +3028,52 @@ function calculateReserve() {
 }
 
 // Рендер таблицы для разделов ОДДС
-function renderOddsTable(items, type, total, deviation = null) {
-    if (!items || items.length === 0) {
+function renderOddsTable(flow, type, total, deviation = null) {
+    const byChannel = type === 'income' ? flow.income.byChannel : flow.expense.byChannel;
+    const items = type === 'income' ? flow.income.items : flow.expense.items;
+    
+    if (!byChannel || Object.keys(byChannel).length === 0) {
         return '<div class="odds-empty">Нет операций</div>';
     }
     
-    const sorted = [...items].sort((a, b) => b.amount - a.amount);
     const isExpense = type === 'expense';
+    
+    // Сортируем каналы по сумме
+    const sortedChannels = Object.entries(byChannel).sort((a, b) => b[1] - a[1]);
     
     return `
         <div class="odds-table-container">
             <table class="odds-table">
                 <thead>
                     <tr>
-                        <th>Статья</th>
-                        <th>Канал/Контрагент</th>
+                        <th>Канал</th>
                         <th>Сумма</th>
+                        <th>Доля</th>
                         ${deviation !== null ? '<th>Отклонение</th>' : ''}
                     </tr>
                 </thead>
                 <tbody>
-                    ${sorted.map(item => `
-                        <tr>
-                            <td>${item.article}</td>
-                            <td>${item.category || '—'}</td>
-                            <td class="${isExpense ? 'negative' : 'positive'}">
-                                ${isExpense ? '-' : ''}${formatCurrency(item.amount)}
-                            </td>
-                            ${deviation !== null ? '<td class="deviation-cell">—</td>' : ''}
-                        </tr>
-                    `).join('')}
+                    ${sortedChannels.map(([channel, amount]) => {
+                        const percent = total > 0 ? (amount / total) * 100 : 0;
+                        return `
+                            <tr>
+                                <td style="font-weight: 500;">${channel}</td>
+                                <td class="${isExpense ? 'negative' : 'positive'}">
+                                    ${isExpense ? '-' : ''}${formatCurrency(amount)}
+                                </td>
+                                <td>${percent.toFixed(1)}%</td>
+                                ${deviation !== null ? '<td class="deviation-cell">—</td>' : ''}
+                            </tr>
+                        `;
+                    }).join('')}
                 </tbody>
                 <tfoot>
                     <tr class="odds-total-row">
-                        <td colspan="2"><strong>ИТОГО</strong></td>
+                        <td><strong>ИТОГО</strong></td>
                         <td class="${isExpense ? 'negative' : 'positive'}">
                             <strong>${isExpense ? '-' : '+'}${formatCurrency(total)}</strong>
                         </td>
+                        <td><strong>100%</strong></td>
                         ${deviation !== null ? `
                             <td class="deviation-cell ${deviation >= 0 ? 'positive' : 'negative'}">
                                 ${deviation >= 0 ? '+' : ''}${formatCurrency(deviation)}
@@ -11102,11 +11111,11 @@ function renderOddsPage() {
                     <div class="odds-section-content" id="section-operating">
                         <div class="odds-subsection">
                             <div class="odds-subsection-header">📥 Поступления</div>
-                            ${renderOddsTable(flows.operating.income.items, 'income', flows.operating.income.total, deviations.incomeDeviation)}
+                            ${renderOddsTable(flows.operating, 'income', flows.operating.income.total, deviations.incomeDeviation)}
                         </div>
                         <div class="odds-subsection">
                             <div class="odds-subsection-header">📤 Платежи</div>
-                            ${renderOddsTable(flows.operating.expense.items, 'expense', flows.operating.expense.total, deviations.expenseDeviation)}
+                            ${renderOddsTable(flows.operating, 'expense', flows.operating.expense.total, deviations.expenseDeviation)}
                         </div>
                     </div>
                 </div>
@@ -11779,28 +11788,83 @@ function clearOddsCache() {
 // Разделение потоков на операционный, инвестиционный, финансовый
 function splitCashFlows(operations) {
     const flows = {
-        operating: { income: { items: [], total: 0 }, expense: { items: [], total: 0 }, net: 0 },
-        investing: { income: { items: [], total: 0 }, expense: { items: [], total: 0 }, net: 0 },
-        financial: { income: { items: [], total: 0 }, expense: { items: [], total: 0 }, net: 0 }
+        operating: { income: { items: [], total: 0, byChannel: {} }, expense: { items: [], total: 0, byChannel: {} }, net: 0 },
+        investing: { income: { items: [], total: 0, byChannel: {} }, expense: { items: [], total: 0, byChannel: {} }, net: 0 },
+        financial: { income: { items: [], total: 0, byChannel: {} }, expense: { items: [], total: 0, byChannel: {} }, net: 0 }
     };
     
-    const financialKeywords = ['Получение займа', 'Возврат займов', 'Проценты по займам', 'Дивиденды', 'Депозит'];
+    // Каналы, которые НУЖНО ИСКЛЮЧИТЬ из операционного потока (они не относятся к продажам)
+    const excludedChannels = [
+        'Комиссия банка', 'Банк', 'Альфа-Банк', 'Сбербанк', 'ВТБ', 'ОЗОН Банк', 'Вайлдберриз Банк',
+        'Перевод', 'Заработная плата', 'Налог', 'Уплата налога', 'Аренда', 'Бухгалтерское', 
+        'IT', 'Услуги связи', 'Фотосессия', 'Приобретение', 'Хозяйственный инвентарь',
+        'Подотчетному лицу', 'Депозит', 'Проценты по займам', 'Возврат займов', 'Получение займа',
+        'Перечисление', 'Комиссия', 'Связь', 'Аутсорсинг', 'Маркетинговые услуги', 'Продвижение'
+    ];
+    
+    // Финансовые операции (кредиты, займы, депозиты)
+    const financialKeywords = ['Получение займа', 'Возврат займов', 'Проценты по займам', 'Дивиденды', 'Депозит', 'Займ'];
     
     operations.forEach(op => {
         let type = 'operating';
         let isIncome = op.type === 'income';
         const article = op.article;
+        const category = op.category || '';
+        const fullText = (article + ' ' + category).toLowerCase();
         
-        if (financialKeywords.some(k => article.includes(k))) {
+        // Проверяем, является ли операция финансовой
+        let isFinancial = financialKeywords.some(k => article.includes(k) || category.includes(k));
+        
+        // Проверяем, нужно ли исключить из операционного потока
+        let isExcluded = excludedChannels.some(ex => article.includes(ex) || category.includes(ex));
+        
+        if (isFinancial) {
             type = 'financial';
+        } else if (isExcluded) {
+            type = 'operating'; // оставляем в операционном, но помечаем как "Прочее"
         }
         
+        // Определяем канал для группировки
+        let channelName = 'Прочее';
+        
+        // Определяем каналы продаж (ищем по названиям)
+        if (fullText.includes('wildberries') || fullText.includes('wb') || article === 'Wildberries') {
+            channelName = 'Wildberries';
+        } else if (fullText.includes('ozon') || article === 'Ozon') {
+            channelName = 'Ozon';
+        } else if (fullText.includes('детский мир') || article === 'Детский мир') {
+            channelName = 'Детский мир';
+        } else if (fullText.includes('lamoda') || article === 'Lamoda') {
+            channelName = 'Lamoda';
+        } else if (fullText.includes('оптовик') || article === 'Оптовики' || category === 'Оптовики') {
+            channelName = 'Оптовики';
+        } else if (fullText.includes('фулфилмент') || article === 'Фулфилмент') {
+            channelName = 'Фулфилмент';
+        } else if (!isExcluded && !isFinancial && (isIncome || article.includes('Доход') || article.includes('Поступление'))) {
+            // Неисключенные доходы - тоже в операционный поток
+            channelName = 'Прочие доходы';
+        } else if (!isExcluded && !isFinancial && !isIncome) {
+            // Неисключенные расходы
+            channelName = 'Прочие расходы';
+        }
+        
+        // Добавляем в соответствующую структуру
         if (isIncome) {
             flows[type].income.items.push(op);
             flows[type].income.total += op.amount;
+            
+            if (!flows[type].income.byChannel[channelName]) {
+                flows[type].income.byChannel[channelName] = 0;
+            }
+            flows[type].income.byChannel[channelName] += op.amount;
         } else {
             flows[type].expense.items.push(op);
             flows[type].expense.total += op.amount;
+            
+            if (!flows[type].expense.byChannel[channelName]) {
+                flows[type].expense.byChannel[channelName] = 0;
+            }
+            flows[type].expense.byChannel[channelName] += op.amount;
         }
     });
     
