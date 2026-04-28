@@ -11136,13 +11136,13 @@ function renderOddsPage() {
                             ${flows.investing.income.items.length > 0 ? `
                                 <div class="odds-subsection">
                                     <div class="odds-subsection-header">📥 Поступления</div>
-                                    ${renderOddsTable(flows.investing.income.items, 'income', flows.investing.income.total)}
+                                    ${renderOddsTable(flows.investing, 'income', flows.investing.income.total)}
                                 </div>
                             ` : ''}
                             ${flows.investing.expense.items.length > 0 ? `
                                 <div class="odds-subsection">
                                     <div class="odds-subsection-header">📤 Платежи</div>
-                                    ${renderOddsTable(flows.investing.expense.items, 'expense', flows.investing.expense.total)}
+                                    ${renderOddsTable(flows.investing, 'expense', flows.investing.expense.total)}
                                 </div>
                             ` : ''}
                         `}
@@ -11165,13 +11165,13 @@ function renderOddsPage() {
                             ${flows.financial.income.items.length > 0 ? `
                                 <div class="odds-subsection">
                                     <div class="odds-subsection-header">📥 Поступления</div>
-                                    ${renderOddsTable(flows.financial.income.items, 'income', flows.financial.income.total)}
+                                    ${renderOddsTable(flows.financial, 'income', flows.financial.income.total)}
                                 </div>
                             ` : ''}
                             ${flows.financial.expense.items.length > 0 ? `
                                 <div class="odds-subsection">
                                     <div class="odds-subsection-header">📤 Платежи</div>
-                                    ${renderOddsTable(flows.financial.expense.items, 'expense', flows.financial.expense.total)}
+                                    ${renderOddsTable(flows.financial, 'expense', flows.financial.expense.total)}
                                 </div>
                             ` : ''}
                         `}
@@ -12013,53 +12013,130 @@ function calculateReserve() {
 }
 
 // Рендер таблицы для разделов ОДДС
-function renderOddsTable(items, type, total, deviation = null) {
-    if (!items || items.length === 0) {
-        return '<div class="odds-empty">Нет операций</div>';
+function renderOddsTable(flow, type, total, deviation = null) {
+    // Получаем данные в зависимости от типа
+    const byChannel = type === 'income' ? (flow.income?.byChannel || {}) : (flow.expense?.byChannel || {});
+    const items = type === 'income' ? (flow.income?.items || []) : (flow.expense?.items || []);
+    
+    // Если нет данных по каналам, пробуем сгруппировать items
+    if (Object.keys(byChannel).length === 0 && items.length > 0) {
+        // Группируем items по каналам
+        const grouped = {};
+        items.forEach(item => {
+            let channelName = item.category || item.article || 'Прочее';
+            // Определяем канал
+            const text = (item.article + ' ' + (item.category || '')).toLowerCase();
+            if (text.includes('wildberries') || text.includes('wb')) channelName = 'Wildberries';
+            else if (text.includes('ozon')) channelName = 'Ozon';
+            else if (text.includes('детский мир')) channelName = 'Детский мир';
+            else if (text.includes('lamoda')) channelName = 'Lamoda';
+            else if (text.includes('оптовик')) channelName = 'Оптовики';
+            else if (text.includes('фулфилмент')) channelName = 'Фулфилмент';
+            
+            grouped[channelName] = (grouped[channelName] || 0) + item.amount;
+        });
+        
+        if (Object.keys(grouped).length > 0) {
+            const isExpense = type === 'expense';
+            const sortedChannels = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
+            
+            return `
+                <div class="odds-table-container">
+                    <table class="odds-table">
+                        <thead>
+                            <tr>
+                                <th>Канал</th>
+                                <th>Сумма</th>
+                                <th>Доля</th>
+                                ${deviation !== null ? '<th>Отклонение</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedChannels.map(([channel, amount]) => {
+                                const percent = total > 0 ? (amount / total) * 100 : 0;
+                                return `
+                                    <tr>
+                                        <td style="font-weight: 500;">${channel}</td>
+                                        <td class="${isExpense ? 'negative' : 'positive'}">
+                                            ${isExpense ? '-' : ''}${formatCurrency(amount)}
+                                        </td>
+                                        <td>${percent.toFixed(1)}%</td>
+                                        ${deviation !== null ? '<td class="deviation-cell">—</td>' : ''}
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr class="odds-total-row">
+                                <td><strong>ИТОГО</strong></td>
+                                <td class="${isExpense ? 'negative' : 'positive'}">
+                                    <strong>${isExpense ? '-' : '+'}${formatCurrency(total)}</strong>
+                                </td>
+                                <td><strong>100%</strong></td>
+                                ${deviation !== null ? `
+                                    <td class="deviation-cell ${deviation >= 0 ? 'positive' : 'negative'}">
+                                        ${deviation >= 0 ? '+' : ''}${formatCurrency(deviation)}
+                                    </td>
+                                ` : ''}
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        }
     }
     
-    const sorted = [...items].sort((a, b) => b.amount - a.amount);
-    const isExpense = type === 'expense';
-    
-    return `
-        <div class="odds-table-container">
-            <table class="odds-table">
-                <thead>
-                    <tr>
-                        <th>Статья</th>
-                        <th>Канал/Контрагент</th>
-                        <th>Сумма</th>
-                        ${deviation !== null ? '<th>Отклонение</th>' : ''}
-                    </tr>
-                </thead>
-                <tbody>
-                    ${sorted.map(item => `
+    // Если есть данные по каналам
+    if (byChannel && Object.keys(byChannel).length > 0) {
+        const isExpense = type === 'expense';
+        const sortedChannels = Object.entries(byChannel).sort((a, b) => b[1] - a[1]);
+        
+        return `
+            <div class="odds-table-container">
+                <table class="odds-table">
+                    <thead>
                         <tr>
-                            <td>${item.article}</td>
-                            <td>${item.category || '—'}</td>
-                            <td class="${isExpense ? 'negative' : 'positive'}">
-                                ${isExpense ? '-' : ''}${formatCurrency(item.amount)}
-                            </td>
-                            ${deviation !== null ? '<td class="deviation-cell">—</td>' : ''}
+                            <th>Канал</th>
+                            <th>Сумма</th>
+                            <th>Доля</th>
+                            ${deviation !== null ? '<th>Отклонение</th>' : ''}
                         </tr>
-                    `).join('')}
-                </tbody>
-                <tfoot>
-                    <tr class="odds-total-row">
-                        <td colspan="2"><strong>ИТОГО</strong></td>
-                        <td class="${isExpense ? 'negative' : 'positive'}">
-                            <strong>${isExpense ? '-' : '+'}${formatCurrency(total)}</strong>
-                        </td>
-                        ${deviation !== null ? `
-                            <td class="deviation-cell ${deviation >= 0 ? 'positive' : 'negative'}">
-                                ${deviation >= 0 ? '+' : ''}${formatCurrency(deviation)}
+                    </thead>
+                    <tbody>
+                        ${sortedChannels.map(([channel, amount]) => {
+                            const percent = total > 0 ? (amount / total) * 100 : 0;
+                            return `
+                                <tr>
+                                    <td style="font-weight: 500;">${channel}</td>
+                                    <td class="${isExpense ? 'negative' : 'positive'}">
+                                        ${isExpense ? '-' : ''}${formatCurrency(amount)}
+                                    </td>
+                                    <td>${percent.toFixed(1)}%</td>
+                                    ${deviation !== null ? '<td class="deviation-cell">—</td>' : ''}
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                    <tfoot>
+                        <tr class="odds-total-row">
+                            <td><strong>ИТОГО</strong></td>
+                            <td class="${isExpense ? 'negative' : 'positive'}">
+                                <strong>${isExpense ? '-' : '+'}${formatCurrency(total)}</strong>
                             </td>
-                        ` : ''}
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    `;
+                            <td><strong>100%</strong></td>
+                            ${deviation !== null ? `
+                                <td class="deviation-cell ${deviation >= 0 ? 'positive' : 'negative'}">
+                                    ${deviation >= 0 ? '+' : ''}${formatCurrency(deviation)}
+                                </td>
+                            ` : ''}
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+    }
+    
+    return '<div class="odds-empty">Нет операций</div>';
 }
 
 // Расчет отклонений от плана
