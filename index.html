@@ -10057,6 +10057,9 @@ const expenses = currencyFiltered.filter(op => op.type === 'expense');
     const startDate = oddsDateRange.startDate;
     let cumulativeBalance = initialBalance;
     let opsBeforeStartCount = 0;
+
+    // ОБНУЛЯЕМ НАКОПЛЕНИЕ ПРИ КАЖДОМ ВЫЗОВЕ
+cumulativeBalance = initialBalance;
     
         if (startDate) {
     // Исключаем технические операции из расчёта начального остатка
@@ -10501,21 +10504,26 @@ function initOddsFilters() {
     if (!startDateInput || !endDateInput) return;
     
     if (applyBtn) {
-        applyBtn.onclick = () => {
-            // ОБНОВЛЯЕМ ДАННЫЕ ПЕРЕД ФИЛЬТРАЦИЕЙ!
-            oddsOperations = collectOddsOperations();
-            
-            if (startDateInput.value) {
-                const [year, month, day] = startDateInput.value.split('-');
-                oddsDateRange.startDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
-            }
-            if (endDateInput.value) {
-                const [year, month, day] = endDateInput.value.split('-');
-                oddsDateRange.endDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
-            }
-            renderOddsPage();
-        };
-    }
+    applyBtn.onclick = () => {
+        console.log('=== ПРИМЕНЕНИЕ ФИЛЬТРА ===');
+        
+        // ===== СБРАСЫВАЕМ КЕШ =====
+        oddsOperations = null;
+        oddsOperations = collectOddsOperations();
+        
+        if (startDateInput.value) {
+            const [year, month, day] = startDateInput.value.split('-');
+            oddsDateRange.startDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+        if (endDateInput.value) {
+            const [year, month, day] = endDateInput.value.split('-');
+            oddsDateRange.endDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+        
+        console.log('Новый период:', oddsDateRange.startDate, '-', oddsDateRange.endDate);
+        renderOddsPage();
+    };
+}
     
     if (resetBtn) {
         resetBtn.onclick = () => {
