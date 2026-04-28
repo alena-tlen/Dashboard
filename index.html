@@ -2663,7 +2663,7 @@ function showNotification(message, type = 'success') {
 
     
     function applyFilters(data, filters = null) {
-    // Если мы на странице ОДДС - возвращаем все данные без фильтрации
+    // ОДДС полностью игнорирует глобальные фильтры
     const activePage = document.querySelector('.page-content.active')?.id;
     if (activePage === 'page-odds') {
         return data;
@@ -9113,6 +9113,9 @@ setTimeout(() => {
 const oddsNavItem = document.querySelector('.nav-item[data-page="odds"]');
 if (oddsNavItem) {
     oddsNavItem.onclick = () => {
+        // Очищаем кэш перед переходом
+        clearOddsCache();
+        
         currentChannel = null;
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
@@ -9122,11 +9125,10 @@ if (oddsNavItem) {
         document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
         document.getElementById('page-odds').classList.add('active');
         
-        // Скрываем плавающую кнопку фильтров на странице ОДДС
+        // Скрываем плавающую кнопку фильтров
         const floatingBtn = document.getElementById('floatingFilterBtn');
         if (floatingBtn) floatingBtn.style.display = 'none';
         
-        // Инициализируем даты при первом открытии
         initOddsDates();
         renderOddsPage();
     };
@@ -9268,25 +9270,26 @@ if (sidebarNav) {
     const channelsSubmenu = document.getElementById('channelsSubmenu');
     const arrow = dashboardMenu?.querySelector('.arrow');
     
-    if (dashboardMenu) {
-        dashboardMenu.onclick = (e) => {
-    e.stopPropagation();
-    channelsSubmenu.classList.toggle('show');
-    if (arrow) arrow.classList.toggle('open');
-    if (!channelsSubmenu.classList.contains('show')) {
-        currentChannel = null;
-        document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
-        document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
-        document.getElementById('page-dashboard').classList.add('active');
-        
-        // Показываем плавающую кнопку фильтров
-        const floatingBtn = document.getElementById('floatingFilterBtn');
-        if (floatingBtn) floatingBtn.style.display = 'flex';
-        
-        renderDashboard();
-    }
-};
-    }
+    // Найдите блок где dashboardMenu.onclick и добавьте показ кнопки
+if (dashboardMenu) {
+    dashboardMenu.onclick = (e) => {
+        e.stopPropagation();
+        channelsSubmenu.classList.toggle('show');
+        if (arrow) arrow.classList.toggle('open');
+        if (!channelsSubmenu.classList.contains('show')) {
+            currentChannel = null;
+            document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
+            document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('page-dashboard').classList.add('active');
+            
+            // Показываем плавающую кнопку обратно
+            const floatingBtn = document.getElementById('floatingFilterBtn');
+            if (floatingBtn) floatingBtn.style.display = 'flex';
+            
+            renderDashboard();
+        }
+    };
+}
     
     document.querySelectorAll('.nav-subitem').forEach(item => {
         item.onclick = () => {
@@ -9574,52 +9577,51 @@ function parseOddsDate(row) {
 }
 
 function collectOddsOperations() {
-    // Принудительно используем ВСЕ данные, игнорируя глобальные фильтры
-    const sourceData = originalData.length > 0 ? originalData : currentData;
+    // ИСПОЛЬЗУЕМ ОРИГИНАЛЬНЫЕ ДАННЫЕ, ИГНОРИРУЯ ВСЕ ФИЛЬТРЫ!
+    const sourceData = originalData.length > 0 ? originalData : [];
+    if (sourceData.length === 0) return [];
     
     const operations = [];
     
     sourceData.forEach(row => {
-    const account = row.Счет || row.счет || row['Счет'] || '';
-    const article = row.статья || '';
-    if (article === 'Начальный остаток' || !account) return;
-    
-    const amount = parseFloat(row.сумма) || 0;
-    if (amount === 0) return;
-    
-    const date = parseOddsDate(row);
-    const currency = detectCurrency(account);
-    
-    // ← ВАЖНО: channel должен быть определён ДО использования!
-    const channel = row.канал || row.Канал || '';
-    const isTechnical = EXCLUDED_FROM_TOP.some(ex => channel.includes(ex));
-    
-    let type = '';
-// Депозитные операции НЕ должны быть income/expense для ОДДС!
-const isDeposit = channel === 'Депозит' || channel === 'депозит';
-
-if (!isDeposit) {
-    if (article === 'Поступление на расчетный счет') type = 'income';
-    else if (article === 'Списание с расчетного счета') type = 'expense';
-    else if (amount > 0) type = 'income';
-    else if (amount < 0) type = 'expense';
-}
-    
-    if (type && date) {
-        operations.push({
-            date: date, 
-            amount: Math.abs(amount), 
-            type: type,
-            article: article, 
-            category: row.канал || row.подканал || article,
-            year: row.год, 
-            month: row.месяц, 
-            account: account,
-            currency: currency, 
-            isTechnical: isTechnical
-        });
-    }
-});
+        const account = row.Счет || row.счет || row['Счет'] || '';
+        const article = row.статья || '';
+        if (article === 'Начальный остаток' || !account) return;
+        
+        const amount = parseFloat(row.сумма) || 0;
+        if (amount === 0) return;
+        
+        const date = parseOddsDate(row);
+        const currency = detectCurrency(account);
+        
+        const channel = row.канал || row.Канал || '';
+        const isTechnical = EXCLUDED_FROM_TOP.some(ex => channel.includes(ex));
+        
+        let type = '';
+        const isDeposit = channel === 'Депозит' || channel === 'депозит';
+        
+        if (!isDeposit) {
+            if (article === 'Поступление на расчетный счет') type = 'income';
+            else if (article === 'Списание с расчетного счета') type = 'expense';
+            else if (amount > 0) type = 'income';
+            else if (amount < 0) type = 'expense';
+        }
+        
+        if (type && date) {
+            operations.push({
+                date: date, 
+                amount: Math.abs(amount), 
+                type: type,
+                article: article, 
+                category: row.канал || row.подканал || article,
+                year: row.год, 
+                month: row.месяц, 
+                account: account,
+                currency: currency, 
+                isTechnical: isTechnical
+            });
+        }
+    });
     
     return operations;
 }
@@ -10024,10 +10026,15 @@ let currentBalance = 0;
 
 // Основной рендер страницы ОДДС
 function renderOddsPage() {
-    // ОЧИЩАЕМ ГЛОБАЛЬНЫЕ ФИЛЬТРЫ ДЛЯ ОДДС
-    if (realCompanyFilter) realCompanyFilter.value = '';
-    if (realYearFilter) realYearFilter.value = '';
-    if (realMonthFilter) Array.from(realMonthFilter.options).forEach(o => o.selected = false);
+    // ===== ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ ДАННЫЕ ПЕРЕД РЕНДЕРОМ =====
+    // Игнорируем currentFilters - используем originalData напрямую
+    oddsOperations = collectOddsOperations();  // Теперь всегда из originalData
+    
+    // Сбрасываем кэш
+    if (window.balanceTrendChart) {
+        try { window.balanceTrendChart.destroy(); } catch(e) {}
+        window.balanceTrendChart = null;
+    }
     
     const container = document.getElementById('oddsMainContent');
     if (!container) return;
@@ -10483,11 +10490,14 @@ function initOddsDates() {
     const endDateInput = document.getElementById('oddsEndDate');
     if (!startDateInput || !endDateInput) return;
     
+    // Используем originalData напрямую, а не currentData
+    const tempOps = collectOddsOperations();
+    
     // Находим минимальную и максимальную дату в данных
     let minDate = null;
     let maxDate = null;
     
-    oddsOperations.forEach(op => {
+    tempOps.forEach(op => {
         if (op.date) {
             if (!minDate || op.date < minDate) minDate = op.date;
             if (!maxDate || op.date > maxDate) maxDate = op.date;
@@ -10496,7 +10506,6 @@ function initOddsDates() {
     
     // Если есть данные, устанавливаем диапазон на основе данных
     if (minDate && maxDate) {
-        // По умолчанию показываем последние 30 дней или все данные, если их меньше
         const defaultStart = new Date(maxDate);
         defaultStart.setDate(maxDate.getDate() - 30);
         const start = defaultStart > minDate ? defaultStart : minDate;
@@ -10647,6 +10656,24 @@ loadOddsPlans();
     
 
 } // <--- ЭТО ЗАКРЫВАЮЩАЯ СКОБКА ФУНКЦИИ initApp
+
+// Добавьте эту функцию после initApp
+function clearOddsCache() {
+    // Очищаем кэшированные операции при переключении страниц
+    oddsOperations = null;
+    if (window.balanceTrendChart) {
+        try { window.balanceTrendChart.destroy(); } catch(e) {}
+        window.balanceTrendChart = null;
+    }
+    if (window.cccChart) {
+        try { window.cccChart.destroy(); } catch(e) {}
+        window.cccChart = null;
+    }
+    if (window.seasonalityChart) {
+        try { window.seasonalityChart.destroy(); } catch(e) {}
+        window.seasonalityChart = null;
+    }
+}
         
     
     function showAdminPanel() {
