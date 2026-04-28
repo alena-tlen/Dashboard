@@ -9573,10 +9573,15 @@ function collectOddsOperations() {
     const isTechnical = EXCLUDED_FROM_TOP.some(ex => channel.includes(ex));
     
     let type = '';
+// Депозитные операции НЕ должны быть income/expense для ОДДС!
+const isDeposit = channel === 'Депозит' || channel === 'депозит';
+
+if (!isDeposit) {
     if (article === 'Поступление на расчетный счет') type = 'income';
     else if (article === 'Списание с расчетного счета') type = 'expense';
     else if (amount > 0) type = 'income';
     else if (amount < 0) type = 'expense';
+}
     
     if (type && date) {
         operations.push({
@@ -10662,3 +10667,5 @@ loadOddsPlans();
 
 </body>
 </html>
+
+    
