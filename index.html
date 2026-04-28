@@ -11325,24 +11325,30 @@ function renderOddsPage() {
         renderRecommendations(breakEven, duration, endBalance, creditLoad, upcomingTaxes);
         
         // Настройка сворачивания секций
-        document.querySelectorAll('.odds-section-header').forEach(header => {
-            header.onclick = () => {
-                const content = header.nextElementSibling;
-                const expandIcon = header.querySelector('.expand-icon');
-                if (content.style.maxHeight && content.style.maxHeight !== '0px') {
-                    content.style.maxHeight = '0';
-                    content.style.padding = '0 20px';
-                    expandIcon.innerHTML = '▶';
-                } else {
-                    content.style.maxHeight = content.scrollHeight + 'px';
-                    content.style.padding = '20px';
-                    expandIcon.innerHTML = '▼';
-                }
-            };
-            // Открыть по умолчанию
-            const content = header.nextElementSibling;
+document.querySelectorAll('.odds-section-header').forEach(header => {
+    header.onclick = () => {
+        const content = header.nextElementSibling;
+        const expandIcon = header.querySelector('.expand-icon');
+        
+        // Проверяем, существует ли content
+        if (!content) return;
+        
+        if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+            content.style.maxHeight = '0';
+            content.style.padding = '0 20px';
+            if (expandIcon) expandIcon.innerHTML = '▶';
+        } else {
             content.style.maxHeight = content.scrollHeight + 'px';
-        });
+            content.style.padding = '20px';
+            if (expandIcon) expandIcon.innerHTML = '▼';
+        }
+    };
+    // Открыть по умолчанию
+    const content = header.nextElementSibling;
+    if (content) {
+        content.style.maxHeight = content.scrollHeight + 'px';
+    }
+});
         
         // Загрузка плана
         const loadPlanBtn = document.getElementById('loadPlanBtn');
