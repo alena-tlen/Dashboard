@@ -3284,21 +3284,21 @@ function renderCashBlock() {
     }, 100);
     
     // ========== ДЕПОЗИТ - ПРАВИЛЬНАЯ ЛОГИКА ==========
-// ========== ДЕПОЗИТ - ПРАВИЛЬНАЯ ЛОГИКА С НАЧАЛЬНЫМ ОСТАТКОМ ==========
+// ========== ДЕПОЗИТ - С УЧЁТОМ ВСЕХ ОПЕРАЦИЙ ==========
 let depositBalance = 0;
 let depositOperations = [];
 
-// Сначала собираем начальные остатки по депозиту из декабря 2025
+// 1. Сначала собираем начальные остатки по депозиту
 originalData.forEach(row => {
     const article = row.статья || '';
     const channel = row.канал || '';
+    const subCategory = row.подканал || '';
     const amount = parseFloat(row.сумма) || 0;
     const year = row.год;
     const month = row.месяц;
-    const account = row.Счет || row['Счет'] || '';
     
-    // Начальный остаток по депозиту (канал = "депозит" или статья = "Начальный остаток" и канал пустой?)
-    if (article === 'Начальный остаток' && (channel === 'депозит' || channel === 'Депозит' || (account && account.includes('депозит')))) {
+    // Начальный остаток по депозиту
+    if (article === 'Начальный остаток' && (channel === 'депозит' || channel === 'Депозит')) {
         depositBalance += amount;
         depositOperations.push({ 
             date: `${year}-${month}`, 
@@ -3309,39 +3309,38 @@ originalData.forEach(row => {
     }
 });
 
-// Затем собираем операции по депозиту за выбранный период
+// 2. Собираем операции по депозиту за выбранный период
 originalData.forEach(row => {
     const article = row.статья || '';
     const channel = row.канал || '';
+    const subCategory = row.подканал || '';
     const amount = parseFloat(row.сумма) || 0;
     const year = row.год;
     const month = row.месяц;
     
-    // Пропускаем начальные остатки (уже обработали)
+    // Пропускаем начальные остатки
     if (article === 'Начальный остаток') return;
     
-    // Включаем в период, если выбран фильтр по году/месяцам
+    // Проверка фильтра периода
     let includeInPeriod = true;
-    if (currentFilters.year) {
-        if (year != currentFilters.year) includeInPeriod = false;
-    }
-    if (currentFilters.month && currentFilters.month.length > 0) {
-        if (!currentFilters.month.includes(month)) includeInPeriod = false;
-    }
+    if (currentFilters.year && year != currentFilters.year) includeInPeriod = false;
+    if (currentFilters.month?.length > 0 && !currentFilters.month.includes(month)) includeInPeriod = false;
     
-    // Только операции по депозиту (канал = "Депозит")
-    if (includeInPeriod && (channel === 'Депозит' || channel === 'депозит')) {
-        // Списание с РС = деньги УХОДЯТ на депозит → депозит УВЕЛИЧИВАЕТСЯ
+    if (!includeInPeriod) return;
+    
+    // Операции по депозиту
+    if (channel === 'Депозит' || channel === 'депозит') {
+        // Списание = пополнение депозита (уход денег) → депозит УВЕЛИЧИВАЕТСЯ
         if (article === 'Списание с расчетного счета' && amount > 0) {
             depositBalance += amount;
             depositOperations.push({ 
                 date: `${year}-${month}`, 
                 amount: amount, 
-                type: 'Размещение на депозит',
+                type: 'Пополнение депозита',
                 sign: '+'
             });
         }
-        // Поступление на РС = деньги ВОЗВРАЩАЮТСЯ с депозита → депозит УМЕНЬШАЕТСЯ
+        // Поступление = возврат с депозита (приход денег) → депозит УМЕНЬШАЕТСЯ
         else if (article === 'Поступление на расчетный счет' && amount > 0) {
             depositBalance -= amount;
             depositOperations.push({ 
@@ -3352,9 +3351,33 @@ originalData.forEach(row => {
             });
         }
     }
+    
+    // Дополнительно: если в подканале указано "Депозит" или "Возврат депозита"
+    if (subCategory === 'Депозит' || subCategory === 'депозит') {
+        if (amount > 0) {
+            depositBalance += amount;
+            depositOperations.push({ 
+                date: `${year}-${month}`, 
+                amount: amount, 
+                type: 'Пополнение депозита',
+                sign: '+'
+            });
+        }
+    }
+    
+    // Возврат депозита по подканалу
+    if (subCategory === 'Возврат депозита' && amount > 0) {
+        depositBalance -= amount;
+        depositOperations.push({ 
+            date: `${year}-${month}`, 
+            amount: amount, 
+            type: 'Возврат депозита',
+            sign: '-'
+        });
+    }
 });
 
-// Обновляем отображение депозита
+// Обновляем отображение
 const depositSidebarBlock = document.getElementById('depositSidebarBlock');
 const depositTotalValue = document.getElementById('depositTotalValue');
 const depositOperationsList = document.getElementById('depositOperationsList');
@@ -3364,7 +3387,6 @@ if (depositSidebarBlock && depositTotalValue) {
         depositSidebarBlock.style.display = 'block';
         depositTotalValue.innerHTML = formatCash(depositBalance, 'RUB');
         
-        // Сортируем операции по дате
         depositOperations.sort((a, b) => a.date.localeCompare(b.date));
         
         const operationsHtml = depositOperations.slice(-15).map(op => `
