@@ -2920,6 +2920,12 @@ if (document.readyState === 'loading') {
     const monthsOrder = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
 
     let activeOddsTab = 0;
+    // ========== ПЕРЕМЕННЫЕ ДЛЯ ОДДС ==========
+    let oddsDateRange = { startDate: null, endDate: null };
+    let oddsOperations = [];
+    let oddsPlans = {};
+    let forecastPeriods = 6;
+    let currentBalance = 0;
     
     const channelMapping = {
         'wildberries': { displayName: 'Wildberries' },
@@ -11460,22 +11466,15 @@ function splitCashFlows(operations) {
         financial: { income: { items: [], total: 0 }, expense: { items: [], total: 0 }, net: 0 }
     };
     
-    const operatingIncomeKeywords = ['Доход', 'Отчет комиссионера', 'Уведомление о выкупе', 'Компенсация ущерба', 'Оптовые продажи', 'Услуги фулфилмент'];
-    const operatingExpenseKeywords = ['Расход', 'Себестоимость', 'Вознаграждение маркетплейса', 'Логистика', 'Продвижение', 'Прочие услуги', 'Закупка товара', 'Заработная плата', 'Уплата налога', 'Аренда', 'Маркетинговые услуги', 'Комиссия банка', 'Услуги связи', 'Бухгалтерское', 'IT', 'Фотосессия', 'Расходы дополнительные', 'Транспортные', 'Приобретение хозяйственного инвентаря', 'Расходы на аутсорсинг'];
-    
-    const investingKeywords = ['Реализация внеоборотных активов', 'Приобретение ОС', 'Долгосрочные займы'];
     const financialKeywords = ['Получение займа', 'Возврат займов', 'Проценты по займам', 'Дивиденды', 'Депозит'];
     
     operations.forEach(op => {
         let type = 'operating';
         let isIncome = op.type === 'income';
         const article = op.article;
-        const category = op.category;
         
-        if (financialKeywords.some(k => article.includes(k) || category.includes(k))) {
+        if (financialKeywords.some(k => article.includes(k))) {
             type = 'financial';
-        } else if (investingKeywords.some(k => article.includes(k) || category.includes(k))) {
-            type = 'investing';
         }
         
         if (isIncome) {
