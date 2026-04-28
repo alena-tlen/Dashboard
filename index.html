@@ -2934,9 +2934,320 @@ if (document.readyState === 'loading') {
         'lamoda': { displayName: 'Lamoda' }
     };
     
+
     function formatCurrency(value) { 
         return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(Math.abs(value)); 
     }
+
+
+// ========== ДОБАВЬТЕ ЭТИ ФУНКЦИИ ==========
+
+// Форматирование даты в формате ДД.ММ
+function formatDate(date) {
+    if (!date) return '';
+    return `${date.getDate()}.${date.getMonth() + 1}`;
+}
+
+// Форматирование полной даты в формате ДД.ММ.ГГГГ
+function formatFullDate(date) {
+    if (!date) return '';
+    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`;
+}
+
+// Форматирование валюты с указанием валюты
+function formatCurrencyWithCurrency(amount, currency = 'RUB') {
+    const symbols = { RUB: '₽', USD: '$', EUR: '€', CNY: '¥' };
+    const symbol = symbols[currency] || currency;
+    const formatter = new Intl.NumberFormat('ru-RU', { 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 2 
+    });
+    return `${formatter.format(Math.abs(amount))} ${symbol}`;
+}
+
+// Функция для расчета дневных остатков
+function calculateDailyBalance(operations, startBalance, dateRange) {
+    if (!operations || operations.length === 0) return [];
+    
+    let filtered = operations;
+    if (dateRange && dateRange.startDate && dateRange.endDate) {
+        filtered = operations.filter(op => op.date >= dateRange.startDate && op.date <= dateRange.endDate);
+    }
+    
+    const sorted = [...filtered].sort((a, b) => a.date - b.date);
+    const dailyMap = new Map();
+    
+    sorted.forEach(op => {
+        const key = op.date.toISOString().split('T')[0];
+        if (!dailyMap.has(key)) {
+            dailyMap.set(key, { date: op.date, income: 0, expense: 0, balance: 0 });
+        }
+        const day = dailyMap.get(key);
+        if (op.type === 'income') day.income += op.amount;
+        else day.expense += op.amount;
+    });
+    
+    const dailyData = Array.from(dailyMap.values()).sort((a, b) => a.date - b.date);
+    let runningBalance = startBalance;
+    dailyData.forEach(day => {
+        runningBalance += day.income - day.expense;
+        day.balance = runningBalance;
+    });
+    
+    return dailyData;
+}
+
+// Функции для светофора ликвидности
+function getLiquidityIcon(balance) {
+    if (balance >= 1000000) return '🟢';
+    if (balance >= 500000) return '🟡';
+    return '🔴';
+}
+
+function getLiquidityColor(balance) {
+    if (balance >= 1000000) return 'color: #48bb78';
+    if (balance >= 500000) return 'color: #f59e0b';
+    return 'color: #f56565';
+}
+
+function getLiquidityColorHex(balance) {
+    if (balance >= 1000000) return '#48bb78';
+    if (balance >= 500000) return '#f59e0b';
+    return '#f56565';
+}
+
+function getLiquidityPercent(balance) {
+    const reserve = calculateReserve();
+    if (reserve === 0) return 0;
+    return Math.min((balance / reserve) * 100, 100);
+}
+
+function calculateReserve() {
+    return 1500000;
+}
+
+// Рендер таблицы для разделов ОДДС
+function renderOddsTable(items, type, total, deviation = null) {
+    if (!items || items.length === 0) {
+        return '<div class="odds-empty">Нет операций</div>';
+    }
+    
+    const sorted = [...items].sort((a, b) => b.amount - a.amount);
+    const isExpense = type === 'expense';
+    
+    return `
+        <div class="odds-table-container">
+            <table class="odds-table">
+                <thead>
+                    <tr>
+                        <th>Статья</th>
+                        <th>Канал/Контрагент</th>
+                        <th>Сумма</th>
+                        ${deviation !== null ? '<th>Отклонение</th>' : ''}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sorted.map(item => `
+                        <tr>
+                            <td>${item.article}</td>
+                            <td>${item.category || '—'}</td>
+                            <td class="${isExpense ? 'negative' : 'positive'}">
+                                ${isExpense ? '-' : ''}${formatCurrency(item.amount)}
+                            </td>
+                            ${deviation !== null ? '<td class="deviation-cell">—</td>' : ''}
+                        </tr>
+                    `).join('')}
+                </tbody>
+                <tfoot>
+                    <tr class="odds-total-row">
+                        <td colspan="2"><strong>ИТОГО</strong></td>
+                        <td class="${isExpense ? 'negative' : 'positive'}">
+                            <strong>${isExpense ? '-' : '+'}${formatCurrency(total)}</strong>
+                        </td>
+                        ${deviation !== null ? `
+                            <td class="deviation-cell ${deviation >= 0 ? 'positive' : 'negative'}">
+                                ${deviation >= 0 ? '+' : ''}${formatCurrency(deviation)}
+                            </td>
+                        ` : ''}
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    `;
+}
+
+// Рендер графика остатков
+function renderBalanceChart(balanceHistory) {
+    const canvas = document.getElementById('oddsBalanceChart');
+    if (!canvas || !balanceHistory || balanceHistory.length === 0) {
+        if (canvas) canvas.parentElement.innerHTML = '<div style="text-align: center; padding: 40px;">📊 Нет данных для графика</div>';
+        return;
+    }
+    
+    if (window.balanceChart) {
+        try { window.balanceChart.destroy(); } catch(e) {}
+    }
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    
+    window.balanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: balanceHistory.map(b => formatDate(b.date)),
+            datasets: [{
+                label: 'Остаток',
+                data: balanceHistory.map(b => b.balance),
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102,126,234,0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 3,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `💰 ${formatCurrency(ctx.raw)}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: { callback: (v) => formatCurrency(v) }
+                }
+            }
+        }
+    });
+}
+
+// Рендер круговой диаграммы расходов
+function renderExpensePieChart(expenseStructure) {
+    const canvas = document.getElementById('oddsExpenseChart');
+    if (!canvas) return;
+    
+    if (window.expenseChart) {
+        try { window.expenseChart.destroy(); } catch(e) {}
+    }
+    
+    const categories = Object.keys(expenseStructure);
+    const amounts = Object.values(expenseStructure);
+    
+    if (categories.length === 0) {
+        canvas.parentElement.innerHTML = '<div style="text-align: center; padding: 40px;">Нет данных по расходам</div>';
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    
+    window.expenseChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: categories,
+            datasets: [{
+                data: amounts,
+                backgroundColor: ['#667eea', '#48bb78', '#f56565', '#f59e0b', '#4299e1', '#ed8936', '#9f7aea'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: isDarkMode ? '#e2e8f0' : '#4a5568' } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.label}: ${formatCurrency(ctx.raw)} (${((ctx.raw / amounts.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)`
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Рендер прогноза
+function renderForecastChart(balanceHistory) {
+    const canvas = document.getElementById('oddsForecastChart');
+    if (!canvas) return;
+    
+    if (window.forecastChart) {
+        try { window.forecastChart.destroy(); } catch(e) {}
+    }
+    
+    const ctx = canvas.getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark');
+    
+    const values = balanceHistory.map(b => b.balance);
+    const x = Array.from({ length: values.length }, (_, i) => i);
+    
+    const n = x.length;
+    const sumX = x.reduce((a, b) => a + b, 0);
+    const sumY = values.reduce((a, b) => a + b, 0);
+    const sumXY = x.reduce((sum, xi, i) => sum + xi * values[i], 0);
+    const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+    
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    
+    const forecastValues = [];
+    const forecastLabels = [];
+    const forecastMonths = window.oddsForecastMonths || 3;
+    
+    for (let i = 0; i < forecastMonths; i++) {
+        const nextX = values.length + i;
+        forecastValues.push(slope * nextX + intercept);
+        forecastLabels.push(`+${i + 1} мес`);
+    }
+    
+    window.forecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [...balanceHistory.map(b => formatDate(b.date)), ...forecastLabels],
+            datasets: [
+                {
+                    label: 'Факт',
+                    data: values,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102,126,234,0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Прогноз',
+                    data: [...new Array(values.length).fill(null), ...forecastValues],
+                    borderColor: '#f56565',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: { callback: (v) => formatCurrency(v) }
+                }
+            }
+        }
+    });
+}
 
     // Функция для показа временных уведомлений
 function showNotification(message, type = 'success') {
