@@ -1957,6 +1957,10 @@ body.dark .odds-section-card {
     100% { transform: scale(1); }
 }
 
+/* Скрытие плавающей кнопки на странице ОДДС */
+body:has(#page-odds.active) .floating-filter-btn {
+    display: none !important;
+}
 
 </style>
 </head>
@@ -2659,17 +2663,23 @@ function showNotification(message, type = 'success') {
 
     
     function applyFilters(data, filters = null) {
-        const f = filters || currentFilters;
-        if (!f) return data;
-        return data.filter(row => {
-            if (row.статья === 'Начальный остаток') return true;
-
-            if (f.company && row.компания !== f.company) return false;
-            if (f.year && row.год !== f.year) return false;
-            if (f.month && f.month.length > 0 && !f.month.includes(row.месяц)) return false;
-            return true;
-        });
+    // Если мы на странице ОДДС - возвращаем все данные без фильтрации
+    const activePage = document.querySelector('.page-content.active')?.id;
+    if (activePage === 'page-odds') {
+        return data;
     }
+    
+    const f = filters || currentFilters;
+    if (!f) return data;
+    return data.filter(row => {
+        if (row.статья === 'Начальный остаток') return true;
+
+        if (f.company && row.компания !== f.company) return false;
+        if (f.year && row.год !== f.year) return false;
+        if (f.month && f.month.length > 0 && !f.month.includes(row.месяц)) return false;
+        return true;
+    });
+}
     
     function renderMiniChart(elementId, data, color) {
         if (!data || data.length === 0) return;
@@ -9112,6 +9122,10 @@ if (oddsNavItem) {
         document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
         document.getElementById('page-odds').classList.add('active');
         
+        // Скрываем плавающую кнопку фильтров на странице ОДДС
+        const floatingBtn = document.getElementById('floatingFilterBtn');
+        if (floatingBtn) floatingBtn.style.display = 'none';
+        
         // Инициализируем даты при первом открытии
         initOddsDates();
         renderOddsPage();
@@ -9256,17 +9270,22 @@ if (sidebarNav) {
     
     if (dashboardMenu) {
         dashboardMenu.onclick = (e) => {
-            e.stopPropagation();
-            channelsSubmenu.classList.toggle('show');
-            if (arrow) arrow.classList.toggle('open');
-            if (!channelsSubmenu.classList.contains('show')) {
-                currentChannel = null;
-                document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
-                document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
-                document.getElementById('page-dashboard').classList.add('active');
-                renderDashboard();
-            }
-        };
+    e.stopPropagation();
+    channelsSubmenu.classList.toggle('show');
+    if (arrow) arrow.classList.toggle('open');
+    if (!channelsSubmenu.classList.contains('show')) {
+        currentChannel = null;
+        document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
+        document.querySelectorAll('.page-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('page-dashboard').classList.add('active');
+        
+        // Показываем плавающую кнопку фильтров
+        const floatingBtn = document.getElementById('floatingFilterBtn');
+        if (floatingBtn) floatingBtn.style.display = 'flex';
+        
+        renderDashboard();
+    }
+};
     }
     
     document.querySelectorAll('.nav-subitem').forEach(item => {
@@ -9555,9 +9574,12 @@ function parseOddsDate(row) {
 }
 
 function collectOddsOperations() {
+    // Принудительно используем ВСЕ данные, игнорируя глобальные фильтры
+    const sourceData = originalData.length > 0 ? originalData : currentData;
+    
     const operations = [];
     
-    currentData.forEach(row => {
+    sourceData.forEach(row => {
     const account = row.Счет || row.счет || row['Счет'] || '';
     const article = row.статья || '';
     if (article === 'Начальный остаток' || !account) return;
@@ -10002,6 +10024,11 @@ let currentBalance = 0;
 
 // Основной рендер страницы ОДДС
 function renderOddsPage() {
+    // ОЧИЩАЕМ ГЛОБАЛЬНЫЕ ФИЛЬТРЫ ДЛЯ ОДДС
+    if (realCompanyFilter) realCompanyFilter.value = '';
+    if (realYearFilter) realYearFilter.value = '';
+    if (realMonthFilter) Array.from(realMonthFilter.options).forEach(o => o.selected = false);
+    
     const container = document.getElementById('oddsMainContent');
     if (!container) return;
     if (!currentData || !currentData.length) {
