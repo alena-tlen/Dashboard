@@ -3284,15 +3284,41 @@ function renderCashBlock() {
     }, 100);
     
     // ========== ДЕПОЗИТ - ПРАВИЛЬНАЯ ЛОГИКА ==========
+// ========== ДЕПОЗИТ - ПРАВИЛЬНАЯ ЛОГИКА С НАЧАЛЬНЫМ ОСТАТКОМ ==========
 let depositBalance = 0;
 let depositOperations = [];
 
+// Сначала собираем начальные остатки по депозиту из декабря 2025
 originalData.forEach(row => {
     const article = row.статья || '';
     const channel = row.канал || '';
     const amount = parseFloat(row.сумма) || 0;
     const year = row.год;
     const month = row.месяц;
+    const account = row.Счет || row['Счет'] || '';
+    
+    // Начальный остаток по депозиту (канал = "депозит" или статья = "Начальный остаток" и канал пустой?)
+    if (article === 'Начальный остаток' && (channel === 'депозит' || channel === 'Депозит' || (account && account.includes('депозит')))) {
+        depositBalance += amount;
+        depositOperations.push({ 
+            date: `${year}-${month}`, 
+            amount: amount, 
+            type: 'Начальный остаток',
+            sign: '+'
+        });
+    }
+});
+
+// Затем собираем операции по депозиту за выбранный период
+originalData.forEach(row => {
+    const article = row.статья || '';
+    const channel = row.канал || '';
+    const amount = parseFloat(row.сумма) || 0;
+    const year = row.год;
+    const month = row.месяц;
+    
+    // Пропускаем начальные остатки (уже обработали)
+    if (article === 'Начальный остаток') return;
     
     // Включаем в период, если выбран фильтр по году/месяцам
     let includeInPeriod = true;
@@ -3304,7 +3330,7 @@ originalData.forEach(row => {
     }
     
     // Только операции по депозиту (канал = "Депозит")
-    if (includeInPeriod && channel === 'Депозит') {
+    if (includeInPeriod && (channel === 'Депозит' || channel === 'депозит')) {
         // Списание с РС = деньги УХОДЯТ на депозит → депозит УВЕЛИЧИВАЕТСЯ
         if (article === 'Списание с расчетного счета' && amount > 0) {
             depositBalance += amount;
@@ -3338,9 +3364,10 @@ if (depositSidebarBlock && depositTotalValue) {
         depositSidebarBlock.style.display = 'block';
         depositTotalValue.innerHTML = formatCash(depositBalance, 'RUB');
         
+        // Сортируем операции по дате
         depositOperations.sort((a, b) => a.date.localeCompare(b.date));
         
-        const operationsHtml = depositOperations.slice(-10).map(op => `
+        const operationsHtml = depositOperations.slice(-15).map(op => `
             <div class="cash-detail-row">
                 <span>📅 ${op.date}</span>
                 <span style="display: flex; gap: 8px;">
