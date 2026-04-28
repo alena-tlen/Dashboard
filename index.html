@@ -10024,7 +10024,6 @@ function calculateForecast() {
 // Основной рендер страницы ОДДС
 let currentBalance = 0;
 
-// Основной рендер страницы ОДДС
 function renderOddsPage() {
     // ===== ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ ДАННЫЕ ПЕРЕД РЕНДЕРОМ =====
     // Игнорируем currentFilters - используем originalData напрямую
@@ -10038,7 +10037,9 @@ function renderOddsPage() {
     
     const container = document.getElementById('oddsMainContent');
     if (!container) return;
-    if (!currentData || !currentData.length) {
+    
+    // ИСПРАВЛЕНО: проверяем originalData, а не currentData!
+    if (!originalData || originalData.length === 0) {
         container.innerHTML = '<div class="loading" style="text-align: center; padding: 60px;">📊 Загрузите данные для отображения ОДДС</div>';
         return;
     }
@@ -10076,9 +10077,9 @@ const expenses = currencyFiltered.filter(op => op.type === 'expense');
     const netFlow = totalIncome - totalExpense;
     
     // ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА ==========
-    // 1. Берём начальные остатки из справочника (только для выбранной валюты)
+    // ИСПРАВЛЕНО: используем originalData для начальных остатков!
     let initialBalance = 0;
-    currentData.forEach(row => {
+    originalData.forEach(row => {
         if (row.статья === 'Начальный остаток') {
             const account = row.Счет || row['Счет'] || '';
             if (detectCurrency(account) === currentCurrency) {
