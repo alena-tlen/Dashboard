@@ -3283,68 +3283,86 @@ function renderCashBlock() {
         });
     }, 100);
     
-        // ========== ДОБАВИТЬ КОД ДЕПОЗИТА ЗДЕСЬ ==========
-    // Депозит - отдельный расчёт (не участвует в общем остатке, но показывается отдельно)
-    let depositBalance = 0;
-    let depositOperations = [];
+    // ========== ДЕПОЗИТ - ПРАВИЛЬНАЯ ЛОГИКА ==========
+let depositBalance = 0;
+let depositOperations = [];
 
-    originalData.forEach(row => {
-        const account = row.Счет || row['Счет'] || '';
-        const article = row.статья || '';
-        const channel = row.канал || '';
-        const amount = parseFloat(row.сумма) || 0;
-        const year = row.год;
-        const month = row.месяц;
-        
-        // Включаем в период, если выбран фильтр по году/месяцам
-        let includeInPeriod = true;
-        if (currentFilters.year) {
-            if (year != currentFilters.year) includeInPeriod = false;
+originalData.forEach(row => {
+    const article = row.статья || '';
+    const channel = row.канал || '';
+    const amount = parseFloat(row.сумма) || 0;
+    const year = row.год;
+    const month = row.месяц;
+    
+    // Включаем в период, если выбран фильтр по году/месяцам
+    let includeInPeriod = true;
+    if (currentFilters.year) {
+        if (year != currentFilters.year) includeInPeriod = false;
+    }
+    if (currentFilters.month && currentFilters.month.length > 0) {
+        if (!currentFilters.month.includes(month)) includeInPeriod = false;
+    }
+    
+    // Только операции по депозиту (канал = "Депозит")
+    if (includeInPeriod && channel === 'Депозит') {
+        // Списание с РС = деньги УХОДЯТ на депозит → депозит УВЕЛИЧИВАЕТСЯ
+        if (article === 'Списание с расчетного счета' && amount > 0) {
+            depositBalance += amount;
+            depositOperations.push({ 
+                date: `${year}-${month}`, 
+                amount: amount, 
+                type: 'Размещение на депозит',
+                sign: '+'
+            });
         }
-        if (currentFilters.month && currentFilters.month.length > 0) {
-            if (!currentFilters.month.includes(month)) includeInPeriod = false;
-        }
-        
-        if (includeInPeriod && (channel === 'Депозит' || article === 'Депозит')) {
-            if (amount > 0 && (article === 'Поступление на расчетный счет' || article === 'Депозит')) {
-                depositBalance += amount;
-                depositOperations.push({ date: `${year}-${month}`, amount: amount, type: 'Пополнение' });
-            } else if (amount < 0 || article === 'Списание с расчетного счета') {
-                depositBalance += amount; // amount отрицательный для снятия
-                depositOperations.push({ date: `${year}-${month}`, amount: Math.abs(amount), type: 'Снятие' });
-            }
-        }
-    });
-
-    // Обновляем отображение депозита
-    const depositSidebarBlock = document.getElementById('depositSidebarBlock');
-    const depositTotalValue = document.getElementById('depositTotalValue');
-    const depositOperationsList = document.getElementById('depositOperationsList');
-
-    if (depositSidebarBlock && depositTotalValue) {
-        if (depositBalance !== 0 || depositOperations.length > 0) {
-            depositSidebarBlock.style.display = 'block';
-            depositTotalValue.innerHTML = formatCash(depositBalance, 'RUB');
-            
-            depositOperations.sort((a, b) => a.date.localeCompare(b.date));
-            
-            const operationsHtml = depositOperations.slice(-10).map(op => `
-                <div class="cash-detail-row">
-                    <span>📅 ${op.date}</span>
-                    <span class="${op.type === 'Пополнение' ? 'cash-income' : 'cash-expense'}">${op.type === 'Пополнение' ? '+' : '-'}${formatCash(op.amount, 'RUB')}</span>
-                </div>
-            `).join('');
-            
-            depositOperationsList.innerHTML = `
-                <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(102,126,234,0.1);">
-                    <div style="font-size: 11px; font-weight: 600; color: #667eea; margin-bottom: 8px;">Последние операции:</div>
-                    ${operationsHtml || '<div class="cash-detail-row"><span>—</span><span>нет операций</span></div>'}
-                </div>
-            `;
-        } else {
-            depositSidebarBlock.style.display = 'none';
+        // Поступление на РС = деньги ВОЗВРАЩАЮТСЯ с депозита → депозит УМЕНЬШАЕТСЯ
+        else if (article === 'Поступление на расчетный счет' && amount > 0) {
+            depositBalance -= amount;
+            depositOperations.push({ 
+                date: `${year}-${month}`, 
+                amount: amount, 
+                type: 'Возврат с депозита',
+                sign: '-'
+            });
         }
     }
+});
+
+// Обновляем отображение депозита
+const depositSidebarBlock = document.getElementById('depositSidebarBlock');
+const depositTotalValue = document.getElementById('depositTotalValue');
+const depositOperationsList = document.getElementById('depositOperationsList');
+
+if (depositSidebarBlock && depositTotalValue) {
+    if (depositBalance !== 0 || depositOperations.length > 0) {
+        depositSidebarBlock.style.display = 'block';
+        depositTotalValue.innerHTML = formatCash(depositBalance, 'RUB');
+        
+        depositOperations.sort((a, b) => a.date.localeCompare(b.date));
+        
+        const operationsHtml = depositOperations.slice(-10).map(op => `
+            <div class="cash-detail-row">
+                <span>📅 ${op.date}</span>
+                <span style="display: flex; gap: 8px;">
+                    <span class="${op.sign === '+' ? 'cash-income' : 'cash-expense'}">${op.sign === '+' ? '↑' : '↓'} ${op.type}</span>
+                    <span class="${op.sign === '+' ? 'cash-income' : 'cash-expense'}">${op.sign === '+' ? '+' : '-'}${formatCash(op.amount, 'RUB')}</span>
+                </span>
+            </div>
+        `).join('');
+        
+        depositOperationsList.innerHTML = `
+            <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(66,153,225,0.2);">
+                <div style="font-size: 11px; font-weight: 600; color: #4299e1; margin-bottom: 8px;">📋 История операций:</div>
+                ${operationsHtml || '<div class="cash-detail-row"><span>—</span><span>нет операций</span></div>'}
+            </div>
+            <div style="margin-top: 12px; padding: 8px; background: rgba(66,153,225,0.1); border-radius: 8px; font-size: 10px;">
+                💡 Депозит — это временно замороженные деньги. Они не участвуют в расчёте свободного остатка.
+            </div>
+        `;
+    } else {
+        depositSidebarBlock.style.display = 'none';
+    }
+}
     // ========== КОНЕЦ КОДА ДЕПОЗИТА ==========
 
     // Обработчики кликов для раскрытия деталей счетов
