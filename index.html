@@ -3438,18 +3438,12 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 const workbook = XLSX.read(data, { type: 'array', cellFormula: false, cellText: false });
                 
                 const allProcessed = [];
-                // Убираем проверку дубликатов - она некорректна
                 
                 for (const sheetName of workbook.SheetNames) {
                     const sheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: true, blankrows: false });
                     
                     for (const row of jsonData) {
-                        console.log('=== АНАЛИЗ СТРОКИ БАНКА ===');
-                        console.log('Все ключи строки:', Object.keys(row));
-                        console.log('Значение "число":', row['число']);
-                        console.log('Значение "день":', row['день']);
-                        console.log('Значение "Дата":', row['Дата']);
                         let company = row['компания'] || row['Компания'] || '';
                         let year = row['год'] || row['Год'] || '';
                         let month = row['месяц'] || row['Месяц'] || '';
@@ -3461,7 +3455,6 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         let account = row['Счет'] || row['счет'] || '';
                         let oddsFlow = row['ОДДС'] || row['оддс'] || '';
                         
-                        // Нормализация
                         company = String(company).trim().toUpperCase();
                         year = String(year).trim();
                         month = String(month).trim().toLowerCase();
@@ -3469,12 +3462,11 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         channel = String(channel).trim();
                         subCategory = String(subCategory).trim();
                         account = String(account).trim();
+                        oddsFlow = String(oddsFlow).trim();
                         
-                        // Пропускаем пустые строки
                         if (!type && !account) continue;
                         if (amount === 0 && type !== 'Начальный остаток') continue;
                         
-                        // Определяем тип записи
                         let mappedType = '';
                         if (type === 'Доход') mappedType = 'Доход';
                         else if (type === 'Расход') mappedType = 'Расход';
@@ -3497,13 +3489,11 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         
                         if (!mappedType) continue;
                         
-                        // Для начальных остатков очищаем год/месяц
                         if (type === 'Начальный остаток') {
                             year = '';
                             month = '';
                         }
                         
-                        // Убираем проверку дубликатов - добавляем все строки
                         allProcessed.push({ 
                             компания: company || 'A', 
                             год: year, 
@@ -3514,18 +3504,9 @@ function renderAnimatedMiniChart(elementId, data, color) {
                             подканал: subCategory, 
                             тип: mappedType, 
                             сумма: amount,
-                            Счет: account
+                            Счет: account,
                             ОДДС: oddsFlow
                         });
-                        if (type === 'Поступление на расчетный счет' || type === 'Списание с расчетного счета') {
-    console.log('Добавлена банковская операция:', { 
-        год: year, 
-        месяц: month, 
-        число: day, 
-        статья: type, 
-        сумма: amount 
-    });
-}
                     }
                 }
                 
@@ -3533,7 +3514,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 const ndsPairs = new Map();
                 for (const row of allProcessed) {
                     if (row.статья === 'НДС' && (row.подканал === 'НДС исходящий' || row.подканал === 'НДС входящий')) {
-                        const key = `${row.компания}|${row.год}|${row.месяц}|${row.канал}`;
+                        const key = row.компания + '|' + row.год + '|' + row.месяц + '|' + row.канал;
                         if (!ndsPairs.has(key)) ndsPairs.set(key, { исходящий: 0, входящий: 0 });
                         const ndsData = ndsPairs.get(key);
                         if (row.подканал === 'НДС исходящий') ndsData.исходящий += row.сумма;
@@ -3543,17 +3524,18 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 for (const [key, ndsData] of ndsPairs.entries()) {
                     const calculatedNds = ndsData.исходящий - ndsData.входящий;
                     if (calculatedNds !== 0) {
-                        const [company, year, month, channel] = key.split('|');
+                        const parts = key.split('|');
                         allProcessed.push({
-                            компания: company, 
-                            год: year, 
-                            месяц: month, 
+                            компания: parts[0], 
+                            год: parts[1], 
+                            месяц: parts[2], 
                             статья: 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ',
-                            канал: channel, 
+                            канал: parts[3], 
                             подканал: 'НДС', 
                             тип: 'НДС', 
                             сумма: calculatedNds,
-                            Счет: ''
+                            Счет: '',
+                            ОДДС: ''
                         });
                     }
                 }
@@ -3561,43 +3543,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 if (allProcessed.length === 0) {
                     reject(new Error('Не найдено данных для анализа'));
                 } else {
-                    console.log(`Загружено ${allProcessed.length} записей`);
-                    
-                    // Диагностика: выводим операции по счетам с датами
-                    const cashOps = allProcessed.filter(r => r.Счет && r.статья !== 'Начальный остаток');
-                    console.log('Операции по счетам с датами:');
-                    cashOps.forEach(r => {
-                        if (r.год && r.месяц) {
-                            console.log(`  ${r.год} ${r.месяц}: ${r.статья}, сумма: ${r.сумма}`);
-                        } else {
-                            console.log(`  [БЕЗ ДАТЫ] ${r.статья}, сумма: ${r.сумма}`);
-                        }
-                    });
-
-                    // ===== ДИАГНОСТИКА ДАТ =====
-console.log('=== ДИАГНОСТИКА ДАТ В ЗАГРУЖЕННОМ ФАЙЛЕ ===');
-const sampleRows = allProcessed.slice(0, 20);
-console.log('Первые 20 записей:');
-sampleRows.forEach((row, idx) => {
-    console.log(`${idx + 1}. год=${row.год}, месяц=${row.месяц}, число=${row.число}, статья=${row.статья}, сумма=${row.сумма}, счет=${row.Счет?.substring(0, 30)}`);
-});
-
-// Проверяем уникальные значения дат
-const uniqueDates = new Set();
-allProcessed.forEach(row => {
-    if (row.год && row.месяц && row.число) {
-        uniqueDates.add(`${row.год}-${row.месяц}-${row.число}`);
-    }
-});
-console.log('Уникальные даты в данных:', Array.from(uniqueDates).slice(0, 20));
-
-// Проверяем операции по банку
-const bankOps = allProcessed.filter(r => r.Счет && (r.статья === 'Поступление на расчетный счет' || r.статья === 'Списание с расчетного счета'));
-console.log('Банковских операций:', bankOps.length);
-bankOps.slice(0, 10).forEach(op => {
-    console.log(`  ${op.год} ${op.месяц} ${op.число}: ${op.статья}, сумма: ${op.сумма}, счет: ${op.Счет?.substring(0, 30)}`);
-});
-                    
+                    console.log('Загружено ' + allProcessed.length + ' записей');
                     resolve(allProcessed);
                 }
             } catch (error) { 
@@ -3605,7 +3551,7 @@ bankOps.slice(0, 10).forEach(op => {
                 reject(error); 
             }
         };
-        reader.onerror = (error) => { 
+        reader.onerror = function(error) { 
             console.error('Ошибка FileReader:', error);
             reject(error); 
         };
@@ -10624,12 +10570,11 @@ function collectOddsOperations() {
     if (sourceData.length === 0) return [];
     
     const operations = [];
-    const processedAccounts = new Set();
     
-    sourceData.forEach(row => {
+    sourceData.forEach(function(row) {
         const account = row.Счет || row.счет || row['Счет'] || '';
         const article = row.статья || '';
-        const oddsFlow = row.ОДДС || row.оддс || '';  // Читаем столбец ОДДС
+        const oddsFlow = row.ОДДС || '';
         
         if (article === 'Начальный остаток' || !account) return;
         
@@ -10639,12 +10584,10 @@ function collectOddsOperations() {
         const date = parseOddsDate(row);
         const currency = detectCurrency(account);
         
-        // ===== ОПРЕДЕЛЕНИЕ ТИПА ПОТОКА ИЗ СТОЛБЦА ОДДС =====
+        let type = '';
         let flowType = null;
-        let type = null;
         
         if (oddsFlow) {
-            // Определяем тип операции по столбцу ОДДС
             if (oddsFlow === '1.1') {
                 flowType = 'operating';
                 type = 'income';
@@ -10657,16 +10600,9 @@ function collectOddsOperations() {
             } else if (oddsFlow === '2.2') {
                 flowType = 'financial';
                 type = 'expense';
-            } else if (oddsFlow === '3.1') {
-                flowType = 'investing';
-                type = 'income';
-            } else if (oddsFlow === '3.2') {
-                flowType = 'investing';
-                type = 'expense';
             }
         }
         
-        // Если ОДДС не указан, определяем по статье и знаку
         if (!type) {
             const isDeposit = (row.канал === 'Депозит' || row.канал === 'депозит');
             if (!isDeposit) {
@@ -10682,7 +10618,7 @@ function collectOddsOperations() {
                 date: date, 
                 amount: Math.abs(amount), 
                 type: type,
-                flowType: flowType,  // Сохраняем тип потока из ОДДС
+                flowType: flowType,
                 article: article, 
                 category: row.канал || row.подканал || article,
                 year: row.год, 
@@ -10691,17 +10627,10 @@ function collectOddsOperations() {
                 currency: currency, 
                 isTechnical: false
             });
-            
-            if (!processedAccounts.has(account)) {
-                processedAccounts.add(account);
-                console.log(`ОДДС: Найден счет: "${account.substring(0, 50)}..." (${currency})`);
-            }
         }
     });
     
-    console.log(`ОДДС: Всего собрано операций: ${operations.length}`);
-    console.log(`ОДДС: Найдено уникальных счетов: ${processedAccounts.size}`);
-    
+    console.log('ОДДС: Всего собрано операций: ' + operations.length);
     return operations;
 }
 
