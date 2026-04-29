@@ -10948,15 +10948,29 @@ function renderOddsPage() {
     const comparison = previousFlows ? compareWithPreviousPeriod(filteredOps, previousOps) : null;
     
     // Рассчитываем остатки
-    let startBalance = 0;
-    originalData.forEach(row => {
-        if (row.статья === 'Начальный остаток') {
-            const account = row.Счет || '';
-            if (detectCurrency(account) === currentCurrency) {
-                startBalance += parseFloat(row.сумма) || 0;
-            }
+    // Расчет начального остатка ТОЛЬКО для RUB счетов
+let startBalance = 0;
+const rubAccounts = new Set();
+
+// Сначала находим все RUB счета из операций
+oddsOperations.forEach(op => {
+    if (op.currency === 'RUB' && op.account) {
+        rubAccounts.add(op.account);
+    }
+});
+
+// Собираем начальные остатки только для RUB счетов
+originalData.forEach(row => {
+    if (row.статья === 'Начальный остаток') {
+        const account = row.Счет || '';
+        const currency = detectCurrency(account);
+        if (currency === 'RUB' && rubAccounts.has(account)) {
+            startBalance += parseFloat(row.сумма) || 0;
         }
-    });
+    }
+});
+
+console.log('ОДДС: Начальный баланс (только RUB):', formatCurrency(startBalance));
     
     const opsBeforeStart = oddsOperations.filter(op => {
         if (op.currency !== currentCurrency) return false;
@@ -11788,47 +11802,27 @@ function clearOddsCache() {
 
 // Разделение потоков на операционный, инвестиционный, финансовый
 function splitCashFlows(operations) {
+    // ТОЛЬКО RUB операции!
+    const rubOperations = operations.filter(op => op.currency === 'RUB');
+    
     const flows = {
         operating: { income: { items: [], total: 0, byChannel: {} }, expense: { items: [], total: 0, byChannel: {} }, net: 0 },
         investing: { income: { items: [], total: 0, byChannel: {} }, expense: { items: [], total: 0, byChannel: {} }, net: 0 },
         financial: { income: { items: [], total: 0, byChannel: {} }, expense: { items: [], total: 0, byChannel: {} }, net: 0 }
     };
     
-    // Каналы, которые НУЖНО ИСКЛЮЧИТЬ из операционного потока (они не относятся к продажам)
-    const excludedChannels = [
-        'Комиссия банка', 'Банк', 'Альфа-Банк', 'Сбербанк', 'ВТБ', 'ОЗОН Банк', 'Вайлдберриз Банк',
-        'Перевод', 'Заработная плата', 'Налог', 'Уплата налога', 'Аренда', 'Бухгалтерское', 
-        'IT', 'Услуги связи', 'Фотосессия', 'Приобретение', 'Хозяйственный инвентарь',
-        'Подотчетному лицу', 'Депозит', 'Проценты по займам', 'Возврат займов', 'Получение займа',
-        'Перечисление', 'Комиссия', 'Связь', 'Аутсорсинг', 'Маркетинговые услуги', 'Продвижение'
-    ];
-    
-    // Финансовые операции (кредиты, займы, депозиты)
-    const financialKeywords = ['Получение займа', 'Возврат займов', 'Проценты по займам', 'Дивиденды', 'Депозит', 'Займ'];
-    
-    operations.forEach(op => {
+    rubOperations.forEach(op => {
         let type = 'operating';
         let isIncome = op.type === 'income';
         const article = op.article;
         const category = op.category || '';
         const fullText = (article + ' ' + category).toLowerCase();
         
-        // Проверяем, является ли операция финансовой
+        const financialKeywords = ['Получение займа', 'Возврат займов', 'Проценты по займам', 'Дивиденды', 'Депозит', 'Займ'];
         let isFinancial = financialKeywords.some(k => article.includes(k) || category.includes(k));
         
-        // Проверяем, нужно ли исключить из операционного потока
-        let isExcluded = excludedChannels.some(ex => article.includes(ex) || category.includes(ex));
-        
-        if (isFinancial) {
-            type = 'financial';
-        } else if (isExcluded) {
-            type = 'operating'; // оставляем в операционном, но помечаем как "Прочее"
-        }
-        
-        // Определяем канал для группировки
         let channelName = 'Прочее';
         
-        // Определяем каналы продаж (ищем по названиям)
         if (fullText.includes('wildberries') || fullText.includes('wb') || article === 'Wildberries') {
             channelName = 'Wildberries';
         } else if (fullText.includes('ozon') || article === 'Ozon') {
@@ -11841,30 +11835,23 @@ function splitCashFlows(operations) {
             channelName = 'Оптовики';
         } else if (fullText.includes('фулфилмент') || article === 'Фулфилмент') {
             channelName = 'Фулфилмент';
-        } else if (!isExcluded && !isFinancial && (isIncome || article.includes('Доход') || article.includes('Поступление'))) {
-            // Неисключенные доходы - тоже в операционный поток
+        } else if (!isFinancial && (isIncome || article.includes('Доход') || article.includes('Поступление'))) {
             channelName = 'Прочие доходы';
-        } else if (!isExcluded && !isFinancial && !isIncome) {
-            // Неисключенные расходы
+        } else if (!isFinancial && !isIncome) {
             channelName = 'Прочие расходы';
         }
         
-        // Добавляем в соответствующую структуру
+        if (isFinancial) type = 'financial';
+        
         if (isIncome) {
             flows[type].income.items.push(op);
             flows[type].income.total += op.amount;
-            
-            if (!flows[type].income.byChannel[channelName]) {
-                flows[type].income.byChannel[channelName] = 0;
-            }
+            if (!flows[type].income.byChannel[channelName]) flows[type].income.byChannel[channelName] = 0;
             flows[type].income.byChannel[channelName] += op.amount;
         } else {
             flows[type].expense.items.push(op);
             flows[type].expense.total += op.amount;
-            
-            if (!flows[type].expense.byChannel[channelName]) {
-                flows[type].expense.byChannel[channelName] = 0;
-            }
+            if (!flows[type].expense.byChannel[channelName]) flows[type].expense.byChannel[channelName] = 0;
             flows[type].expense.byChannel[channelName] += op.amount;
         }
     });
@@ -11957,11 +11944,16 @@ function calculateDailyBalance(operations, startBalance, dateRange) {
     if (!operations || operations.length === 0) return [];
     
     let filtered = operations;
-    if (dateRange.startDate && dateRange.endDate) {
+    if (dateRange && dateRange.startDate && dateRange.endDate) {
         filtered = operations.filter(op => op.date >= dateRange.startDate && op.date <= dateRange.endDate);
     }
     
-    const sorted = [...filtered].sort((a, b) => a.date - b.date);
+    // ТОЛЬКО RUB операции!
+    const rubOperations = filtered.filter(op => op.currency === 'RUB');
+    
+    if (rubOperations.length === 0) return [];
+    
+    const sorted = [...rubOperations].sort((a, b) => a.date - b.date);
     const dailyMap = new Map();
     
     sorted.forEach(op => {
