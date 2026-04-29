@@ -3459,6 +3459,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         let subCategory = row['подканал'] || row['Подканал'] || '';
                         let amount = parseFloat(row['сумма'] || row['Сумма'] || 0);
                         let account = row['Счет'] || row['счет'] || '';
+                        let oddsFlow = row['ОДДС'] || row['оддс'] || '';
                         
                         // Нормализация
                         company = String(company).trim().toUpperCase();
@@ -3514,6 +3515,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                             тип: mappedType, 
                             сумма: amount,
                             Счет: account
+                            ОДДС: oddsFlow
                         });
                         if (type === 'Поступление на расчетный счет' || type === 'Списание с расчетного счета') {
     console.log('Добавлена банковская операция:', { 
@@ -10618,15 +10620,17 @@ function calculateForecast() {
 }
 
 function collectOddsOperations() {
-    // ИСПОЛЬЗУЕМ ОРИГИНАЛЬНЫЕ ДАННЫЕ, ИГНОРИРУЯ ВСЕ ФИЛЬТРЫ!
     const sourceData = originalData.length > 0 ? originalData : [];
     if (sourceData.length === 0) return [];
     
     const operations = [];
+    const processedAccounts = new Set();
     
     sourceData.forEach(row => {
         const account = row.Счет || row.счет || row['Счет'] || '';
         const article = row.статья || '';
+        const oddsFlow = row.ОДДС || row.оддс || '';  // Читаем столбец ОДДС
+        
         if (article === 'Начальный остаток' || !account) return;
         
         const amount = parseFloat(row.сумма) || 0;
@@ -10635,17 +10639,42 @@ function collectOddsOperations() {
         const date = parseOddsDate(row);
         const currency = detectCurrency(account);
         
-        const channel = row.канал || row.Канал || '';
-        const isTechnical = EXCLUDED_FROM_TOP.some(ex => channel.includes(ex));
+        // ===== ОПРЕДЕЛЕНИЕ ТИПА ПОТОКА ИЗ СТОЛБЦА ОДДС =====
+        let flowType = null;
+        let type = null;
         
-        let type = '';
-        const isDeposit = channel === 'Депозит' || channel === 'депозит';
+        if (oddsFlow) {
+            // Определяем тип операции по столбцу ОДДС
+            if (oddsFlow === '1.1') {
+                flowType = 'operating';
+                type = 'income';
+            } else if (oddsFlow === '1.2') {
+                flowType = 'operating';
+                type = 'expense';
+            } else if (oddsFlow === '2.1') {
+                flowType = 'financial';
+                type = 'income';
+            } else if (oddsFlow === '2.2') {
+                flowType = 'financial';
+                type = 'expense';
+            } else if (oddsFlow === '3.1') {
+                flowType = 'investing';
+                type = 'income';
+            } else if (oddsFlow === '3.2') {
+                flowType = 'investing';
+                type = 'expense';
+            }
+        }
         
-        if (!isDeposit) {
-            if (article === 'Поступление на расчетный счет') type = 'income';
-            else if (article === 'Списание с расчетного счета') type = 'expense';
-            else if (amount > 0) type = 'income';
-            else if (amount < 0) type = 'expense';
+        // Если ОДДС не указан, определяем по статье и знаку
+        if (!type) {
+            const isDeposit = (row.канал === 'Депозит' || row.канал === 'депозит');
+            if (!isDeposit) {
+                if (article === 'Поступление на расчетный счет') type = 'income';
+                else if (article === 'Списание с расчетного счета') type = 'expense';
+                else if (amount > 0) type = 'income';
+                else if (amount < 0) type = 'expense';
+            }
         }
         
         if (type && date) {
@@ -10653,16 +10682,25 @@ function collectOddsOperations() {
                 date: date, 
                 amount: Math.abs(amount), 
                 type: type,
+                flowType: flowType,  // Сохраняем тип потока из ОДДС
                 article: article, 
                 category: row.канал || row.подканал || article,
                 year: row.год, 
                 month: row.месяц, 
                 account: account,
                 currency: currency, 
-                isTechnical: isTechnical
+                isTechnical: false
             });
+            
+            if (!processedAccounts.has(account)) {
+                processedAccounts.add(account);
+                console.log(`ОДДС: Найден счет: "${account.substring(0, 50)}..." (${currency})`);
+            }
         }
     });
+    
+    console.log(`ОДДС: Всего собрано операций: ${operations.length}`);
+    console.log(`ОДДС: Найдено уникальных счетов: ${processedAccounts.size}`);
     
     return operations;
 }
@@ -11808,7 +11846,7 @@ function clearOddsCache() {
 // Разделение потоков на операционный, инвестиционный, финансовый
 // Разделение потоков на операционный, инвестиционный, финансовый
 function splitCashFlows(operations) {
-    // ===== ВАЖНО: ТОЛЬКО RUB ОПЕРАЦИИ! =====
+    // ТОЛЬКО RUB операции!
     const rubOperations = operations.filter(op => op.currency === 'RUB');
     
     const flows = {
@@ -11818,47 +11856,58 @@ function splitCashFlows(operations) {
     };
     
     rubOperations.forEach(op => {
-        let type = 'operating';
-        let isIncome = op.type === 'income';
-        const article = op.article;
-        const category = op.category || '';
-        const fullText = (article + ' ' + category).toLowerCase();
+        // Определяем тип потока
+        let flowName = 'operating'; // по умолчанию
         
-        const financialKeywords = ['Получение займа', 'Возврат займов', 'Проценты по займам', 'Дивиденды', 'Депозит', 'Займ'];
-        let isFinancial = financialKeywords.some(k => article.includes(k) || category.includes(k));
+        // Если в операции есть flowType из ОДДС - используем его
+        if (op.flowType) {
+            flowName = op.flowType;
+        } else {
+            // Иначе определяем по ключевым словам
+            const article = op.article;
+            const category = op.category || '';
+            const fullText = (article + ' ' + category).toLowerCase();
+            
+            const financialKeywords = ['Получение займа', 'Возврат займов', 'Проценты по займам', 'Дивиденды', 'Депозит', 'Займ'];
+            if (financialKeywords.some(k => article.includes(k) || category.includes(k))) {
+                flowName = 'financial';
+            }
+        }
         
+        const isIncome = op.type === 'income';
+        
+        // Определяем канал
         let channelName = 'Прочее';
+        const fullText = (op.article + ' ' + (op.category || '')).toLowerCase();
         
-        if (fullText.includes('wildberries') || fullText.includes('wb') || article === 'Wildberries') {
+        if (fullText.includes('wildberries') || fullText.includes('wb') || op.article === 'Wildberries') {
             channelName = 'Wildberries';
-        } else if (fullText.includes('ozon') || article === 'Ozon') {
+        } else if (fullText.includes('ozon') || op.article === 'Ozon') {
             channelName = 'Ozon';
-        } else if (fullText.includes('детский мир') || article === 'Детский мир') {
+        } else if (fullText.includes('детский мир') || op.article === 'Детский мир') {
             channelName = 'Детский мир';
-        } else if (fullText.includes('lamoda') || article === 'Lamoda') {
+        } else if (fullText.includes('lamoda') || op.article === 'Lamoda') {
             channelName = 'Lamoda';
-        } else if (fullText.includes('оптовик') || article === 'Оптовики' || category === 'Оптовики') {
+        } else if (fullText.includes('оптовик') || op.article === 'Оптовики') {
             channelName = 'Оптовики';
-        } else if (fullText.includes('фулфилмент') || article === 'Фулфилмент') {
+        } else if (fullText.includes('фулфилмент') || op.article === 'Фулфилмент') {
             channelName = 'Фулфилмент';
-        } else if (!isFinancial && (isIncome || article.includes('Доход') || article.includes('Поступление'))) {
+        } else if (isIncome) {
             channelName = 'Прочие доходы';
-        } else if (!isFinancial && !isIncome) {
+        } else {
             channelName = 'Прочие расходы';
         }
         
-        if (isFinancial) type = 'financial';
-        
         if (isIncome) {
-            flows[type].income.items.push(op);
-            flows[type].income.total += op.amount;
-            if (!flows[type].income.byChannel[channelName]) flows[type].income.byChannel[channelName] = 0;
-            flows[type].income.byChannel[channelName] += op.amount;
+            flows[flowName].income.items.push(op);
+            flows[flowName].income.total += op.amount;
+            if (!flows[flowName].income.byChannel[channelName]) flows[flowName].income.byChannel[channelName] = 0;
+            flows[flowName].income.byChannel[channelName] += op.amount;
         } else {
-            flows[type].expense.items.push(op);
-            flows[type].expense.total += op.amount;
-            if (!flows[type].expense.byChannel[channelName]) flows[type].expense.byChannel[channelName] = 0;
-            flows[type].expense.byChannel[channelName] += op.amount;
+            flows[flowName].expense.items.push(op);
+            flows[flowName].expense.total += op.amount;
+            if (!flows[flowName].expense.byChannel[channelName]) flows[flowName].expense.byChannel[channelName] = 0;
+            flows[flowName].expense.byChannel[channelName] += op.amount;
         }
     });
     
