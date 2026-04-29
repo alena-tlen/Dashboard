@@ -10961,17 +10961,6 @@ if (startDate) {
 let startBalance = cumulativeBalance;
 console.log('Остаток на начало периода: ' + formatCurrencyWithCurrency(startBalance, currentCurrency));
     
-    const opsBeforeStart = oddsOperations.filter(op => {
-        if (op.currency !== currentCurrency) return false;
-        if (op.isTechnical) return false;
-        return oddsDateRange.startDate ? op.date < oddsDateRange.startDate : false;
-    });
-    
-    opsBeforeStart.forEach(op => {
-        if (op.type === 'income') startBalance += op.amount;
-        else if (op.type === 'expense') startBalance -= op.amount;
-    });
-    
     const endBalance = startBalance + flows.operating.net + flows.investing.net + flows.financial.net;
     const netCashFlow = endBalance - startBalance;
     
