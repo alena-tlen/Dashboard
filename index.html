@@ -10576,13 +10576,6 @@ function collectOddsOperations() {
     if (sourceData.length === 0) return [];
     
     const operations = [];
-    const processedAccounts = new Set();
-    
-    const EXCLUDED_FROM_TOP = [
-        'Перевод с другого счета', 'Перевод на другой счет организации',
-        'Перевод на другой счет', 'Перевод между счетами', 'Внутренний перевод',
-        'Комиссия банка', 'Уплата налога', 'Перечисление заработной платы по ведомостям'
-    ];
     
     sourceData.forEach(function(row) {
         const account = row.Счет || row.счет || row['Счет'] || '';
@@ -10590,18 +10583,15 @@ function collectOddsOperations() {
         const channel = row.канал || row.Канал || '';
         const subCategory = row.подканал || '';
         
-        // ===== ИСКЛЮЧАЕМ ВСЕ ОПЕРАЦИИ ПО ДЕПОЗИТУ =====
-        // 1. Если канал = Депозит - пропускаем
+        // ===== ИСКЛЮЧАЕМ ДЕПОЗИТ ИЗ СВОБОДНОГО ОСТАТКА =====
+        // (как в правой панели)
         if (channel === 'Депозит' || channel === 'депозит') return;
-        
-        // 2. Если подканал связан с депозитом - пропускаем
         if (subCategory === 'Депозит' || subCategory === 'депозит') return;
         if (subCategory === 'Возврат депозита') return;
+        if (article.includes('Депозит')) return;
         
-        // 3. Если статья содержит депозит - пропускаем
-        if (article.includes('Депозит') || article.includes('депозит')) return;
-        
-        if (article === 'Начальный остаток' || !account) return;
+        if (article === 'Начальный остаток') return;
+        if (!account) return;
         
         const amount = parseFloat(row.сумма) || 0;
         if (amount === 0) return;
@@ -10609,12 +10599,10 @@ function collectOddsOperations() {
         const date = parseOddsDate(row);
         const currency = detectCurrency(account);
         
-        const isTechnical = EXCLUDED_FROM_TOP.some(function(ex) {
-            return channel.includes(ex) || article.includes(ex);
-        });
+        // ТОЛЬКО RUB операции
+        if (currency !== 'RUB') return;
         
         let type = '';
-        
         if (article === 'Поступление на расчетный счет') {
             type = 'income';
         } else if (article === 'Списание с расчетного счета') {
@@ -10625,23 +10613,39 @@ function collectOddsOperations() {
             type = 'expense';
         }
         
-        if (type && date) {
-            operations.push({
-                date: date, 
-                amount: Math.abs(amount), 
-                type: type,
-                article: article, 
-                category: channel || subCategory || article,
-                year: row.год, 
-                month: row.месяц, 
-                account: account,
-                currency: currency, 
-                isTechnical: isTechnical
-            });
+        if (!type || !date) return;
+        
+        operations.push({
+            date: date, 
+            amount: Math.abs(amount), 
+            type: type,
+            article: article, 
+            category: channel || subCategory || article,
+            year: row.год, 
+            month: row.месяц, 
+            account: account,
+            currency: currency, 
+            isTechnical: false
+        });
+    });
+    
+    // Отдельно собираем депозитные операции (для информации)
+    const depositOps = [];
+    sourceData.forEach(function(row) {
+        const channel = row.канал || row.Канал || '';
+        const subCategory = row.подканал || '';
+        if (channel === 'Депозит' || channel === 'депозит' ||
+            subCategory === 'Депозит' || subCategory === 'депозит') {
+            const amount = parseFloat(row.сумма) || 0;
+            if (amount !== 0 && row.статья !== 'Начальный остаток') {
+                depositOps.push(row);
+            }
         }
     });
     
-    console.log('ОДДС: Всего собрано операций: ' + operations.length);
+    console.log('ОДДС: Свободных RUB операций (без депозита): ' + operations.length);
+    console.log('ОДДС: Депозитных операций (справочно): ' + depositOps.length);
+    
     return operations;
 }
 
