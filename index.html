@@ -10935,36 +10935,35 @@ function renderOddsPage() {
     const comparison = previousFlows ? compareWithPreviousPeriod(filteredOps, previousOps) : null;
     
 
-// ========== ИСПОЛЬЗУЕМ ЛОГИКУ ПРАВОЙ ПАНЕЛИ ДЛЯ РАСЧЁТА ОСТАТКА ==========
+// ========== РАСЧЁТ ОСТАТКОВ С УЧЁТОМ ДЕПОЗИТА ==========
 
-// Функция для получения остатка на любую дату (как в правой панели)
-function getBalanceOnDate(targetDate, data) {
+// Функция для получения остатка по ВСЕМ счетам (включая депозит)
+function getTotalBalanceOnDate(targetDate, includeDeposit = true) {
     if (!targetDate) return 0;
     
-    const balances = {};
-    const allAccounts = new Set();
+    let totalBalance = 0;
+    const processedAccounts = new Set();
     
-    // 1. Собираем начальные остатки ДО targetDate
-    data.forEach(row => {
+    // 1. Начальные остатки
+    originalData.forEach(row => {
         if (row.статья !== 'Начальный остаток') return;
         
         const account = row.Счет || row.счет || row['Счет'] || '';
-        if (!account) return;
-        
         const amount = parseFloat(row.сумма) || 0;
         const channel = row.канал || row.Канал || '';
         const subCategory = row.подканал || '';
         const rowYear = row.год;
         const rowMonth = row.месяц;
         
-        // Исключаем депозит
-        if (channel === 'Депозит' || channel === 'депозит') return;
-        if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+        // Если includeDeposit = false, исключаем депозит
+        if (!includeDeposit) {
+            if (channel === 'Депозит' || channel === 'депозит') return;
+            if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+        }
         
-        // Только RUB
         if (detectCurrency(account) !== 'RUB') return;
         
-        // Проверяем, относится ли остаток к дате ДО targetDate
+        // Проверяем дату остатка
         let shouldInclude = true;
         if (rowYear && rowMonth) {
             const yearNum = parseInt(rowYear);
@@ -10973,15 +10972,14 @@ function getBalanceOnDate(targetDate, data) {
             if (rowDate > targetDate) shouldInclude = false;
         }
         
-        if (shouldInclude && !balances[account]) {
-            balances[account] = { initial: 0, income: 0, expense: 0 };
-            balances[account].initial = amount;
-            allAccounts.add(account);
+        if (shouldInclude && !processedAccounts.has(account)) {
+            processedAccounts.add(account);
+            totalBalance += amount;
         }
     });
     
-    // 2. Собираем операции ДО targetDate
-    data.forEach(row => {
+    // 2. Операции ДО targetDate
+    originalData.forEach(row => {
         const account = row.Счет || row.счет || row['Счет'] || '';
         if (!account) return;
         if (row.статья === 'Начальный остаток') return;
@@ -10995,52 +10993,63 @@ function getBalanceOnDate(targetDate, data) {
         const channel = row.канал || row.Канал || '';
         const subCategory = row.подканал || '';
         
-        // Исключаем депозит
-        if (channel === 'Депозит' || channel === 'депозит') return;
-        if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+        if (!includeDeposit) {
+            if (channel === 'Депозит' || channel === 'депозит') return;
+            if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+        }
         
         if (detectCurrency(account) !== 'RUB') return;
         
-        if (!balances[account]) {
-            balances[account] = { initial: 0, income: 0, expense: 0 };
-            allAccounts.add(account);
-        }
-        
-        // Определяем тип операции
         let isIncome = false;
         let isExpense = false;
         
-        if (row.статья === 'Поступление на расчетный счет') {
+        if (row.статья === 'Поступление на расчетный счет' || amount > 0) {
             isIncome = true;
-        } else if (row.статья === 'Списание с расчетного счета') {
-            isExpense = true;
-        } else if (amount > 0) {
-            isIncome = true;
-        } else if (amount < 0) {
+        } else if (row.статья === 'Списание с расчетного счета' || amount < 0) {
             isExpense = true;
         }
         
         const absAmount = Math.abs(amount);
-        if (isIncome) balances[account].income += absAmount;
-        if (isExpense) balances[account].expense += absAmount;
+        if (isIncome) totalBalance += absAmount;
+        if (isExpense) totalBalance -= absAmount;
     });
-    
-    // 3. Суммируем балансы всех счетов
-    let totalBalance = 0;
-    for (const account of allAccounts) {
-        const bal = balances[account];
-        const balance = bal.initial + bal.income - bal.expense;
-        totalBalance += balance;
-    }
     
     return totalBalance;
 }
 
-// Получаем остаток на начало выбранного периода
-const startDateForBalance = oddsDateRange.startDate;
-startBalance = getBalanceOnDate(startDateForBalance, originalData);
+// Получаем остатки
+const startDateTotal = oddsDateRange.startDate;
+const endDateTotal = oddsDateRange.endDate;
 
-console.log(`Остаток на начало периода (по логике правой панели): ${formatCurrency(startBalance)}`);
+// Остаток на ВСЕХ счетах (включая депозит)
+const totalBalanceStart = getTotalBalanceOnDate(startDateTotal, true);
+const totalBalanceEnd = getTotalBalanceOnDate(endDateTotal, true);
+
+// Остаток ТОЛЬКО на депозите
+const depositBalanceStart = getTotalBalanceOnDate(startDateTotal, false);
+const depositBalanceEnd = getTotalBalanceOnDate(endDateTotal, false);
+
+// СВОБОДНЫЙ остаток (все счета минус депозит)
+const freeBalanceStart = totalBalanceStart - depositBalanceStart;
+const freeBalanceEnd = totalBalanceEnd - depositBalanceEnd;
+
+// Чистый денежный поток (свободные деньги)
+const netCashFlow = freeBalanceEnd - freeBalanceStart;
+
+console.log(`=== ОСТАТКИ НА ${startDateTotal?.toISOString().split('T')[0]} ===`);
+console.log(`Все счета (вкл. депозит): ${formatCurrency(totalBalanceStart)}`);
+console.log(`Депозит: ${formatCurrency(depositBalanceStart)}`);
+console.log(`Свободный остаток: ${formatCurrency(freeBalanceStart)}`);
+
+console.log(`=== ОСТАТКИ НА ${endDateTotal?.toISOString().split('T')[0]} ===`);
+console.log(`Все счета (вкл. депозит): ${formatCurrency(totalBalanceEnd)}`);
+console.log(`Депозит: ${formatCurrency(depositBalanceEnd)}`);
+console.log(`Свободный остаток: ${formatCurrency(freeBalanceEnd)}`);
+
+console.log(`Чистый свободный поток: ${formatCurrency(netCashFlow)}`);
+
+let startBalance = freeBalanceStart;
+let endBalance = freeBalanceEnd;
     
     const endBalance = startBalance + flows.operating.net + flows.investing.net + flows.financial.net;
     const netCashFlow = endBalance - startBalance;
@@ -11398,6 +11407,104 @@ console.log(`Остаток на начало периода (по логике 
         </div>
     `;
     
+    // ========== БЛОК ДЕПОЗИТА (отдельно от ОДДС) ==========
+
+// Рассчитываем депозит на выбранную дату
+function getDepositBalance(targetDate) {
+    let depositBalance = 0;
+    
+    originalData.forEach(row => {
+        if (row.статья === 'Начальный остаток') {
+            const channel = row.канал || '';
+            const subCategory = row.подканал || '';
+            if (channel === 'Депозит' || channel === 'депозит' ||
+                subCategory === 'Депозит' || subCategory === 'депозит') {
+                depositBalance += parseFloat(row.сумма) || 0;
+            }
+        }
+    });
+    
+    // Операции по депозиту ДО targetDate
+    originalData.forEach(row => {
+        const article = row.статья || '';
+        if (article === 'Начальный остаток') return;
+        
+        const channel = row.канал || '';
+        const subCategory = row.подканал || '';
+        
+        if (channel === 'Депозит' || channel === 'депозит' ||
+            subCategory === 'Депозит' || subCategory === 'депозит' ||
+            subCategory === 'Возврат депозита') {
+            
+            const amount = parseFloat(row.сумма) || 0;
+            if (amount === 0) return;
+            
+            const date = parseOddsDate(row);
+            if (!date || date >= targetDate) return;
+            
+            // Пополнение депозита (списание со счета) - увеличивает депозит
+            if (article === 'Списание с расчетного счета' && amount > 0) {
+                depositBalance += amount;
+            }
+            // Возврат с депозита (поступление на счет) - уменьшает депозит
+            else if (article === 'Поступление на расчетный счет' && amount > 0) {
+                depositBalance -= amount;
+            }
+            else if (amount > 0) {
+                depositBalance += amount;
+            } else if (amount < 0) {
+                depositBalance -= Math.abs(amount);
+            }
+        }
+    });
+    
+    return depositBalance;
+}
+
+const depositStartBalance = getDepositBalance(oddsDateRange.startDate);
+const depositEndBalance = getDepositBalance(oddsDateRange.endDate);
+const depositNetChange = depositEndBalance - depositStartBalance;
+
+// Добавляем блок депозита в HTML (после ключевых метрик)
+const depositBlockHtml = `
+<div class="metrics-grid" style="margin-top: 20px;">
+    <div class="metric-card" style="background: linear-gradient(135deg, rgba(66,153,225,0.1) 0%, rgba(102,126,234,0.1) 100%);">
+        <div class="metric-title" style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">🏦</span>
+            <span>ДЕПОЗИТ</span>
+            <span style="font-size: 11px; color: #4299e1; margin-left: auto;">средства, размещённые в банке</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 12px;">
+            <div style="text-align: center;">
+                <div style="font-size: 11px; opacity: 0.7;">Остаток на начало</div>
+                <div class="metric-value" style="font-size: 24px; color: #4299e1;">${formatCurrency(depositStartBalance)}</div>
+                <div class="metric-sub">${oddsDateRange.startDate ? formatDate(oddsDateRange.startDate) : 'Начало периода'}</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 11px; opacity: 0.7;">Изменение за период</div>
+                <div class="metric-value" style="font-size: 24px; ${depositNetChange >= 0 ? 'color: #48bb78' : 'color: #f56565'}">
+                    ${depositNetChange >= 0 ? '+' : ''}${formatCurrency(depositNetChange)}
+                </div>
+                <div class="metric-sub">чистое движение</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 11px; opacity: 0.7;">Остаток на конец</div>
+                <div class="metric-value" style="font-size: 24px; color: #4299e1;">${formatCurrency(depositEndBalance)}</div>
+                <div class="metric-sub">${oddsDateRange.endDate ? formatDate(oddsDateRange.endDate) : 'Конец периода'}</div>
+            </div>
+        </div>
+        <div style="margin-top: 12px; padding: 8px; background: rgba(66,153,225,0.1); border-radius: 8px; font-size: 11px; text-align: center;">
+            💡 Депозит не участвует в расчёте свободного денежного потока. Это замороженные средства.
+        </div>
+    </div>
+</div>
+`;
+
+// Вставляем блок депозита после 4 карточек с остатками
+// Найдем место в HTML где заканчиваются ключевые метрики
+html = html.replace('<!-- Ключевые метрики -->', '<!-- Ключевые метрики -->' + depositBlockHtml);
+
+
     document.getElementById('oddsMainContent').innerHTML = html;
     
     // Отрисовка графиков
