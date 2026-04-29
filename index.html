@@ -10940,10 +10940,7 @@ originalData.forEach(row => {
         const subCategory = row.подканал || '';
         
         // Пропускаем депозит (проверяем оба варианта написания)
-        if (channel === 'Депозит' || channel === 'депозит') {
-            console.log('Исключен начальный остаток депозита:', row.сумма);
-            return;
-        }
+        if (channel === 'Депозит' || channel === 'депозит') return;
         if (subCategory === 'Депозит' || subCategory === 'депозит') return;
         
         if (detectCurrency(account) === currentCurrency) {
@@ -10979,55 +10976,27 @@ if (startDate) {
 
 let startBalance = cumulativeBalance;
 
-console.log('=== ПОЛНАЯ ДИАГНОСТИКА ДЕПОЗИТА ===');
-
-// 1. Находим все операции, связанные с депозитом
-const allDepositOps = originalData.filter(row => {
-    const channel = row.канал || '';
-    const subCat = row.подканал || '';
-    const article = row.статья || '';
-    return channel === 'Депозит' || channel === 'депозит' || 
-           subCat === 'Депозит' || subCat === 'депозит' ||
-           article.includes('Депозит') || article.includes('депозит');
+console.log('=== ПРОВЕРКА initialBalance ===');
+let testBalance = 0;
+originalData.forEach(row => {
+    if (row.статья === 'Начальный остаток') {
+        const account = row.Счет || '';
+        const channel = row.канал || '';
+        const subCategory = row.подканал || '';
+        const currency = detectCurrency(account);
+        let isExcluded = false;
+        
+        if (channel === 'Депозит' || channel === 'депозит') isExcluded = true;
+        if (subCategory === 'Депозит' || subCategory === 'депозит') isExcluded = true;
+        
+        console.log(`  ${row.сумма} руб, канал="${channel}", подканал="${subCategory}", валюта=${currency}, исключен=${isExcluded}`);
+        
+        if (!isExcluded && currency === 'RUB') {
+            testBalance += parseFloat(row.сумма) || 0;
+        }
+    }
 });
-
-console.log('Всего операций с депозитом в originalData:', allDepositOps.length);
-allDepositOps.forEach(op => {
-    console.log(`  ${op.год} ${op.месяц}: ${op.статья}, сумма: ${op.сумма}, канал: ${op.канал}, подканал: ${op.подканал}`);
-});
-
-// 2. Проверяем, попадают ли они в oddsOperations
-const depositInOdds = oddsOperations.filter(op => {
-    return op.category === 'Депозит' || op.category === 'депозит' ||
-           op.article.includes('Депозит') || op.article.includes('депозит');
-});
-console.log('Операций с депозитом в oddsOperations:', depositInOdds.length);
-depositInOdds.forEach(op => {
-    console.log(`  ${op.date}: ${op.type} ${op.amount} - ${op.article} (${op.category})`);
-});
-
-// 3. Начальные остатки депозита
-const depositInitial = originalData.filter(row => {
-    return row.статья === 'Начальный остаток' && 
-           (row.канал === 'Депозит' || row.канал === 'депозит');
-});
-console.log('Начальные остатки депозита:', depositInitial.length);
-depositInitial.forEach(op => {
-    console.log(`  сумма: ${op.сумма}`);
-});
-
-// 4. Считаем чистый поток по депозиту за январь
-const janDepositOps = oddsOperations.filter(op => {
-    if (op.category !== 'Депозит' && op.category !== 'депозит') return false;
-    if (!op.date) return false;
-    return op.date.getMonth() === 0 && op.date.getFullYear() === 2026;
-});
-let depositIncome = 0, depositExpense = 0;
-janDepositOps.forEach(op => {
-    if (op.type === 'income') depositIncome += op.amount;
-    else depositExpense += op.amount;
-});
-console.log('Депозит за январь: доходы=', depositIncome, 'расходы=', depositExpense, 'нетто=', depositIncome - depositExpense);
+console.log('ИТОГО initialBalance (должен быть без 35 000 000):', testBalance);
 
 
 
