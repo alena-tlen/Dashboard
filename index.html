@@ -10938,6 +10938,9 @@ function renderOddsPage() {
 // ========== РАСЧЁТ ОСТАТКОВ С УЧЁТОМ ДЕПОЗИТА ==========
 
 // Функция для получения остатка по ВСЕМ счетам (включая депозит)
+// ========== РАСЧЁТ ОСТАТКОВ С УЧЁТОМ ДЕПОЗИТА ==========
+
+// Функция для получения остатка по ВСЕМ счетам (включая депозит)
 function getTotalBalanceOnDate(targetDate, includeDeposit = true) {
     if (!targetDate) return 0;
     
@@ -10955,7 +10958,6 @@ function getTotalBalanceOnDate(targetDate, includeDeposit = true) {
         const rowYear = row.год;
         const rowMonth = row.месяц;
         
-        // Если includeDeposit = false, исключаем депозит
         if (!includeDeposit) {
             if (channel === 'Депозит' || channel === 'депозит') return;
             if (subCategory === 'Депозит' || subCategory === 'депозит') return;
@@ -10963,7 +10965,6 @@ function getTotalBalanceOnDate(targetDate, includeDeposit = true) {
         
         if (detectCurrency(account) !== 'RUB') return;
         
-        // Проверяем дату остатка
         let shouldInclude = true;
         if (rowYear && rowMonth) {
             const yearNum = parseInt(rowYear);
@@ -11034,7 +11035,7 @@ const freeBalanceStart = totalBalanceStart - depositBalanceStart;
 const freeBalanceEnd = totalBalanceEnd - depositBalanceEnd;
 
 // Чистый денежный поток (свободные деньги)
-const netCashFlow = freeBalanceEnd - freeBalanceStart;
+const freeNetCashFlow = freeBalanceEnd - freeBalanceStart;
 
 console.log(`=== ОСТАТКИ НА ${startDateTotal?.toISOString().split('T')[0]} ===`);
 console.log(`Все счета (вкл. депозит): ${formatCurrency(totalBalanceStart)}`);
@@ -11046,10 +11047,13 @@ console.log(`Все счета (вкл. депозит): ${formatCurrency(totalB
 console.log(`Депозит: ${formatCurrency(depositBalanceEnd)}`);
 console.log(`Свободный остаток: ${formatCurrency(freeBalanceEnd)}`);
 
-console.log(`Чистый свободный поток: ${formatCurrency(netCashFlow)}`);
+console.log(`Чистый свободный поток: ${formatCurrency(freeNetCashFlow)}`);
 
-let startBalance = freeBalanceStart;
-let endBalance = freeBalanceEnd;
+// ПЕРЕЗАПИСЫВАЕМ startBalance (используем существующую переменную)
+startBalance = freeBalanceStart;
+
+// ВАЖНО: не объявляем endBalance заново, а перезаписываем существующую!
+endBalance = freeBalanceEnd;
     
     const endBalance = startBalance + flows.operating.net + flows.investing.net + flows.financial.net;
     const netCashFlow = endBalance - startBalance;
