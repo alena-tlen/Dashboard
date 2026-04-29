@@ -2975,7 +2975,7 @@ function calculateDailyBalance(operations, startBalance, dateRange) {
         filtered = operations.filter(op => op.date >= dateRange.startDate && op.date <= dateRange.endDate);
     }
     
-    // ТОЛЬКО RUB операции!
+    // ===== ТОЛЬКО RUB операции! =====
     const rubOperations = filtered.filter(op => op.currency === 'RUB');
     
     if (rubOperations.length === 0) return [];
@@ -11806,8 +11806,9 @@ function clearOddsCache() {
 // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ОДДС ==========
 
 // Разделение потоков на операционный, инвестиционный, финансовый
+// Разделение потоков на операционный, инвестиционный, финансовый
 function splitCashFlows(operations) {
-    // ТОЛЬКО RUB операции!
+    // ===== ВАЖНО: ТОЛЬКО RUB ОПЕРАЦИИ! =====
     const rubOperations = operations.filter(op => op.currency === 'RUB');
     
     const flows = {
