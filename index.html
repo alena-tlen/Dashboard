@@ -10977,54 +10977,6 @@ if (startDate) {
 let startBalance = cumulativeBalance;
 
 
-console.log('=== ОПЕРАЦИИ ДО 1 ФЕВРАЛЯ ===');
-
-// Находим все операции за январь
-const januaryOps = oddsOperations.filter(op => {
-    if (!op.date) return false;
-    return op.date.getMonth() === 0 && op.date.getFullYear() === 2026;
-});
-
-console.log('Всего операций за январь:', januaryOps.length);
-
-let totalIncome = 0, totalExpense = 0;
-januaryOps.forEach(op => {
-    if (op.type === 'income') totalIncome += op.amount;
-    else totalExpense += op.amount;
-    console.log(`${op.date.toISOString().split('T')[0]}: ${op.type === 'income' ? '+' : '-'}${op.amount} - ${op.article.substring(0, 40)}`);
-});
-
-console.log('Доходы января:', totalIncome);
-console.log('Расходы января:', totalExpense);
-console.log('Чистый поток января:', totalIncome - totalExpense);
-console.log('initialBalance:', 5592199.15);
-console.log('initialBalance + чистый поток января:', 5592199.15 + (totalIncome - totalExpense));
-
-
-console.log('=== ОПЕРАЦИИ В opsBeforeStart ===');
-const startDate = new Date(2026, 1, 1); // 1 февраля 2026
-
-const opsBefore = oddsOperations.filter(op => {
-    if (!op.date) return false;
-    if (op.isTechnical) return false;
-    return op.date < startDate;
-});
-
-console.log('Всего операций до 1 февраля:', opsBefore.length);
-
-let beforeIncome = 0, beforeExpense = 0;
-opsBefore.forEach(op => {
-    if (op.type === 'income') beforeIncome += op.amount;
-    else beforeExpense += op.amount;
-});
-console.log('Доходы:', beforeIncome);
-console.log('Расходы:', beforeExpense);
-console.log('Чистый поток:', beforeIncome - beforeExpense);
-
-
-
-
-
 
 
 console.log('Остаток на начало периода: ' + formatCurrencyWithCurrency(startBalance, currentCurrency));
