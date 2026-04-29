@@ -10933,6 +10933,9 @@ function renderOddsPage() {
 // ========== ИСПОЛЬЗУЕМ ЛОГИКУ ПРАВОЙ ПАНЕЛИ ДЛЯ РАСЧЁТА ОСТАТКА ==========
 
 // Функция для получения остатка на любую дату (как в правой панели)
+// ========== ИСПОЛЬЗУЕМ ЛОГИКУ ПРАВОЙ ПАНЕЛИ ДЛЯ РАСЧЁТА ОСТАТКА ==========
+
+// Функция для получения остатка на любую дату (как в правой панели)
 function getBalanceOnDate(targetDate, data) {
     if (!targetDate) return 0;
     
@@ -11033,7 +11036,7 @@ function getBalanceOnDate(targetDate, data) {
 
 // Получаем остаток на начало выбранного периода
 const startDateForBalance = oddsDateRange.startDate;
-let startBalance = getBalanceOnDate(startDateForBalance, originalData);
+startBalance = getBalanceOnDate(startDateForBalance, originalData);   // <-- УБРАЛИ "let"!
 
 console.log(`Остаток на начало периода (по логике правой панели): ${formatCurrency(startBalance)}`);
 
