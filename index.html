@@ -3655,18 +3655,24 @@ function calculateCashData() {
     
     // Собираем начальные остатки
     allData.forEach(row => {
-        const article = row.статья || '';
-        const amount = parseFloat(row.сумма) || 0;
-        const account = row.Счет || row.счет || row['Счет'] || '';
+    const article = row.статья || '';
+    const amount = parseFloat(row.сумма) || 0;
+    const account = row.Счет || row.счет || row['Счет'] || '';
+    const channel = row.канал || row.Канал || '';  // ДОБАВИТЬ
+    const subCategory = row.подканал || '';         // ДОБАВИТЬ
+    
+    if (!account) return;
+    
+    if (article === 'Начальный остаток') {
+        // Исключаем депозит (проверяем оба варианта написания)
+        if (channel === 'Депозит' || channel === 'депозит') return;
+        if (subCategory === 'Депозит' || subCategory === 'депозит') return;
         
-        if (!account) return;
-        
-        if (article === 'Начальный остаток') {
-            if (!initialBalances[account]) initialBalances[account] = 0;
-            initialBalances[account] += amount;
-            allAccounts.add(account);
-        }
-    });
+        if (!initialBalances[account]) initialBalances[account] = 0;
+        initialBalances[account] += amount;
+        allAccounts.add(account);
+    }
+});
     
     const cumulativeIncome = {};
     const cumulativeExpense = {};
@@ -10933,8 +10939,11 @@ originalData.forEach(row => {
         const channel = row.канал || row.Канал || '';
         const subCategory = row.подканал || '';
         
-        // Пропускаем всё, что связано с депозитом
-        if (channel === 'Депозит' || channel === 'депозит') return;
+        // Пропускаем депозит (проверяем оба варианта написания)
+        if (channel === 'Депозит' || channel === 'депозит') {
+            console.log('Исключен начальный остаток депозита:', row.сумма);
+            return;
+        }
         if (subCategory === 'Депозит' || subCategory === 'депозит') return;
         
         if (detectCurrency(account) === currentCurrency) {
@@ -10942,6 +10951,7 @@ originalData.forEach(row => {
         }
     }
 });
+console.log('Начальные остатки (без депозита):', initialBalance);
 
 // 2. Если выбран период НЕ с начала данных, находим остаток на начало периода
 const startDate = oddsDateRange.startDate;
