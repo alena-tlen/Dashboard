@@ -10930,12 +10930,22 @@ function renderOddsPage() {
     // Сравнение с прошлым периодом
     const comparison = previousFlows ? compareWithPreviousPeriod(filteredOps, previousOps) : null;
     
-// ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА ==========
-// 1. Начальные остатки из справочника (только RUB, исключая депозит)
+// ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА (последовательный) ==========
+
+// 1. Собираем начальные остатки на САМУЮ РАННЮЮ дату в данных
 let initialBalance = 0;
 const processedAccounts = new Set();
 
-// ШАГ 1: Собираем начальные остатки по ВСЕМ счетам (кроме депозита)
+// Находим самую раннюю дату в операциях
+let earliestDate = null;
+oddsOperations.forEach(op => {
+    if (op.date && (!earliestDate || op.date < earliestDate)) {
+        earliestDate = op.date;
+    }
+});
+
+console.log('Самая ранняя дата в операциях:', earliestDate);
+
 originalData.forEach(row => {
     if (row.статья !== 'Начальный остаток') return;
     
@@ -10944,11 +10954,9 @@ originalData.forEach(row => {
     const channel = row.канал || row.Канал || '';
     const subCategory = row.подканал || '';
     
-    // ИСКЛЮЧАЕМ ДЕПОЗИТ (как в правой панели)
     if (channel === 'Депозит' || channel === 'депозит') return;
     if (subCategory === 'Депозит' || subCategory === 'депозит') return;
     
-    // ТОЛЬКО RUB счета (как в правой панели)
     if (detectCurrency(account) === 'RUB') {
         if (!processedAccounts.has(account)) {
             processedAccounts.add(account);
@@ -10958,39 +10966,43 @@ originalData.forEach(row => {
     }
 });
 
-console.log(`=== ОБЩИЙ НАЧАЛЬНЫЙ ОСТАТОК (RUB, без депозита): ${formatCurrency(initialBalance)} ===`);
+console.log(`=== ОБЩИЙ НАЧАЛЬНЫЙ ОСТАТОК НА ${earliestDate?.toISOString().split('T')[0]}: ${formatCurrency(initialBalance)} ===`);
 
-// ШАГ 2: Если выбран период НЕ с начала данных, добавляем операции ДО начала периода
+// 2. Рассчитываем остаток на НАЧАЛО выбранного периода
+let startBalance;
 const startDate = oddsDateRange.startDate;
-let cumulativeBalance = initialBalance;
 
-if (startDate) {
-    // Собираем все RUB операции ДО startDate (исключая депозит)
-    const opsBeforeStart = oddsOperations.filter(op => {
-        if (op.currency !== 'RUB') return false;
-        if (op.isTechnical) return false;
-        // Исключаем депозит (как в правой панели)
-        if (op.category === 'Депозит' || op.category === 'депозит') return false;
-        return op.date < startDate;
-    });
+if (!startDate || !earliestDate || startDate <= earliestDate) {
+    // Если период начинается с самой ранней даты или раньше
+    startBalance = initialBalance;
+    console.log(`Остаток на начало периода (самая ранняя дата): ${formatCurrency(startBalance)}`);
+} else {
+    // Накопляем остаток от самой ранней даты до startDate
+    let runningBalance = initialBalance;
+    const allOpsSorted = [...oddsOperations]
+        .filter(op => {
+            if (op.currency !== 'RUB') return false;
+            if (op.isTechnical) return false;
+            if (op.category === 'Депозит' || op.category === 'депозит') return false;
+            return op.date >= earliestDate && op.date < startDate;
+        })
+        .sort((a, b) => a.date - b.date);
     
-    console.log(`Операций ДО ${startDate.toISOString().split('T')[0]}: ${opsBeforeStart.length}`);
+    console.log(`Операций для накопления от ${earliestDate.toISOString().split('T')[0]} до ${startDate.toISOString().split('T')[0]}: ${allOpsSorted.length}`);
     
-    // Накопливаем остаток
-    opsBeforeStart.forEach(op => {
+    allOpsSorted.forEach(op => {
         if (op.type === 'income') {
-            cumulativeBalance += op.amount;
-            console.log(`  + Доход до периода: ${formatCurrency(op.amount)} - ${op.article}`);
+            runningBalance += op.amount;
+            console.log(`  + ${formatCurrency(op.amount)} - ${op.article} (${op.date.toISOString().split('T')[0]})`);
         } else if (op.type === 'expense') {
-            cumulativeBalance -= op.amount;
-            console.log(`  - Расход до периода: ${formatCurrency(op.amount)} - ${op.article}`);
+            runningBalance -= op.amount;
+            console.log(`  - ${formatCurrency(op.amount)} - ${op.article} (${op.date.toISOString().split('T')[0]})`);
         }
     });
     
-    console.log(`Остаток на начало периода ${startDate.toISOString().split('T')[0]}: ${formatCurrency(cumulativeBalance)}`);
+    startBalance = runningBalance;
+    console.log(`Остаток на начало периода ${startDate.toISOString().split('T')[0]}: ${formatCurrency(startBalance)}`);
 }
-
-let startBalance = cumulativeBalance;
 
 
 
