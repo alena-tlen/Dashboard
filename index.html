@@ -10582,16 +10582,20 @@ function collectOddsOperations() {
         const account = row.Счет || row.счет || row['Счет'] || '';
         const article = row.статья || '';
         const channel = row.канал || row.Канал || '';
+        const subCategory = row.подканал || '';
         
-        // ===== ИСКЛЮЧАЕМ ДЕПОЗИТ ИЗ ОДДС =====
-        if (channel === 'Депозит' || channel === 'депозит') {
-            return; // Пропускаем все операции по депозиту
-        }
+        // ===== ИСКЛЮЧАЕМ ВСЕ ОПЕРАЦИИ ПО ДЕПОЗИТУ =====
+        // 1. Если канал = Депозит - пропускаем
+        if (channel === 'Депозит' || channel === 'депозит') return;
+        
+        // 2. Если подканал связан с депозитом - пропускаем
+        if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+        if (subCategory === 'Возврат депозита') return;
+        
+        // 3. Если статья содержит депозит - пропускаем
+        if (article.includes('Депозит') || article.includes('депозит')) return;
         
         if (article === 'Начальный остаток' || !account) return;
-        
-        // Дополнительно: если в статье или подканале есть "Депозит" - пропускаем
-        if (article.includes('Депозит') || article.includes('депозит')) return;
         
         const amount = parseFloat(row.сумма) || 0;
         if (amount === 0) return;
@@ -10621,7 +10625,7 @@ function collectOddsOperations() {
                 amount: Math.abs(amount), 
                 type: type,
                 article: article, 
-                category: row.канал || row.подканал || article,
+                category: channel || subCategory || article,
                 year: row.год, 
                 month: row.месяц, 
                 account: account,
@@ -10927,9 +10931,11 @@ originalData.forEach(row => {
     if (row.статья === 'Начальный остаток') {
         const account = row.Счет || row['Счет'] || '';
         const channel = row.канал || row.Канал || '';
+        const subCategory = row.подканал || '';
         
-        // Пропускаем депозит
+        // Пропускаем всё, что связано с депозитом
         if (channel === 'Депозит' || channel === 'депозит') return;
+        if (subCategory === 'Депозит' || subCategory === 'депозит') return;
         
         if (detectCurrency(account) === currentCurrency) {
             initialBalance += parseFloat(row.сумма) || 0;
