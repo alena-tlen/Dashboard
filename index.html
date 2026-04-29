@@ -10930,43 +10930,112 @@ function renderOddsPage() {
     // Сравнение с прошлым периодом
     const comparison = previousFlows ? compareWithPreviousPeriod(filteredOps, previousOps) : null;
     
-// ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА (последовательный) ==========
+// ========== ИСПОЛЬЗУЕМ ЛОГИКУ ПРАВОЙ ПАНЕЛИ ДЛЯ РАСЧЁТА ОСТАТКА ==========
 
-// 1. Собираем начальные остатки на САМУЮ РАННЮЮ дату в данных
-let initialBalance = 0;
-const processedAccounts = new Set();
-
-// Находим самую раннюю дату в операциях
-let earliestDate = null;
-oddsOperations.forEach(op => {
-    if (op.date && (!earliestDate || op.date < earliestDate)) {
-        earliestDate = op.date;
-    }
-});
-
-console.log('Самая ранняя дата в операциях:', earliestDate);
-
-originalData.forEach(row => {
-    if (row.статья !== 'Начальный остаток') return;
+// Функция для получения остатка на любую дату (как в правой панели)
+function getBalanceOnDate(targetDate, data) {
+    if (!targetDate) return 0;
     
-    const account = row.Счет || row.счет || row['Счет'] || '';
-    const amount = parseFloat(row.сумма) || 0;
-    const channel = row.канал || row.Канал || '';
-    const subCategory = row.подканал || '';
+    const balances = {};
+    const allAccounts = new Set();
     
-    if (channel === 'Депозит' || channel === 'депозит') return;
-    if (subCategory === 'Депозит' || subCategory === 'депозит') return;
-    
-    if (detectCurrency(account) === 'RUB') {
-        if (!processedAccounts.has(account)) {
-            processedAccounts.add(account);
-            initialBalance += amount;
-            console.log(`Начальный остаток счета "${account}": ${formatCurrency(amount)}`);
+    // 1. Собираем начальные остатки ДО targetDate
+    data.forEach(row => {
+        if (row.статья !== 'Начальный остаток') return;
+        
+        const account = row.Счет || row.счет || row['Счет'] || '';
+        if (!account) return;
+        
+        const amount = parseFloat(row.сумма) || 0;
+        const channel = row.канал || row.Канал || '';
+        const subCategory = row.подканал || '';
+        const rowYear = row.год;
+        const rowMonth = row.месяц;
+        
+        // Исключаем депозит
+        if (channel === 'Депозит' || channel === 'депозит') return;
+        if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+        
+        // Только RUB
+        if (detectCurrency(account) !== 'RUB') return;
+        
+        // Проверяем, относится ли остаток к дате ДО targetDate
+        let shouldInclude = true;
+        if (rowYear && rowMonth) {
+            const yearNum = parseInt(rowYear);
+            const monthIndex = monthsOrder.indexOf(rowMonth);
+            const rowDate = new Date(yearNum, monthIndex, 1);
+            if (rowDate > targetDate) shouldInclude = false;
         }
+        
+        if (shouldInclude && !balances[account]) {
+            balances[account] = { initial: 0, income: 0, expense: 0 };
+            balances[account].initial = amount;
+            allAccounts.add(account);
+        }
+    });
+    
+    // 2. Собираем операции ДО targetDate
+    data.forEach(row => {
+        const account = row.Счет || row.счет || row['Счет'] || '';
+        if (!account) return;
+        if (row.статья === 'Начальный остаток') return;
+        
+        const amount = parseFloat(row.сумма) || 0;
+        if (amount === 0) return;
+        
+        const date = parseOddsDate(row);
+        if (!date || date >= targetDate) return;
+        
+        const channel = row.канал || row.Канал || '';
+        const subCategory = row.подканал || '';
+        
+        // Исключаем депозит
+        if (channel === 'Депозит' || channel === 'депозит') return;
+        if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+        
+        if (detectCurrency(account) !== 'RUB') return;
+        
+        if (!balances[account]) {
+            balances[account] = { initial: 0, income: 0, expense: 0 };
+            allAccounts.add(account);
+        }
+        
+        // Определяем тип операции
+        let isIncome = false;
+        let isExpense = false;
+        
+        if (row.статья === 'Поступление на расчетный счет') {
+            isIncome = true;
+        } else if (row.статья === 'Списание с расчетного счета') {
+            isExpense = true;
+        } else if (amount > 0) {
+            isIncome = true;
+        } else if (amount < 0) {
+            isExpense = true;
+        }
+        
+        const absAmount = Math.abs(amount);
+        if (isIncome) balances[account].income += absAmount;
+        if (isExpense) balances[account].expense += absAmount;
+    });
+    
+    // 3. Суммируем балансы всех счетов
+    let totalBalance = 0;
+    for (const account of allAccounts) {
+        const bal = balances[account];
+        const balance = bal.initial + bal.income - bal.expense;
+        totalBalance += balance;
     }
-});
+    
+    return totalBalance;
+}
 
-console.log(`=== ОБЩИЙ НАЧАЛЬНЫЙ ОСТАТОК НА ${earliestDate?.toISOString().split('T')[0]}: ${formatCurrency(initialBalance)} ===`);
+// Получаем остаток на начало выбранного периода
+const startDateForBalance = oddsDateRange.startDate;
+let startBalance = getBalanceOnDate(startDateForBalance, originalData);
+
+console.log(`Остаток на начало периода (по логике правой панели): ${formatCurrency(startBalance)}`);
 
 // 2. Рассчитываем остаток на НАЧАЛО выбранного периода
 let startBalance;
