@@ -10933,21 +10933,66 @@ function renderOddsPage() {
 // ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА ==========
 // 1. Начальные остатки из справочника (только RUB, исключая депозит)
 let initialBalance = 0;
+const processedAccounts = new Set();
+
+// ШАГ 1: Собираем начальные остатки по ВСЕМ счетам (кроме депозита)
 originalData.forEach(row => {
-    if (row.статья === 'Начальный остаток') {
-        const account = row.Счет || row['Счет'] || '';
-        const channel = row.канал || row.Канал || '';
-        const subCategory = row.подканал || '';
-        
-        // Пропускаем депозит (проверяем оба варианта написания)
-        if (channel === 'Депозит' || channel === 'депозит') return;
-        if (subCategory === 'Депозит' || subCategory === 'депозит') return;
-        
-        if (detectCurrency(account) === currentCurrency) {
-            initialBalance += parseFloat(row.сумма) || 0;
+    if (row.статья !== 'Начальный остаток') return;
+    
+    const account = row.Счет || row.счет || row['Счет'] || '';
+    const amount = parseFloat(row.сумма) || 0;
+    const channel = row.канал || row.Канал || '';
+    const subCategory = row.подканал || '';
+    
+    // ИСКЛЮЧАЕМ ДЕПОЗИТ (как в правой панели)
+    if (channel === 'Депозит' || channel === 'депозит') return;
+    if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+    
+    // ТОЛЬКО RUB счета (как в правой панели)
+    if (detectCurrency(account) === 'RUB') {
+        if (!processedAccounts.has(account)) {
+            processedAccounts.add(account);
+            initialBalance += amount;
+            console.log(`Начальный остаток счета "${account}": ${formatCurrency(amount)}`);
         }
     }
 });
+
+console.log(`=== ОБЩИЙ НАЧАЛЬНЫЙ ОСТАТОК (RUB, без депозита): ${formatCurrency(initialBalance)} ===`);
+
+// ШАГ 2: Если выбран период НЕ с начала данных, добавляем операции ДО начала периода
+const startDate = oddsDateRange.startDate;
+let cumulativeBalance = initialBalance;
+
+if (startDate) {
+    // Собираем все RUB операции ДО startDate (исключая депозит)
+    const opsBeforeStart = oddsOperations.filter(op => {
+        if (op.currency !== 'RUB') return false;
+        if (op.isTechnical) return false;
+        // Исключаем депозит (как в правой панели)
+        if (op.category === 'Депозит' || op.category === 'депозит') return false;
+        return op.date < startDate;
+    });
+    
+    console.log(`Операций ДО ${startDate.toISOString().split('T')[0]}: ${opsBeforeStart.length}`);
+    
+    // Накопливаем остаток
+    opsBeforeStart.forEach(op => {
+        if (op.type === 'income') {
+            cumulativeBalance += op.amount;
+            console.log(`  + Доход до периода: ${formatCurrency(op.amount)} - ${op.article}`);
+        } else if (op.type === 'expense') {
+            cumulativeBalance -= op.amount;
+            console.log(`  - Расход до периода: ${formatCurrency(op.amount)} - ${op.article}`);
+        }
+    });
+    
+    console.log(`Остаток на начало периода ${startDate.toISOString().split('T')[0]}: ${formatCurrency(cumulativeBalance)}`);
+}
+
+let startBalance = cumulativeBalance;
+
+
 console.log('Начальные остатки (без депозита):', initialBalance);
 
 // 2. Если выбран период НЕ с начала данных, находим остаток на начало периода
