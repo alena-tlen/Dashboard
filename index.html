@@ -10930,9 +10930,7 @@ function renderOddsPage() {
     // Сравнение с прошлым периодом
     const comparison = previousFlows ? compareWithPreviousPeriod(filteredOps, previousOps) : null;
     
-// ========== ИСПОЛЬЗУЕМ ЛОГИКУ ПРАВОЙ ПАНЕЛИ ДЛЯ РАСЧЁТА ОСТАТКА ==========
 
-// Функция для получения остатка на любую дату (как в правой панели)
 // ========== ИСПОЛЬЗУЕМ ЛОГИКУ ПРАВОЙ ПАНЕЛИ ДЛЯ РАСЧЁТА ОСТАТКА ==========
 
 // Функция для получения остатка на любую дату (как в правой панели)
@@ -11036,49 +11034,9 @@ function getBalanceOnDate(targetDate, data) {
 
 // Получаем остаток на начало выбранного периода
 const startDateForBalance = oddsDateRange.startDate;
-startBalance = getBalanceOnDate(startDateForBalance, originalData);   // <-- УБРАЛИ "let"!
+startBalance = getBalanceOnDate(startDateForBalance, originalData);
 
 console.log(`Остаток на начало периода (по логике правой панели): ${formatCurrency(startBalance)}`);
-
-// 2. Рассчитываем остаток на НАЧАЛО выбранного периода
-let startBalance;
-const startDate = oddsDateRange.startDate;
-
-if (!startDate || !earliestDate || startDate <= earliestDate) {
-    // Если период начинается с самой ранней даты или раньше
-    startBalance = initialBalance;
-    console.log(`Остаток на начало периода (самая ранняя дата): ${formatCurrency(startBalance)}`);
-} else {
-    // Накопляем остаток от самой ранней даты до startDate
-    let runningBalance = initialBalance;
-    const allOpsSorted = [...oddsOperations]
-        .filter(op => {
-            if (op.currency !== 'RUB') return false;
-            if (op.isTechnical) return false;
-            if (op.category === 'Депозит' || op.category === 'депозит') return false;
-            return op.date >= earliestDate && op.date < startDate;
-        })
-        .sort((a, b) => a.date - b.date);
-    
-    console.log(`Операций для накопления от ${earliestDate.toISOString().split('T')[0]} до ${startDate.toISOString().split('T')[0]}: ${allOpsSorted.length}`);
-    
-    allOpsSorted.forEach(op => {
-        if (op.type === 'income') {
-            runningBalance += op.amount;
-            console.log(`  + ${formatCurrency(op.amount)} - ${op.article} (${op.date.toISOString().split('T')[0]})`);
-        } else if (op.type === 'expense') {
-            runningBalance -= op.amount;
-            console.log(`  - ${formatCurrency(op.amount)} - ${op.article} (${op.date.toISOString().split('T')[0]})`);
-        }
-    });
-    
-    startBalance = runningBalance;
-    console.log(`Остаток на начало периода ${startDate.toISOString().split('T')[0]}: ${formatCurrency(startBalance)}`);
-}
-
-
-
-console.log('Остаток на начало периода: ' + formatCurrencyWithCurrency(startBalance, currentCurrency));
     
     const endBalance = startBalance + flows.operating.net + flows.investing.net + flows.financial.net;
     const netCashFlow = endBalance - startBalance;
