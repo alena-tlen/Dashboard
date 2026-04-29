@@ -3813,6 +3813,7 @@ function calculateCashData() {
         let shortName = account;
         if (account.includes('ООО "ОЗОН Банк"')) shortName = 'Озон Банк';
         else if (account.includes('АЛЬФА-БАНК')) shortName = 'Альфа-Банк';
+        else if (account.includes('Банк Точка')) shortName = 'Точка Банк';
         else if (account.includes('ООО "Вайлдберриз Банк"')) shortName = 'Вайлдберриз Банк';
         else if (account.includes('ПАО СБЕРБАНК') || account.includes('Сбербанк')) shortName = 'Сбербанк';
         else if (account.includes('ВТБ')) shortName = 'ВТБ';
