@@ -10996,9 +10996,6 @@ let startBalance = cumulativeBalance;
 console.log('Начальные остатки (без депозита):', initialBalance);
 
 // 2. Если выбран период НЕ с начала данных, находим остаток на начало периода
-const startDate = oddsDateRange.startDate;
-let cumulativeBalance = initialBalance;
-let opsBeforeStartCount = 0;
 
 if (startDate) {
     const opsBeforeStart = oddsOperations.filter(op => {
