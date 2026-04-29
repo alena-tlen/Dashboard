@@ -10923,8 +10923,6 @@ function renderOddsPage() {
     // Сравнение с прошлым периодом
     const comparison = previousFlows ? compareWithPreviousPeriod(filteredOps, previousOps) : null;
     
-    // Рассчитываем остатки
-    // Расчет начального остатка ТОЛЬКО для RUB счетов
 // ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА ==========
 // 1. Начальные остатки из справочника (только для выбранной валюты)
 let initialBalance = 0;
@@ -10942,12 +10940,18 @@ const startDate = oddsDateRange.startDate;
 let cumulativeBalance = initialBalance;
 
 if (startDate) {
+    // ВАЖНО: берем ВСЕ операции, включая те, что не входят в выбранный период,
+    // но ДО startDate, независимо от их месяца/года!
     const opsBeforeStart = oddsOperations.filter(op => {
         if (op.currency !== currentCurrency) return false;
         if (op.isTechnical) return false;
+        // Сравниваем дату операции с датой начала периода
         return op.date < startDate;
     });
     
+    console.log('Операций ДО ' + startDate.toISOString() + ': ' + opsBeforeStart.length);
+    
+    // Накопить остаток на начало периода
     opsBeforeStart.forEach(op => {
         if (op.type === 'income') cumulativeBalance += op.amount;
         else if (op.type === 'expense') cumulativeBalance -= op.amount;
@@ -10955,8 +10959,7 @@ if (startDate) {
 }
 
 let startBalance = cumulativeBalance;
-
-console.log('ОДДС: Начальный баланс (только RUB):', formatCurrency(startBalance));
+console.log('Остаток на начало периода: ' + formatCurrencyWithCurrency(startBalance, currentCurrency));
     
     const opsBeforeStart = oddsOperations.filter(op => {
         if (op.currency !== currentCurrency) return false;
