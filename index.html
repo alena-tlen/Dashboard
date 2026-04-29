@@ -10921,7 +10921,6 @@ function renderOddsPage() {
     const comparison = previousFlows ? compareWithPreviousPeriod(filteredOps, previousOps) : null;
     
 // ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА ==========
-// ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА ==========
 // 1. Начальные остатки из справочника (только RUB, исключая депозит)
 let initialBalance = 0;
 originalData.forEach(row => {
@@ -10941,9 +10940,9 @@ originalData.forEach(row => {
 // 2. Если выбран период НЕ с начала данных, находим остаток на начало периода
 const startDate = oddsDateRange.startDate;
 let cumulativeBalance = initialBalance;
+let opsBeforeStartCount = 0;
 
 if (startDate) {
-    // Находим ВСЕ операции ДО startDate
     const opsBeforeStart = oddsOperations.filter(op => {
         if (op.currency !== currentCurrency) return false;
         if (op.isTechnical) return false;
@@ -10952,7 +10951,8 @@ if (startDate) {
         return op.date < startDate;
     });
     
-    console.log('Операций ДО ' + startDate.toISOString() + ': ' + opsBeforeStart.length);
+    opsBeforeStartCount = opsBeforeStart.length;
+    console.log('Операций ДО ' + startDate.toISOString() + ': ' + opsBeforeStartCount);
     
     // Накопить остаток
     opsBeforeStart.forEach(op => {
@@ -10965,10 +10965,31 @@ let startBalance = cumulativeBalance;
 
 // ДИАГНОСТИКА: проверяем остаток на начало февраля
 if (startDate && startDate.getMonth() === 1 && startDate.getFullYear() === 2026) {
+    // Отдельно считаем операции за январь для проверки
+    const januaryOps = oddsOperations.filter(op => {
+        if (op.currency !== currentCurrency) return false;
+        if (op.isTechnical) return false;
+        if (op.category === 'Депозит' || op.category === 'депозит') return false;
+        const month = op.date.getMonth();
+        const year = op.date.getFullYear();
+        return month === 0 && year === 2026;
+    });
+    
+    let janIncome = 0, janExpense = 0;
+    januaryOps.forEach(op => {
+        if (op.type === 'income') janIncome += op.amount;
+        else janExpense += op.amount;
+    });
+    const janNet = janIncome - janExpense;
+    
     console.log('=== ПРОВЕРКА ОСТАТКА НА 1 ФЕВРАЛЯ ===');
     console.log('Начальные остатки (дек 2025):', initialBalance);
-    console.log('Операций за январь в opsBeforeStart:', opsBeforeStart.length);
-    console.log('Накопленный остаток на 1 февраля:', startBalance);
+    console.log('Операций за январь:', januaryOps.length);
+    console.log('Доходы января:', janIncome);
+    console.log('Расходы января:', janExpense);
+    console.log('Чистый поток января:', janNet);
+    console.log('Расчетный остаток на 1 февраля:', initialBalance + janNet);
+    console.log('Текущий startBalance:', cumulativeBalance);
     console.log('Ожидаемый остаток: 2 045 246,12 ₽');
     console.log('===================================');
 }
