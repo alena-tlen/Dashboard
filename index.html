@@ -10993,30 +10993,6 @@ if (startDate) {
 let startBalance = cumulativeBalance;
 
 
-console.log('Начальные остатки (без депозита):', initialBalance);
-
-// 2. Если выбран период НЕ с начала данных, находим остаток на начало периода
-
-if (startDate) {
-    const opsBeforeStart = oddsOperations.filter(op => {
-        if (op.currency !== currentCurrency) return false;
-        if (op.isTechnical) return false;
-        // Исключаем депозит
-        if (op.category === 'Депозит' || op.category === 'депозит') return false;
-        return op.date < startDate;
-    });
-    
-    opsBeforeStartCount = opsBeforeStart.length;
-    console.log('Операций ДО ' + startDate.toISOString() + ': ' + opsBeforeStartCount);
-    
-    // Накопить остаток
-    opsBeforeStart.forEach(op => {
-        if (op.type === 'income') cumulativeBalance += op.amount;
-        else if (op.type === 'expense') cumulativeBalance -= op.amount;
-    });
-}
-
-
 
 console.log('Остаток на начало периода: ' + formatCurrencyWithCurrency(startBalance, currentCurrency));
     
