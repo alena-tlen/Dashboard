@@ -10572,7 +10572,6 @@ function collectOddsOperations() {
     const operations = [];
     const processedAccounts = new Set();
     
-    // Список операций, исключаемых из ТОП-списков (технические)
     const EXCLUDED_FROM_TOP = [
         'Перевод с другого счета', 'Перевод на другой счет организации',
         'Перевод на другой счет', 'Перевод между счетами', 'Внутренний перевод',
@@ -10582,8 +10581,17 @@ function collectOddsOperations() {
     sourceData.forEach(function(row) {
         const account = row.Счет || row.счет || row['Счет'] || '';
         const article = row.статья || '';
+        const channel = row.канал || row.Канал || '';
+        
+        // ===== ИСКЛЮЧАЕМ ДЕПОЗИТ ИЗ ОДДС =====
+        if (channel === 'Депозит' || channel === 'депозит') {
+            return; // Пропускаем все операции по депозиту
+        }
         
         if (article === 'Начальный остаток' || !account) return;
+        
+        // Дополнительно: если в статье или подканале есть "Депозит" - пропускаем
+        if (article.includes('Депозит') || article.includes('депозит')) return;
         
         const amount = parseFloat(row.сумма) || 0;
         if (amount === 0) return;
@@ -10591,26 +10599,20 @@ function collectOddsOperations() {
         const date = parseOddsDate(row);
         const currency = detectCurrency(account);
         
-        const channel = row.канал || row.Канал || '';
-        
-        // ОПРЕДЕЛЯЕМ isTechnical - нужно ли исключать операцию из ТОП-списков
         const isTechnical = EXCLUDED_FROM_TOP.some(function(ex) {
             return channel.includes(ex) || article.includes(ex);
         });
         
         let type = '';
-        const isDeposit = (channel === 'Депозит' || channel === 'депозит');
         
-        if (!isDeposit) {
-            if (article === 'Поступление на расчетный счет') {
-                type = 'income';
-            } else if (article === 'Списание с расчетного счета') {
-                type = 'expense';
-            } else if (amount > 0) {
-                type = 'income';
-            } else if (amount < 0) {
-                type = 'expense';
-            }
+        if (article === 'Поступление на расчетный счет') {
+            type = 'income';
+        } else if (article === 'Списание с расчетного счета') {
+            type = 'expense';
+        } else if (amount > 0) {
+            type = 'income';
+        } else if (amount < 0) {
+            type = 'expense';
         }
         
         if (type && date) {
@@ -10624,13 +10626,8 @@ function collectOddsOperations() {
                 month: row.месяц, 
                 account: account,
                 currency: currency, 
-                isTechnical: isTechnical  // ← ДОБАВЛЕНО!
+                isTechnical: isTechnical
             });
-            
-            if (!processedAccounts.has(account)) {
-                processedAccounts.add(account);
-                console.log('ОДДС: Найден счет: ' + account.substring(0, 50) + '... (' + currency + ')');
-            }
         }
     });
     
@@ -10924,11 +10921,16 @@ function renderOddsPage() {
     const comparison = previousFlows ? compareWithPreviousPeriod(filteredOps, previousOps) : null;
     
 // ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА ==========
-// 1. Начальные остатки из справочника (только для выбранной валюты)
+// 1. Начальные остатки из справочника (только RUB, исключая депозит)
 let initialBalance = 0;
 originalData.forEach(row => {
     if (row.статья === 'Начальный остаток') {
         const account = row.Счет || row['Счет'] || '';
+        const channel = row.канал || row.Канал || '';
+        
+        // Пропускаем депозит
+        if (channel === 'Депозит' || channel === 'депозит') return;
+        
         if (detectCurrency(account) === currentCurrency) {
             initialBalance += parseFloat(row.сумма) || 0;
         }
