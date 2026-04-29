@@ -10958,6 +10958,30 @@ if (startDate) {
     });
 }
 
+// ===== ДИАГНОСТИКА: выводим все операции за январь =====
+console.log('=== ДИАГНОСТИКА ОПЕРАЦИЙ ЗА ЯНВАРЬ ===');
+const januaryOps = oddsOperations.filter(op => {
+    if (op.currency !== 'RUB') return false;
+    if (op.isTechnical) return false;
+    const month = op.date.getMonth();
+    const year = op.date.getFullYear();
+    return month === 0 && year === 2026; // январь 2026
+});
+
+let janIncome = 0, janExpense = 0;
+januaryOps.forEach(op => {
+    if (op.type === 'income') janIncome += op.amount;
+    else janExpense += op.amount;
+    console.log(`  ${op.date.toISOString().split('T')[0]}: ${op.type === 'income' ? '+' : '-'}${op.amount} - ${op.article.substring(0, 40)}`);
+});
+console.log('Январь 2026: доходы =', janIncome, 'расходы =', janExpense);
+console.log('Чистый поток за январь =', janIncome - janExpense);
+console.log('Начальные остатки (RUB):', initialBalance);
+console.log('Остаток на 1 февраля (должен быть):', initialBalance + (janIncome - janExpense));
+console.log('Текущий startBalance:', startBalance);
+console.log('РАЗНИЦА:', (initialBalance + (janIncome - janExpense)) - startBalance);
+console.log('===================================');
+
 let startBalance = cumulativeBalance;
 console.log('Остаток на начало периода: ' + formatCurrencyWithCurrency(startBalance, currentCurrency));
     
