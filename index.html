@@ -2975,7 +2975,12 @@ function calculateDailyBalance(operations, startBalance, dateRange) {
         filtered = operations.filter(op => op.date >= dateRange.startDate && op.date <= dateRange.endDate);
     }
     
-    const sorted = [...filtered].sort((a, b) => a.date - b.date);
+    // ТОЛЬКО RUB операции!
+    const rubOperations = filtered.filter(op => op.currency === 'RUB');
+    
+    if (rubOperations.length === 0) return [];
+    
+    const sorted = [...rubOperations].sort((a, b) => a.date - b.date);
     const dailyMap = new Map();
     
     sorted.forEach(op => {
@@ -11939,42 +11944,6 @@ function calculateDuration(operations) {
     return { duration, inventoryDays, receivablesDays, payablesDays, risk, color, recommendation };
 }
 
-// Расчет дневных остатков
-function calculateDailyBalance(operations, startBalance, dateRange) {
-    if (!operations || operations.length === 0) return [];
-    
-    let filtered = operations;
-    if (dateRange && dateRange.startDate && dateRange.endDate) {
-        filtered = operations.filter(op => op.date >= dateRange.startDate && op.date <= dateRange.endDate);
-    }
-    
-    // ТОЛЬКО RUB операции!
-    const rubOperations = filtered.filter(op => op.currency === 'RUB');
-    
-    if (rubOperations.length === 0) return [];
-    
-    const sorted = [...rubOperations].sort((a, b) => a.date - b.date);
-    const dailyMap = new Map();
-    
-    sorted.forEach(op => {
-        const key = op.date.toISOString().split('T')[0];
-        if (!dailyMap.has(key)) {
-            dailyMap.set(key, { date: op.date, income: 0, expense: 0, balance: 0 });
-        }
-        const day = dailyMap.get(key);
-        if (op.type === 'income') day.income += op.amount;
-        else day.expense += op.amount;
-    });
-    
-    const dailyData = Array.from(dailyMap.values()).sort((a, b) => a.date - b.date);
-    let runningBalance = startBalance;
-    dailyData.forEach(day => {
-        runningBalance += day.income - day.expense;
-        day.balance = runningBalance;
-    });
-    
-    return dailyData;
-}
 
 // Функции для светофора ликвидности
 function getLiquidityIcon(balance) {
