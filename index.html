@@ -10583,14 +10583,17 @@ function collectOddsOperations() {
         const channel = row.канал || row.Канал || '';
         const subCategory = row.подканал || '';
         
-        // ===== ИСКЛЮЧАЕМ ДЕПОЗИТ ИЗ СВОБОДНОГО ОСТАТКА =====
-        // (как в правой панели)
+        // ===== ПОЛНОСТЬЮ ИСКЛЮЧАЕМ ВСЁ, ЧТО СВЯЗАНО С ДЕПОЗИТОМ =====
+        // Это НЕ должно попадать в ОДДС вообще!
         if (channel === 'Депозит' || channel === 'депозит') return;
         if (subCategory === 'Депозит' || subCategory === 'депозит') return;
         if (subCategory === 'Возврат депозита') return;
-        if (article.includes('Депозит')) return;
+        if (article.includes('Депозит') || article === 'Депозит') return;
         
+        // Начальные остатки тоже не нужны в ОДДС
         if (article === 'Начальный остаток') return;
+        
+        // Проверяем наличие счёта
         if (!account) return;
         
         const amount = parseFloat(row.сумма) || 0;
@@ -10599,9 +10602,10 @@ function collectOddsOperations() {
         const date = parseOddsDate(row);
         const currency = detectCurrency(account);
         
-        // ТОЛЬКО RUB операции
+        // Только RUB операции
         if (currency !== 'RUB') return;
         
+        // Определяем тип: income или expense
         let type = '';
         if (article === 'Поступление на расчетный счет') {
             type = 'income';
@@ -10629,22 +10633,18 @@ function collectOddsOperations() {
         });
     });
     
-    // Отдельно собираем депозитные операции (для информации)
-    const depositOps = [];
-    sourceData.forEach(function(row) {
-        const channel = row.канал || row.Канал || '';
-        const subCategory = row.подканал || '';
-        if (channel === 'Депозит' || channel === 'депозит' ||
-            subCategory === 'Депозит' || subCategory === 'депозит') {
-            const amount = parseFloat(row.сумма) || 0;
-            if (amount !== 0 && row.статья !== 'Начальный остаток') {
-                depositOps.push(row);
-            }
-        }
+    // Статистика для проверки
+    let totalIncome = 0, totalExpense = 0;
+    operations.forEach(op => {
+        if (op.type === 'income') totalIncome += op.amount;
+        else totalExpense += op.amount;
     });
     
-    console.log('ОДДС: Свободных RUB операций (без депозита): ' + operations.length);
-    console.log('ОДДС: Депозитных операций (справочно): ' + depositOps.length);
+    console.log(`=== ОДДС: операции без депозита ===`);
+    console.log(`Всего операций: ${operations.length}`);
+    console.log(`Доходы: ${formatCurrency(totalIncome)}`);
+    console.log(`Расходы: ${formatCurrency(totalExpense)}`);
+    console.log(`Чистый поток: ${formatCurrency(totalIncome - totalExpense)}`);
     
     return operations;
 }
