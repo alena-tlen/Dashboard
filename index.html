@@ -11593,7 +11593,7 @@ document.querySelectorAll('.odds-section-header').forEach(header => {
         const forecastSelect = document.getElementById('forecastMonthsSelect');
         if (forecastSelect) {
             forecastSelect.onchange = (e) => {
-                oddsForecastMonths = parseInt(e.target.value);
+                window.oddsForecastMonths = parseInt(e.target.value);
                 renderOddsPage();
             };
         }
