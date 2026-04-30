@@ -2531,7 +2531,7 @@ body.dark .odds-section-card {
     let authUsers = [];
     let usersLoaded = false;
     const USERS_FILE_PATH = 'users.xlsx';
-    let oddsForecastMonths = 3;
+
     
     async function loadUsersFromFile() {
         const authError = document.getElementById('authError');
@@ -2922,7 +2922,7 @@ if (document.readyState === 'loading') {
     const monthsOrder = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
 
     let activeOddsTab = 0;
-    let oddsForecastMonths = 3;  // ДОБАВЬТЕ ЭТУ СТРОКУ
+   
     // ========== ПЕРЕМЕННЫЕ ДЛЯ ОДДС ==========
     let oddsDateRange = { startDate: null, endDate: null };
     let oddsOperations = [];
