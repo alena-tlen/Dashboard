@@ -10935,10 +10935,6 @@ function renderOddsPage() {
     const comparison = previousFlows ? compareWithPreviousPeriod(filteredOps, previousOps) : null;
     
 
-// ========== РАСЧЁТ ОСТАТКОВ С УЧЁТОМ ДЕПОЗИТА ==========
-
-// Функция для получения остатка по ВСЕМ счетам (включая депозит)
-// ========== РАСЧЁТ ОСТАТКОВ С УЧЁТОМ ДЕПОЗИТА ==========
 
 // Функция для получения остатка по ВСЕМ счетам (включая депозит)
 function getTotalBalanceOnDate(targetDate, includeDeposit = true) {
@@ -10947,7 +10943,6 @@ function getTotalBalanceOnDate(targetDate, includeDeposit = true) {
     let totalBalance = 0;
     const processedAccounts = new Set();
     
-    // 1. Начальные остатки
     originalData.forEach(row => {
         if (row.статья !== 'Начальный остаток') return;
         
@@ -10979,7 +10974,6 @@ function getTotalBalanceOnDate(targetDate, includeDeposit = true) {
         }
     });
     
-    // 2. Операции ДО targetDate
     originalData.forEach(row => {
         const account = row.Счет || row.счет || row['Счет'] || '';
         if (!account) return;
@@ -11019,41 +11013,30 @@ function getTotalBalanceOnDate(targetDate, includeDeposit = true) {
 }
 
 // Получаем остатки
-const startDateTotal = oddsDateRange.startDate;
-const endDateTotal = oddsDateRange.endDate;
+const startDateForBalance = oddsDateRange.startDate;
+const endDateForBalance = oddsDateRange.endDate;
 
 // Остаток на ВСЕХ счетах (включая депозит)
-const totalBalanceStart = getTotalBalanceOnDate(startDateTotal, true);
-const totalBalanceEnd = getTotalBalanceOnDate(endDateTotal, true);
+const totalBalanceStart = getTotalBalanceOnDate(startDateForBalance, true);
+const totalBalanceEnd = getTotalBalanceOnDate(endDateForBalance, true);
 
 // Остаток ТОЛЬКО на депозите
-const depositBalanceStart = getTotalBalanceOnDate(startDateTotal, false);
-const depositBalanceEnd = getTotalBalanceOnDate(endDateTotal, false);
+const depositBalanceStart = getTotalBalanceOnDate(startDateForBalance, false);
+const depositBalanceEnd = getTotalBalanceOnDate(endDateForBalance, false);
 
 // СВОБОДНЫЙ остаток (все счета минус депозит)
 const freeBalanceStart = totalBalanceStart - depositBalanceStart;
 const freeBalanceEnd = totalBalanceEnd - depositBalanceEnd;
 
-// Чистый денежный поток (свободные деньги)
-const freeNetCashFlow = freeBalanceEnd - freeBalanceStart;
+console.log(`=== СВОБОДНЫЙ ОСТАТОК ===`);
+console.log(`На начало (${startDateForBalance?.toISOString().split('T')[0]}): ${formatCurrency(freeBalanceStart)}`);
+console.log(`На конец (${endDateForBalance?.toISOString().split('T')[0]}): ${formatCurrency(freeBalanceEnd)}`);
+console.log(`Изменение: ${formatCurrency(freeBalanceEnd - freeBalanceStart)}`);
 
-console.log(`=== ОСТАТКИ НА ${startDateTotal?.toISOString().split('T')[0]} ===`);
-console.log(`Все счета (вкл. депозит): ${formatCurrency(totalBalanceStart)}`);
-console.log(`Депозит: ${formatCurrency(depositBalanceStart)}`);
-console.log(`Свободный остаток: ${formatCurrency(freeBalanceStart)}`);
-
-console.log(`=== ОСТАТКИ НА ${endDateTotal?.toISOString().split('T')[0]} ===`);
-console.log(`Все счета (вкл. депозит): ${formatCurrency(totalBalanceEnd)}`);
-console.log(`Депозит: ${formatCurrency(depositBalanceEnd)}`);
-console.log(`Свободный остаток: ${formatCurrency(freeBalanceEnd)}`);
-
-console.log(`Чистый свободный поток: ${formatCurrency(freeNetCashFlow)}`);
-
-// ПЕРЕЗАПИСЫВАЕМ startBalance (используем существующую переменную)
+// Перезаписываем переменные
 startBalance = freeBalanceStart;
-
-// ВАЖНО: не объявляем endBalance заново, а перезаписываем существующую!
 endBalance = freeBalanceEnd;
+netCashFlow = freeBalanceEnd - freeBalanceStart;
     
     
     // Точка безубыточности
