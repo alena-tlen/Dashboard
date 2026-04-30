@@ -12411,8 +12411,9 @@ function renderForecastChart(balanceHistory) {
     
     const forecastValues = [];
     const forecastLabels = [];
+    const forecastMonths = window.oddsForecastMonths || 3;  // ← Используем эту переменную
     
-    for (let i = 0; i < oddsForecastMonths; i++) {
+    for (let i = 0; i < forecastMonths; i++) {  // ← ИСПРАВЛЕНО: теперь forecastMonths
         const nextX = values.length + i;
         forecastValues.push(slope * nextX + intercept);
         forecastLabels.push(`+${i + 1} мес`);
