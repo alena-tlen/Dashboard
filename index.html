@@ -2531,6 +2531,7 @@ body.dark .odds-section-card {
     let authUsers = [];
     let usersLoaded = false;
     const USERS_FILE_PATH = 'users.xlsx';
+    var oddsForecastMonths = 3;
 
     
     async function loadUsersFromFile() {
@@ -10655,7 +10656,6 @@ function collectOddsOperations() {
 
 // Глобальные переменные
 let oddsPlanData = null;
-let oddsForecastMonths = 3;
 let oddsCalendarDate = new Date();
 let oddsTaxReminders = [];
 
