@@ -11055,8 +11055,6 @@ startBalance = freeBalanceStart;
 // ВАЖНО: не объявляем endBalance заново, а перезаписываем существующую!
 endBalance = freeBalanceEnd;
     
-    const endBalance = startBalance + flows.operating.net + flows.investing.net + flows.financial.net;
-    const netCashFlow = endBalance - startBalance;
     
     // Точка безубыточности
     const breakEven = calculateBreakEven(filteredOps);
