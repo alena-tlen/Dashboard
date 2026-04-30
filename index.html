@@ -1962,352 +1962,6 @@ body:has(#page-odds.active) .floating-filter-btn {
     display: none !important;
 }
 
-/* ========== НОВЫЕ СТИЛИ ДЛЯ ОДДС ========== */
-.odds-dashboard {
-    width: 100%;
-    animation: fadeIn 0.5s ease-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.odds-section-card {
-    background: white;
-    border-radius: 16px;
-    margin-bottom: 24px;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-body.dark .odds-section-card {
-    background: #1a1a2a;
-    border: 1px solid #2d2d3a;
-}
-
-.odds-section-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.odds-section-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 20px;
-    background: rgba(102,126,234,0.08);
-    border-bottom: 1px solid rgba(102,126,234,0.15);
-    cursor: pointer;
-}
-
-.odds-section-header:hover {
-    background: rgba(102,126,234,0.12);
-}
-
-.odds-section-icon {
-    font-size: 24px;
-}
-
-.odds-section-title {
-    font-size: 16px;
-    font-weight: 600;
-    flex: 1;
-}
-
-.odds-section-net {
-    font-size: 18px;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 20px;
-}
-
-.odds-section-net.positive {
-    background: rgba(72,187,120,0.15);
-    color: #48bb78;
-}
-
-.odds-section-net.negative {
-    background: rgba(245,101,101,0.15);
-    color: #f56565;
-}
-
-.odds-section-content {
-    padding: 20px;
-    transition: max-height 0.3s ease;
-}
-
-.odds-subsection {
-    margin-bottom: 24px;
-}
-
-.odds-subsection:last-child {
-    margin-bottom: 0;
-}
-
-.odds-subsection-header {
-    font-size: 14px;
-    font-weight: 600;
-    color: #667eea;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(102,126,234,0.2);
-}
-
-.odds-table-container {
-    overflow-x: auto;
-}
-
-.odds-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-.odds-table th,
-.odds-table td {
-    padding: 10px 12px;
-    text-align: left;
-    border-bottom: 1px solid rgba(102,126,234,0.1);
-}
-
-.odds-table th {
-    background: rgba(102,126,234,0.05);
-    font-weight: 600;
-    color: #667eea;
-}
-
-.odds-total-row {
-    background: rgba(102,126,234,0.08);
-    font-weight: 600;
-}
-
-.odds-empty {
-    text-align: center;
-    padding: 40px;
-    color: #a0aec0;
-}
-
-.deviation-cell {
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.odds-card {
-    transition: all 0.3s ease;
-}
-
-.odds-card:hover {
-    transform: translateY(-2px);
-}
-
-/* Чек-лист налогов */
-.tax-checklist {
-    background: rgba(245,101,101,0.08);
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 16px;
-}
-
-.tax-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px;
-    border-bottom: 1px solid rgba(245,101,101,0.2);
-}
-
-.tax-item:last-child {
-    border-bottom: none;
-}
-
-.tax-status {
-    width: 24px;
-    font-size: 18px;
-}
-
-.tax-name {
-    flex: 1;
-    font-weight: 500;
-}
-
-.tax-date {
-    font-size: 12px;
-    opacity: 0.7;
-}
-
-.tax-amount {
-    font-weight: 600;
-    min-width: 100px;
-    text-align: right;
-}
-
-.tax-warning {
-    background: rgba(245,101,101,0.15);
-    border-left: 3px solid #f56565;
-}
-
-/* Календарь */
-.odds-calendar {
-    background: rgba(102,126,234,0.05);
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 16px;
-}
-
-.calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
-.calendar-nav {
-    background: none;
-    border: none;
-    font-size: 18px;
-    cursor: pointer;
-    padding: 4px 12px;
-    border-radius: 8px;
-    transition: all 0.2s;
-}
-
-.calendar-nav:hover {
-    background: rgba(102,126,234,0.2);
-}
-
-.calendar-weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-size: 11px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.calendar-days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-}
-
-.calendar-day {
-    aspect-ratio: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-}
-
-.calendar-day:hover {
-    background: rgba(102,126,234,0.2);
-}
-
-.calendar-day.has-event {
-    background: rgba(72,187,120,0.2);
-}
-
-.calendar-day.has-payment {
-    background: rgba(245,101,101,0.2);
-}
-
-.calendar-day.today {
-    border: 2px solid #667eea;
-    font-weight: 700;
-}
-
-.event-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    position: absolute;
-    bottom: 4px;
-}
-
-.event-dot.payment {
-    background: #f56565;
-}
-
-.event-dot.reminder {
-    background: #4299e1;
-}
-
-/* Кнопка экспорта */
-.export-btn {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-}
-
-.export-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102,126,234,0.4);
-}
-
-/* Кредитный калькулятор в ОДДС */
-.credit-calculator-card {
-    background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
-    border-radius: 16px;
-    padding: 20px;
-    margin-top: 24px;
-}
-
-.credit-slider {
-    width: 100%;
-    height: 6px;
-    border-radius: 3px;
-    background: linear-gradient(90deg, #667eea, #764ba2);
-    appearance: none;
-    cursor: pointer;
-}
-
-.credit-slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #667eea;
-    border: 2px solid white;
-    cursor: pointer;
-}
-
-.credit-result {
-    background: rgba(255,255,255,0.1);
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 16px;
-}
-
-/* Анимации */
-@keyframes slideInRight {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
-}
-
-.tax-warning {
-    animation: pulse 1s ease-in-out 3;
-}
-
 </style>
 </head>
 <body>
@@ -2526,13 +2180,10 @@ body.dark .odds-section-card {
 
     <script>
     // ========== АВТОРИЗАЦИЯ ==========
-    
     let currentUser = null;
     let authUsers = [];
     let usersLoaded = false;
     const USERS_FILE_PATH = 'users.xlsx';
-    var oddsForecastMonths = 3;
-
     
     async function loadUsersFromFile() {
         const authError = document.getElementById('authError');
@@ -2923,13 +2574,6 @@ if (document.readyState === 'loading') {
     const monthsOrder = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
 
     let activeOddsTab = 0;
-   
-    // ========== ПЕРЕМЕННЫЕ ДЛЯ ОДДС ==========
-    let oddsDateRange = { startDate: null, endDate: null };
-    let oddsOperations = [];
-    let oddsPlans = {};
-    let forecastPeriods = 6;
-    let currentBalance = 0;
     
     const channelMapping = {
         'wildberries': { displayName: 'Wildberries' },
@@ -2938,334 +2582,9 @@ if (document.readyState === 'loading') {
         'lamoda': { displayName: 'Lamoda' }
     };
     
-
     function formatCurrency(value) { 
         return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(Math.abs(value)); 
     }
-
-
-// ========== ДОБАВЬТЕ ЭТИ ФУНКЦИИ ==========
-
-// Форматирование даты в формате ДД.ММ
-function formatDate(date) {
-    if (!date) return '';
-    return `${date.getDate()}.${date.getMonth() + 1}`;
-}
-
-// Форматирование полной даты в формате ДД.ММ.ГГГГ
-function formatFullDate(date) {
-    if (!date) return '';
-    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`;
-}
-
-// Форматирование валюты с указанием валюты
-function formatCurrencyWithCurrency(amount, currency = 'RUB') {
-    const symbols = { RUB: '₽', USD: '$', EUR: '€', CNY: '¥' };
-    const symbol = symbols[currency] || currency;
-    const formatter = new Intl.NumberFormat('ru-RU', { 
-        minimumFractionDigits: 0, 
-        maximumFractionDigits: 2 
-    });
-    return `${formatter.format(Math.abs(amount))} ${symbol}`;
-}
-
-// Функция для расчета дневных остатков
-function calculateDailyBalance(operations, startBalance, dateRange) {
-    if (!operations || operations.length === 0) return [];
-    
-    let filtered = operations;
-    if (dateRange && dateRange.startDate && dateRange.endDate) {
-        filtered = operations.filter(op => op.date >= dateRange.startDate && op.date <= dateRange.endDate);
-    }
-    
-    // ===== ТОЛЬКО RUB операции! =====
-    const rubOperations = filtered.filter(op => op.currency === 'RUB');
-    
-    if (rubOperations.length === 0) return [];
-    
-    const sorted = [...rubOperations].sort((a, b) => a.date - b.date);
-    const dailyMap = new Map();
-    
-    sorted.forEach(op => {
-        const key = op.date.toISOString().split('T')[0];
-        if (!dailyMap.has(key)) {
-            dailyMap.set(key, { date: op.date, income: 0, expense: 0, balance: 0 });
-        }
-        const day = dailyMap.get(key);
-        if (op.type === 'income') day.income += op.amount;
-        else day.expense += op.amount;
-    });
-    
-    const dailyData = Array.from(dailyMap.values()).sort((a, b) => a.date - b.date);
-    let runningBalance = startBalance;
-    dailyData.forEach(day => {
-        runningBalance += day.income - day.expense;
-        day.balance = runningBalance;
-    });
-    
-    return dailyData;
-}
-
-// Функции для светофора ликвидности
-function getLiquidityIcon(balance) {
-    if (balance >= 1000000) return '🟢';
-    if (balance >= 500000) return '🟡';
-    return '🔴';
-}
-
-function getLiquidityColor(balance) {
-    if (balance >= 1000000) return 'color: #48bb78';
-    if (balance >= 500000) return 'color: #f59e0b';
-    return 'color: #f56565';
-}
-
-function getLiquidityColorHex(balance) {
-    if (balance >= 1000000) return '#48bb78';
-    if (balance >= 500000) return '#f59e0b';
-    return '#f56565';
-}
-
-function getLiquidityPercent(balance) {
-    const reserve = calculateReserve();
-    if (reserve === 0) return 0;
-    return Math.min((balance / reserve) * 100, 100);
-}
-
-function calculateReserve() {
-    return 1500000;
-}
-
-// Рендер таблицы для разделов ОДДС
-function renderOddsTable(flow, type, total, deviation = null) {
-    const byChannel = type === 'income' ? flow.income.byChannel : flow.expense.byChannel;
-    const items = type === 'income' ? flow.income.items : flow.expense.items;
-    
-    if (!byChannel || Object.keys(byChannel).length === 0) {
-        return '<div class="odds-empty">Нет операций</div>';
-    }
-    
-    const isExpense = type === 'expense';
-    
-    // Сортируем каналы по сумме
-    const sortedChannels = Object.entries(byChannel).sort((a, b) => b[1] - a[1]);
-    
-    return `
-        <div class="odds-table-container">
-            <table class="odds-table">
-                <thead>
-                    <tr>
-                        <th>Канал</th>
-                        <th>Сумма</th>
-                        <th>Доля</th>
-                        ${deviation !== null ? '<th>Отклонение</th>' : ''}
-                    </tr>
-                </thead>
-                <tbody>
-                    ${sortedChannels.map(([channel, amount]) => {
-                        const percent = total > 0 ? (amount / total) * 100 : 0;
-                        return `
-                            <tr>
-                                <td style="font-weight: 500;">${channel}</td>
-                                <td class="${isExpense ? 'negative' : 'positive'}">
-                                    ${isExpense ? '-' : ''}${formatCurrency(amount)}
-                                </td>
-                                <td>${percent.toFixed(1)}%</td>
-                                ${deviation !== null ? '<td class="deviation-cell">—</td>' : ''}
-                            </tr>
-                        `;
-                    }).join('')}
-                </tbody>
-                <tfoot>
-                    <tr class="odds-total-row">
-                        <td><strong>ИТОГО</strong></td>
-                        <td class="${isExpense ? 'negative' : 'positive'}">
-                            <strong>${isExpense ? '-' : '+'}${formatCurrency(total)}</strong>
-                        </td>
-                        <td><strong>100%</strong></td>
-                        ${deviation !== null ? `
-                            <td class="deviation-cell ${deviation >= 0 ? 'positive' : 'negative'}">
-                                ${deviation >= 0 ? '+' : ''}${formatCurrency(deviation)}
-                            </td>
-                        ` : ''}
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    `;
-}
-
-// Рендер графика остатков
-function renderBalanceChart(balanceHistory) {
-    const canvas = document.getElementById('oddsBalanceChart');
-    if (!canvas || !balanceHistory || balanceHistory.length === 0) {
-        if (canvas) canvas.parentElement.innerHTML = '<div style="text-align: center; padding: 40px;">📊 Нет данных для графика</div>';
-        return;
-    }
-    
-    if (window.balanceChart) {
-        try { window.balanceChart.destroy(); } catch(e) {}
-    }
-    
-    const ctx = canvas.getContext('2d');
-    const isDarkMode = document.body.classList.contains('dark');
-    
-    window.balanceChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: balanceHistory.map(b => formatDate(b.date)),
-            datasets: [{
-                label: 'Остаток',
-                data: balanceHistory.map(b => b.balance),
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102,126,234,0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 3,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => `💰 ${formatCurrency(ctx.raw)}`
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    ticks: { callback: (v) => formatCurrency(v) }
-                }
-            }
-        }
-    });
-}
-
-// Рендер круговой диаграммы расходов
-function renderExpensePieChart(expenseStructure) {
-    const canvas = document.getElementById('oddsExpenseChart');
-    if (!canvas) return;
-    
-    if (window.expenseChart) {
-        try { window.expenseChart.destroy(); } catch(e) {}
-    }
-    
-    const categories = Object.keys(expenseStructure);
-    const amounts = Object.values(expenseStructure);
-    
-    if (categories.length === 0) {
-        canvas.parentElement.innerHTML = '<div style="text-align: center; padding: 40px;">Нет данных по расходам</div>';
-        return;
-    }
-    
-    const ctx = canvas.getContext('2d');
-    const isDarkMode = document.body.classList.contains('dark');
-    
-    window.expenseChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: categories,
-            datasets: [{
-                data: amounts,
-                backgroundColor: ['#667eea', '#48bb78', '#f56565', '#f59e0b', '#4299e1', '#ed8936', '#9f7aea'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { position: 'bottom', labels: { color: isDarkMode ? '#e2e8f0' : '#4a5568' } },
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => `${ctx.label}: ${formatCurrency(ctx.raw)} (${((ctx.raw / amounts.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)`
-                    }
-                }
-            }
-        }
-    });
-}
-
-// Рендер прогноза
-function renderForecastChart(balanceHistory) {
-    const canvas = document.getElementById('oddsForecastChart');
-    if (!canvas) return;
-    
-    if (window.forecastChart) {
-        try { window.forecastChart.destroy(); } catch(e) {}
-    }
-    
-    const ctx = canvas.getContext('2d');
-    const isDarkMode = document.body.classList.contains('dark');
-    
-    const values = balanceHistory.map(b => b.balance);
-    const x = Array.from({ length: values.length }, (_, i) => i);
-    
-    const n = x.length;
-    const sumX = x.reduce((a, b) => a + b, 0);
-    const sumY = values.reduce((a, b) => a + b, 0);
-    const sumXY = x.reduce((sum, xi, i) => sum + xi * values[i], 0);
-    const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
-    
-    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-    const intercept = (sumY - slope * sumX) / n;
-    
-    const forecastValues = [];
-    const forecastLabels = [];
-    const forecastMonths = window.oddsForecastMonths || 3;
-    
-    for (let i = 0; i < forecastMonths; i++) {
-        const nextX = values.length + i;
-        forecastValues.push(slope * nextX + intercept);
-        forecastLabels.push(`+${i + 1} мес`);
-    }
-    
-    window.forecastChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [...balanceHistory.map(b => formatDate(b.date)), ...forecastLabels],
-            datasets: [
-                {
-                    label: 'Факт',
-                    data: values,
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102,126,234,0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.3
-                },
-                {
-                    label: 'Прогноз',
-                    data: [...new Array(values.length).fill(null), ...forecastValues],
-                    borderColor: '#f56565',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    fill: false,
-                    tension: 0.3
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    ticks: { callback: (v) => formatCurrency(v) }
-                }
-            }
-        }
-    });
-}
 
     // Функция для показа временных уведомлений
 function showNotification(message, type = 'success') {
@@ -3441,12 +2760,18 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 const workbook = XLSX.read(data, { type: 'array', cellFormula: false, cellText: false });
                 
                 const allProcessed = [];
+                // Убираем проверку дубликатов - она некорректна
                 
                 for (const sheetName of workbook.SheetNames) {
                     const sheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: true, blankrows: false });
                     
                     for (const row of jsonData) {
+                        console.log('=== АНАЛИЗ СТРОКИ БАНКА ===');
+                        console.log('Все ключи строки:', Object.keys(row));
+                        console.log('Значение "число":', row['число']);
+                        console.log('Значение "день":', row['день']);
+                        console.log('Значение "Дата":', row['Дата']);
                         let company = row['компания'] || row['Компания'] || '';
                         let year = row['год'] || row['Год'] || '';
                         let month = row['месяц'] || row['Месяц'] || '';
@@ -3456,8 +2781,8 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         let subCategory = row['подканал'] || row['Подканал'] || '';
                         let amount = parseFloat(row['сумма'] || row['Сумма'] || 0);
                         let account = row['Счет'] || row['счет'] || '';
-                        let oddsFlow = row['ОДДС'] || row['оддс'] || '';
                         
+                        // Нормализация
                         company = String(company).trim().toUpperCase();
                         year = String(year).trim();
                         month = String(month).trim().toLowerCase();
@@ -3465,11 +2790,12 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         channel = String(channel).trim();
                         subCategory = String(subCategory).trim();
                         account = String(account).trim();
-                        oddsFlow = String(oddsFlow).trim();
                         
+                        // Пропускаем пустые строки
                         if (!type && !account) continue;
                         if (amount === 0 && type !== 'Начальный остаток') continue;
                         
+                        // Определяем тип записи
                         let mappedType = '';
                         if (type === 'Доход') mappedType = 'Доход';
                         else if (type === 'Расход') mappedType = 'Расход';
@@ -3492,11 +2818,13 @@ function renderAnimatedMiniChart(elementId, data, color) {
                         
                         if (!mappedType) continue;
                         
+                        // Для начальных остатков очищаем год/месяц
                         if (type === 'Начальный остаток') {
                             year = '';
                             month = '';
                         }
                         
+                        // Убираем проверку дубликатов - добавляем все строки
                         allProcessed.push({ 
                             компания: company || 'A', 
                             год: year, 
@@ -3507,9 +2835,17 @@ function renderAnimatedMiniChart(elementId, data, color) {
                             подканал: subCategory, 
                             тип: mappedType, 
                             сумма: amount,
-                            Счет: account,
-                            ОДДС: oddsFlow
+                            Счет: account
                         });
+                        if (type === 'Поступление на расчетный счет' || type === 'Списание с расчетного счета') {
+    console.log('Добавлена банковская операция:', { 
+        год: year, 
+        месяц: month, 
+        число: day, 
+        статья: type, 
+        сумма: amount 
+    });
+}
                     }
                 }
                 
@@ -3517,7 +2853,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 const ndsPairs = new Map();
                 for (const row of allProcessed) {
                     if (row.статья === 'НДС' && (row.подканал === 'НДС исходящий' || row.подканал === 'НДС входящий')) {
-                        const key = row.компания + '|' + row.год + '|' + row.месяц + '|' + row.канал;
+                        const key = `${row.компания}|${row.год}|${row.месяц}|${row.канал}`;
                         if (!ndsPairs.has(key)) ndsPairs.set(key, { исходящий: 0, входящий: 0 });
                         const ndsData = ndsPairs.get(key);
                         if (row.подканал === 'НДС исходящий') ndsData.исходящий += row.сумма;
@@ -3527,18 +2863,17 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 for (const [key, ndsData] of ndsPairs.entries()) {
                     const calculatedNds = ndsData.исходящий - ndsData.входящий;
                     if (calculatedNds !== 0) {
-                        const parts = key.split('|');
+                        const [company, year, month, channel] = key.split('|');
                         allProcessed.push({
-                            компания: parts[0], 
-                            год: parts[1], 
-                            месяц: parts[2], 
+                            компания: company, 
+                            год: year, 
+                            месяц: month, 
                             статья: 'НДС К УПЛАТЕ/ВОЗМЕЩЕНИЮ',
-                            канал: parts[3], 
+                            канал: channel, 
                             подканал: 'НДС', 
                             тип: 'НДС', 
                             сумма: calculatedNds,
-                            Счет: '',
-                            ОДДС: ''
+                            Счет: ''
                         });
                     }
                 }
@@ -3546,7 +2881,43 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 if (allProcessed.length === 0) {
                     reject(new Error('Не найдено данных для анализа'));
                 } else {
-                    console.log('Загружено ' + allProcessed.length + ' записей');
+                    console.log(`Загружено ${allProcessed.length} записей`);
+                    
+                    // Диагностика: выводим операции по счетам с датами
+                    const cashOps = allProcessed.filter(r => r.Счет && r.статья !== 'Начальный остаток');
+                    console.log('Операции по счетам с датами:');
+                    cashOps.forEach(r => {
+                        if (r.год && r.месяц) {
+                            console.log(`  ${r.год} ${r.месяц}: ${r.статья}, сумма: ${r.сумма}`);
+                        } else {
+                            console.log(`  [БЕЗ ДАТЫ] ${r.статья}, сумма: ${r.сумма}`);
+                        }
+                    });
+
+                    // ===== ДИАГНОСТИКА ДАТ =====
+console.log('=== ДИАГНОСТИКА ДАТ В ЗАГРУЖЕННОМ ФАЙЛЕ ===');
+const sampleRows = allProcessed.slice(0, 20);
+console.log('Первые 20 записей:');
+sampleRows.forEach((row, idx) => {
+    console.log(`${idx + 1}. год=${row.год}, месяц=${row.месяц}, число=${row.число}, статья=${row.статья}, сумма=${row.сумма}, счет=${row.Счет?.substring(0, 30)}`);
+});
+
+// Проверяем уникальные значения дат
+const uniqueDates = new Set();
+allProcessed.forEach(row => {
+    if (row.год && row.месяц && row.число) {
+        uniqueDates.add(`${row.год}-${row.месяц}-${row.число}`);
+    }
+});
+console.log('Уникальные даты в данных:', Array.from(uniqueDates).slice(0, 20));
+
+// Проверяем операции по банку
+const bankOps = allProcessed.filter(r => r.Счет && (r.статья === 'Поступление на расчетный счет' || r.статья === 'Списание с расчетного счета'));
+console.log('Банковских операций:', bankOps.length);
+bankOps.slice(0, 10).forEach(op => {
+    console.log(`  ${op.год} ${op.месяц} ${op.число}: ${op.статья}, сумма: ${op.сумма}, счет: ${op.Счет?.substring(0, 30)}`);
+});
+                    
                     resolve(allProcessed);
                 }
             } catch (error) { 
@@ -3554,7 +2925,7 @@ function renderAnimatedMiniChart(elementId, data, color) {
                 reject(error); 
             }
         };
-        reader.onerror = function(error) { 
+        reader.onerror = (error) => { 
             console.error('Ошибка FileReader:', error);
             reject(error); 
         };
@@ -3658,24 +3029,18 @@ function calculateCashData() {
     
     // Собираем начальные остатки
     allData.forEach(row => {
-    const article = row.статья || '';
-    const amount = parseFloat(row.сумма) || 0;
-    const account = row.Счет || row.счет || row['Счет'] || '';
-    const channel = row.канал || row.Канал || '';  // ДОБАВИТЬ
-    const subCategory = row.подканал || '';         // ДОБАВИТЬ
-    
-    if (!account) return;
-    
-    if (article === 'Начальный остаток') {
-        // Исключаем депозит (проверяем оба варианта написания)
-        if (channel === 'Депозит' || channel === 'депозит') return;
-        if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+        const article = row.статья || '';
+        const amount = parseFloat(row.сумма) || 0;
+        const account = row.Счет || row.счет || row['Счет'] || '';
         
-        if (!initialBalances[account]) initialBalances[account] = 0;
-        initialBalances[account] += amount;
-        allAccounts.add(account);
-    }
-});
+        if (!account) return;
+        
+        if (article === 'Начальный остаток') {
+            if (!initialBalances[account]) initialBalances[account] = 0;
+            initialBalances[account] += amount;
+            allAccounts.add(account);
+        }
+    });
     
     const cumulativeIncome = {};
     const cumulativeExpense = {};
@@ -3775,7 +3140,6 @@ function calculateCashData() {
         let shortName = account;
         if (account.includes('ООО "ОЗОН Банк"')) shortName = 'Озон Банк';
         else if (account.includes('АЛЬФА-БАНК')) shortName = 'Альфа-Банк';
-        else if (account.includes('Банк Точка')) shortName = 'Точка Банк';
         else if (account.includes('ООО "Вайлдберриз Банк"')) shortName = 'Вайлдберриз Банк';
         else if (account.includes('ПАО СБЕРБАНК') || account.includes('Сбербанк')) shortName = 'Сбербанк';
         else if (account.includes('ВТБ')) shortName = 'ВТБ';
@@ -10156,9 +9520,47 @@ if (abcxyzUploadArea) {
     abcxyzUploadArea.onclick = () => abcxyzFileInput?.click();
 }
 
-// ========== ДОБАВЬТЕ ЭТИ ФУНКЦИИ ПОСЛЕ ФУНКЦИИ detectCurrency ==========
+// ========== ОДДС С ПОЛНЫМ АНАЛИЗОМ ==========
+let oddsDateRange = { startDate: null, endDate: null };
+let oddsOperations = [];
+let oddsPlans = {}; // Хранилище плановых значений
+let forecastPeriods = 6; // Прогноз на 6 месяцев вперёд
 
-// Парсинг даты из строки
+// Загрузка/сохранение планов в localStorage
+function loadOddsPlans() {
+    const saved = localStorage.getItem('odds_plans');
+    if (saved) {
+        try {
+            oddsPlans = JSON.parse(saved);
+        } catch(e) {}
+    }
+}
+
+function saveOddsPlans() {
+    localStorage.setItem('odds_plans', JSON.stringify(oddsPlans));
+}
+
+// Список операций, исключаемых из ТОП-списков
+const EXCLUDED_FROM_TOP = [
+    'Перевод с другого счета', 'Перевод на другой счет организации',
+    'Перевод на другой счет', 'Перевод между счетами', 'Внутренний перевод'
+];
+
+// Валюты
+const ALL_CURRENCIES = ['RUB', 'USD', 'EUR', 'CNY'];
+let currentCurrency = 'RUB';
+
+// Функция определения валюты по счету
+function detectCurrency(account) {
+    if (!account) return 'RUB';
+    const accUpper = account.toUpperCase();
+    if (accUpper.includes('CNY')) return 'CNY';
+    if (accUpper.includes('USD')) return 'USD';
+    if (accUpper.includes('EUR')) return 'EUR';
+    return 'RUB';
+}
+
+// Парсинг даты
 function parseOddsDate(row) {
     const year = row.год;
     const month = row.месяц;
@@ -10174,43 +9576,57 @@ function parseOddsDate(row) {
     return isNaN(date.getTime()) ? null : date;
 }
 
-// Функция для загрузки планов из localStorage
-function loadOddsPlans() {
-    const saved = localStorage.getItem('odds_plans');
-    if (saved) {
-        try {
-            oddsPlans = JSON.parse(saved);
-        } catch(e) {}
-    }
+function collectOddsOperations() {
+    // ИСПОЛЬЗУЕМ ОРИГИНАЛЬНЫЕ ДАННЫЕ, ИГНОРИРУЯ ВСЕ ФИЛЬТРЫ!
+    const sourceData = originalData.length > 0 ? originalData : [];
+    if (sourceData.length === 0) return [];
+    
+    const operations = [];
+    
+    sourceData.forEach(row => {
+        const account = row.Счет || row.счет || row['Счет'] || '';
+        const article = row.статья || '';
+        if (article === 'Начальный остаток' || !account) return;
+        
+        const amount = parseFloat(row.сумма) || 0;
+        if (amount === 0) return;
+        
+        const date = parseOddsDate(row);
+        const currency = detectCurrency(account);
+        
+        const channel = row.канал || row.Канал || '';
+        const isTechnical = EXCLUDED_FROM_TOP.some(ex => channel.includes(ex));
+        
+        let type = '';
+        const isDeposit = channel === 'Депозит' || channel === 'депозит';
+        
+        if (!isDeposit) {
+            if (article === 'Поступление на расчетный счет') type = 'income';
+            else if (article === 'Списание с расчетного счета') type = 'expense';
+            else if (amount > 0) type = 'income';
+            else if (amount < 0) type = 'expense';
+        }
+        
+        if (type && date) {
+            operations.push({
+                date: date, 
+                amount: Math.abs(amount), 
+                type: type,
+                article: article, 
+                category: row.канал || row.подканал || article,
+                year: row.год, 
+                month: row.месяц, 
+                account: account,
+                currency: currency, 
+                isTechnical: isTechnical
+            });
+        }
+    });
+    
+    return operations;
 }
 
-// Функция для сохранения планов в localStorage
-function saveOddsPlans() {
-    localStorage.setItem('odds_plans', JSON.stringify(oddsPlans));
-}
-
-// Список операций, исключаемых из ТОП-списков
-const EXCLUDED_FROM_TOP = [
-    'Перевод с другого счета', 'Перевод на другой счет организации',
-    'Перевод на другой счет', 'Перевод между счетами', 'Внутренний перевод'
-];
-
-// Валюты
-const ALL_CURRENCIES = ['RUB', 'USD', 'EUR', 'CNY'];
-let currentCurrency = 'RUB';
-let oddsPlans = {};
-
-// Функция определения валюты по счету
-function detectCurrency(account) {
-    if (!account) return 'RUB';
-    const accUpper = account.toUpperCase();
-    if (accUpper.includes('CNY')) return 'CNY';
-    if (accUpper.includes('USD')) return 'USD';
-    if (accUpper.includes('EUR')) return 'EUR';
-    return 'RUB';
-}
-
-// Функция для расчета накопительных остатков (если её нет)
+// Расчёт накопительных остатков по дням (для выбранной валюты)
 function calculateCumulativeBalance(operations, startBalance, currency = 'RUB') {
     const filtered = operations.filter(op => op.currency === currency);
     const sorted = [...filtered].sort((a, b) => a.date - b.date);
@@ -10236,7 +9652,37 @@ function calculateCumulativeBalance(operations, startBalance, currency = 'RUB') 
     return dailyData;
 }
 
-// Функция для расчета точки безубыточности (если её нет)
+// Разделение расходов на постоянные и переменные
+function splitExpensesByType(operations, currency = 'RUB') {
+    const filtered = operations.filter(op => op.type === 'expense' && op.currency === currency && !op.isTechnical);
+    
+    const fixedKeywords = ['аренд', 'фот', 'зарплат', 'оклад', 'бухгалтер', 'юр сопровожд', 'связ', 'подписк', 'страхован', 'лиценз'];
+    const variableKeywords = ['закупк', 'товар', 'себестоим', 'логистик', 'доставк', 'комисс', 'маркетинг', 'реклам', 'wb', 'ozon', 'маркетплейс'];
+    
+    let fixedTotal = 0, variableTotal = 0;
+    const fixedItems = [], variableItems = [];
+    
+    filtered.forEach(op => {
+        const text = (op.article + ' ' + op.category).toLowerCase();
+        let isFixed = fixedKeywords.some(kw => text.includes(kw));
+        let isVariable = variableKeywords.some(kw => text.includes(kw));
+        
+        if (isFixed && !isVariable) {
+            fixedTotal += op.amount;
+            fixedItems.push(op);
+        } else if (isVariable || (!isFixed && !isVariable && text.includes('расход'))) {
+            variableTotal += op.amount;
+            variableItems.push(op);
+        } else if (!isFixed && !isVariable) {
+            variableTotal += op.amount;
+            variableItems.push(op);
+        }
+    });
+    
+    return { fixedTotal, variableTotal, fixedItems, variableItems };
+}
+
+// Расчёт точки безубыточности
 function calculateBreakEvenPoint(fixedCosts, variableCosts, revenue) {
     const contributionMargin = revenue - variableCosts;
     const contributionMarginRatio = revenue > 0 ? (contributionMargin / revenue) * 100 : 0;
@@ -10247,32 +9693,34 @@ function calculateBreakEvenPoint(fixedCosts, variableCosts, revenue) {
     return { contributionMargin, contributionMarginRatio, breakEvenRevenue, safetyMargin, safetyMarginAbsolute };
 }
 
-// Функция для расчета Cash Conversion Cycle
+// Расчёт Cash Conversion Cycle
 function calculateCCC(operations, currency = 'RUB') {
     const filtered = operations.filter(op => op.currency === currency);
     
+    // Ищем средний срок оплаты поставщикам (по переменным расходам)
     const variableOps = filtered.filter(op => {
         const text = (op.article + ' ' + op.category).toLowerCase();
         return text.includes('закупк') || text.includes('товар') || text.includes('поставщик');
     });
     
+    // Ищем средний срок получения денег от покупателей
     const incomeOps = filtered.filter(op => op.type === 'income' && 
         (op.article.includes('поступление') || op.category.includes('оплата')));
     
-    const avgPayablesDays = variableOps.length > 0 ? 30 : 45;
+    const avgPayablesDays = variableOps.length > 0 ? 30 : 45; // Примерная оценка
     const avgReceivablesDays = incomeOps.length > 0 ? 15 : 30;
-    const avgInventoryDays = 60;
+    const avgInventoryDays = 60; // Примерно 60 дней оборачиваемость товара
     
     const ccc = avgInventoryDays + avgReceivablesDays - avgPayablesDays;
     
     return { ccc, avgInventoryDays, avgReceivablesDays, avgPayablesDays, risk: ccc > 60 ? 'high' : ccc > 30 ? 'medium' : 'low' };
 }
 
-// Функция для прогноза кассовых разрывов
+// Прогноз кассовых разрывов
 function calculateCashGapForecast(currentBalance, dailyIncome, dailyExpense, months = 6) {
     const forecast = [];
     let balance = currentBalance;
-    const minBalance = 100000;
+    const minBalance = 100000; // Минимальный порог в 100 тыс. руб.
     
     for (let i = 1; i <= months; i++) {
         const monthIncome = dailyIncome * 30;
@@ -10292,7 +9740,7 @@ function calculateCashGapForecast(currentBalance, dailyIncome, dailyExpense, mon
     return forecast;
 }
 
-// Функция для рекомендаций по ликвидности
+// Рекомендации по ликвидности
 function getLiquidityRecommendations(balance, ccc, safetyMargin, breakEvenRevenue, revenue) {
     const recommendations = [];
     
@@ -10477,8 +9925,8 @@ function renderCreditCalculator() {
             <div style="margin-bottom: 12px;">💰 Ежемесячный платёж: <strong>${formatCurrency(payment)}</strong></div>
             <div style="margin-bottom: 12px;">📊 Общая сумма выплат: <strong>${formatCurrency(totalPayment)}</strong></div>
             <div style="margin-bottom: 8px;">💸 Переплата: <strong>${formatCurrency(overpayment)}</strong> (${((overpayment/amount)*100).toFixed(1)}%)</div>
-            <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(102,126,234,0.2); font-size: 11px; color: ${payment * 3 > window.currentBalance ? '#f56565' : '#48bb78'}">
-                ${payment * 3 > window.currentBalance ? '⚠️ Платёж более 3х кратного остатка! Риск кассового разрыва.' : '✅ Платёж в пределах безопасности.'}
+            <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(102,126,234,0.2); font-size: 11px; color: ${payment * 3 > currentBalance ? '#f56565' : '#48bb78'}">
+                ${payment * 3 > currentBalance ? '⚠️ Платёж более 3х кратного остатка! Риск кассового разрыва.' : '✅ Платёж в пределах безопасности.'}
             </div>
         `;
     });
@@ -10491,14 +9939,13 @@ function renderPlannedExpenses() {
     
     const months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
     const currentMonth = new Date().getMonth();
-    const forecastPeriods = 6;
     
     let html = '<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 12px;"><thead><tr>';
     for (let i = 0; i < Math.min(forecastPeriods, months.length); i++) {
         const monthIdx = (currentMonth + i) % 12;
         html += `<th style="padding: 10px; background: rgba(102,126,234,0.1);">${months[monthIdx]}</th>`;
     }
-    html += `</tr></thead><tbody><td>`;
+    html += `</tr></thead><tbody><tr>`;
     
     for (let i = 0; i < forecastPeriods; i++) {
         const key = `planned_month_${i}`;
@@ -10535,9 +9982,8 @@ function renderPlannedExpenses() {
 
 function calculateForecast() {
     const forecast = [];
-    let balance = window.currentBalance || 0;
+    let balance = currentBalance;
     let gapMonths = [];
-    const forecastPeriods = 6;
     
     for (let i = 0; i < forecastPeriods; i++) {
         const plannedIncome = parseFloat(oddsPlans[`planned_income_${i}`]) || 0;
@@ -10574,1076 +10020,379 @@ function calculateForecast() {
     if (forecastResult) forecastResult.innerHTML = resultHtml;
 }
 
-function collectOddsOperations() {
-    const sourceData = originalData.length > 0 ? originalData : [];
-    if (sourceData.length === 0) return [];
-    
-    const operations = [];
-    
-    sourceData.forEach(function(row) {
-        const account = row.Счет || row.счет || row['Счет'] || '';
-        const article = row.статья || '';
-        const channel = row.канал || row.Канал || '';
-        const subCategory = row.подканал || '';
-        
-        // ===== ПОЛНОСТЬЮ ИСКЛЮЧАЕМ ВСЁ, ЧТО СВЯЗАНО С ДЕПОЗИТОМ =====
-        // Это НЕ должно попадать в ОДДС вообще!
-        if (channel === 'Депозит' || channel === 'депозит') return;
-        if (subCategory === 'Депозит' || subCategory === 'депозит') return;
-        if (subCategory === 'Возврат депозита') return;
-        if (article.includes('Депозит') || article === 'Депозит') return;
-        
-        // Начальные остатки тоже не нужны в ОДДС
-        if (article === 'Начальный остаток') return;
-        
-        // Проверяем наличие счёта
-        if (!account) return;
-        
-        const amount = parseFloat(row.сумма) || 0;
-        if (amount === 0) return;
-        
-        const date = parseOddsDate(row);
-        const currency = detectCurrency(account);
-        
-        // Только RUB операции
-        if (currency !== 'RUB') return;
-        
-        // Определяем тип: income или expense
-        let type = '';
-        if (article === 'Поступление на расчетный счет') {
-            type = 'income';
-        } else if (article === 'Списание с расчетного счета') {
-            type = 'expense';
-        } else if (amount > 0) {
-            type = 'income';
-        } else if (amount < 0) {
-            type = 'expense';
-        }
-        
-        if (!type || !date) return;
-        
-        operations.push({
-            date: date, 
-            amount: Math.abs(amount), 
-            type: type,
-            article: article, 
-            category: channel || subCategory || article,
-            year: row.год, 
-            month: row.месяц, 
-            account: account,
-            currency: currency, 
-            isTechnical: false
-        });
-    });
-    
-    // Статистика для проверки
-    let totalIncome = 0, totalExpense = 0;
-    operations.forEach(op => {
-        if (op.type === 'income') totalIncome += op.amount;
-        else totalExpense += op.amount;
-    });
-    
-    console.log(`=== ОДДС: операции без депозита ===`);
-    console.log(`Всего операций: ${operations.length}`);
-    console.log(`Доходы: ${formatCurrency(totalIncome)}`);
-    console.log(`Расходы: ${formatCurrency(totalExpense)}`);
-    console.log(`Чистый поток: ${formatCurrency(totalIncome - totalExpense)}`);
-    
-    return operations;
-}
 
-// ========== ПОЛНОСТЬЮ ОБНОВЛЕННАЯ СТРАНИЦА ОДДС ==========
+// Основной рендер страницы ОДДС
+let currentBalance = 0;
 
-// Глобальные переменные
-let oddsPlanData = null;
-let oddsCalendarDate = new Date();
-let oddsTaxReminders = [];
-
-// Данные по налоговым платежам (можно загружать из Excel)
-const taxPayments = [
-    { name: 'НДС (за квартал)', day: 25, months: [3, 6, 9, 12], amount: null, type: 'quarter' },
-    { name: 'Налог на прибыль', day: 28, months: [3, 6, 9, 12], amount: null, type: 'quarter' },
-    { name: 'Страховые взносы', day: 15, months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], amount: null, type: 'month' },
-    { name: 'НДФЛ', day: 15, months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], amount: null, type: 'month' },
-    { name: 'УСН (аванс)', day: 25, months: [4, 7, 10], amount: null, type: 'quarter' }
-];
-
-// Функция загрузки плана из Excel
-async function loadOddsPlan(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-                
-                const planData = {};
-                jsonData.forEach(row => {
-                    const article = row['Статья'] || row['статья'];
-                    if (article) {
-                        planData[article] = {};
-                        Object.keys(row).forEach(key => {
-                            if (key !== 'Статья' && key !== 'статья') {
-                                const month = key.toLowerCase();
-                                const value = parseFloat(row[key]) || 0;
-                                planData[article][month] = value;
-                            }
-                        });
-                    }
-                });
-                resolve(planData);
-            } catch (error) {
-                reject(error);
-            }
-        };
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(file);
-    });
-}
-
-// Функция экспорта в PDF
-function exportOddsToPDF() {
-    const element = document.getElementById('oddsMainContent');
-    if (!element) return;
-    
-    showNotification('📄 Подготовка отчета...', 'info');
-    
-    // Используем html2pdf если доступен, иначе показываем инструкцию
-    if (typeof html2pdf !== 'undefined') {
-        const opt = {
-            margin: [0.5, 0.5, 0.5, 0.5],
-            filename: `ODDS_отчет_${new Date().toISOString().slice(0, 10)}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-        };
-        html2pdf().set(opt).from(element).save();
-    } else {
-        showNotification('Для экспорта в PDF добавьте библиотеку html2pdf', 'error');
-        window.open('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js');
-    }
-}
-
-// Функция экспорта в Excel
-function exportOddsToExcel() {
-    const data = collectOddsExportData();
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'ОДДС');
-    XLSX.writeFile(wb, `ODDS_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    showNotification('✅ Отчет экспортирован в Excel', 'success');
-}
-
-// Сбор данных для экспорта
-function collectOddsExportData() {
-    const exportData = [];
-    const flows = splitCashFlows(oddsOperations);
-    
-    exportData.push({ Статья: '=== ОПЕРАЦИОННЫЙ ПОТОК ===', Сумма: '' });
-    flows.operating.income.items.forEach(item => {
-        exportData.push({ Статья: `[Доход] ${item.article}`, Сумма: item.amount });
-    });
-    flows.operating.expense.items.forEach(item => {
-        exportData.push({ Статья: `[Расход] ${item.article}`, Сумма: -item.amount });
-    });
-    exportData.push({ Статья: 'ИТОГО ОПЕРАЦИОННЫЙ', Сумма: flows.operating.net });
-    
-    return exportData;
-}
-
-// Расчет кредитной нагрузки
-function calculateCreditLoad(operations) {
-    const creditPayments = operations.filter(op => 
-        op.type === 'expense' && 
-        (op.article.includes('Возврат займов') || 
-         op.article.includes('Проценты по займам') ||
-         op.category.includes('кредит'))
-    );
-    
-    const totalPayments = creditPayments.reduce((sum, op) => sum + op.amount, 0);
-    const monthlyAvg = creditPayments.length > 0 ? totalPayments / creditPayments.length : 0;
-    
-    return { totalPayments, monthlyAvg, paymentsCount: creditPayments.length };
-}
-
-// Сравнение с прошлым периодом
-function compareWithPreviousPeriod(currentOps, previousOps) {
-    const currentIncome = currentOps.filter(op => op.type === 'income').reduce((s, o) => s + o.amount, 0);
-    const currentExpense = currentOps.filter(op => op.type === 'expense').reduce((s, o) => s + o.amount, 0);
-    const currentNet = currentIncome - currentExpense;
-    
-    const prevIncome = previousOps.filter(op => op.type === 'income').reduce((s, o) => s + o.amount, 0);
-    const prevExpense = previousOps.filter(op => op.type === 'expense').reduce((s, o) => s + o.amount, 0);
-    const prevNet = prevIncome - prevExpense;
-    
-    const incomeChange = prevIncome > 0 ? ((currentIncome - prevIncome) / prevIncome) * 100 : 0;
-    const expenseChange = prevExpense > 0 ? ((currentExpense - prevExpense) / prevExpense) * 100 : 0;
-    const netChange = prevNet !== 0 ? ((currentNet - prevNet) / Math.abs(prevNet)) * 100 : 0;
-    
-    return {
-        incomeChange, expenseChange, netChange,
-        currentNet, prevNet,
-        isBetter: netChange > 0
-    };
-}
-
-// Получение налоговых платежей
-function getUpcomingTaxPayments(currentDate) {
-    const now = currentDate || new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-    const nextPayments = [];
-    
-    taxPayments.forEach(tax => {
-        for (const month of tax.months) {
-            if (month >= currentMonth || (month < currentMonth && tax.type === 'quarter')) {
-                let paymentDate = new Date(currentYear, month - 1, tax.day);
-                if (paymentDate < now) {
-                    paymentDate = new Date(currentYear + 1, month - 1, tax.day);
-                }
-                
-                const daysUntil = Math.ceil((paymentDate - now) / (1000 * 60 * 60 * 24));
-                
-                if (daysUntil <= 30 && daysUntil >= 0) {
-                    nextPayments.push({
-                        name: tax.name,
-                        date: paymentDate,
-                        daysUntil: daysUntil,
-                        type: tax.type,
-                        isUrgent: daysUntil <= 7,
-                        amount: tax.amount || estimateTaxAmount(tax.name)
-                    });
-                }
-            }
-        }
-    });
-    
-    return nextPayments.sort((a, b) => a.daysUntil - b.daysUntil);
-}
-
-// Оценка суммы налога (можно заменить на реальные данные)
-function estimateTaxAmount(taxName) {
-    const avgExpense = 500000; // TODO: рассчитать из данных
-    if (taxName.includes('НДС')) return avgExpense * 0.2;
-    if (taxName.includes('прибыль')) return avgExpense * 0.2;
-    if (taxName.includes('Страховые')) return avgExpense * 0.3;
-    if (taxName.includes('НДФЛ')) return avgExpense * 0.13;
-    return avgExpense * 0.06;
-}
-
-// Календарь событий
-function renderOddsCalendar(operations, currentDate) {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startWeekday = firstDay.getDay() || 7;
-    
-    // Собираем события из операций
-    const events = new Map();
-    operations.forEach(op => {
-        if (op.date) {
-            const dateKey = `${op.date.getFullYear()}-${op.date.getMonth() + 1}-${op.date.getDate()}`;
-            if (!events.has(dateKey)) events.set(dateKey, { payments: 0, reminders: 0 });
-            const ev = events.get(dateKey);
-            if (op.type === 'expense') ev.payments++;
-            else ev.reminders++;
-        }
-    });
-    
-    // Добавляем налоговые события
-    const taxEvents = getUpcomingTaxPayments(currentDate);
-    taxEvents.forEach(tax => {
-        const dateKey = `${tax.date.getFullYear()}-${tax.date.getMonth() + 1}-${tax.date.getDate()}`;
-        if (!events.has(dateKey)) events.set(dateKey, { payments: 0, reminders: 0 });
-        events.get(dateKey).payments++;
-    });
-    
-    let calendarHtml = `
-        <div class="odds-calendar">
-            <div class="calendar-header">
-                <button class="calendar-nav" id="calendarPrevBtn">◀</button>
-                <span style="font-weight: 600;">${firstDay.toLocaleString('ru', { month: 'long', year: 'numeric' })}</span>
-                <button class="calendar-nav" id="calendarNextBtn">▶</button>
-            </div>
-            <div class="calendar-weekdays">
-                <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
-            </div>
-            <div class="calendar-days">
-    `;
-    
-    // Пустые ячейки для первого дня
-    for (let i = 1; i < startWeekday; i++) {
-        calendarHtml += `<div class="calendar-day"></div>`;
-    }
-    
-    // Дни месяца
-    const today = new Date();
-    for (let day = 1; day <= lastDay.getDate(); day++) {
-        const date = new Date(year, month, day);
-        const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-        const event = events.get(dateKey);
-        const isToday = date.toDateString() === today.toDateString();
-        let classes = 'calendar-day';
-        if (isToday) classes += ' today';
-        if (event) {
-            if (event.payments > 0) classes += ' has-payment';
-            if (event.reminders > 0) classes += ' has-event';
-        }
-        
-        calendarHtml += `
-            <div class="${classes}" data-date="${date.toISOString()}">
-                <span>${day}</span>
-                ${event && event.payments > 0 ? `<div class="event-dot payment"></div>` : ''}
-                ${event && event.reminders > 0 ? `<div class="event-dot reminder"></div>` : ''}
-            </div>
-        `;
-    }
-    
-    calendarHtml += `</div></div>`;
-    return calendarHtml;
-}
-
-// ГЛАВНАЯ ФУНКЦИЯ РЕНДЕРИНГА ОДДС
 function renderOddsPage() {
-    // Собираем данные
-    oddsOperations = collectOddsOperations();
+    // ===== ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ ДАННЫЕ ПЕРЕД РЕНДЕРОМ =====
+    // Игнорируем currentFilters - используем originalData напрямую
+    oddsOperations = collectOddsOperations();  // Теперь всегда из originalData
     
-    // Фильтруем по датам
+    // Сбрасываем кэш
+    if (window.balanceTrendChart) {
+        try { window.balanceTrendChart.destroy(); } catch(e) {}
+        window.balanceTrendChart = null;
+    }
+    
+    const container = document.getElementById('oddsMainContent');
+    if (!container) return;
+    
+    // ИСПРАВЛЕНО: проверяем originalData, а не currentData!
+    if (!originalData || originalData.length === 0) {
+        container.innerHTML = '<div class="loading" style="text-align: center; padding: 60px;">📊 Загрузите данные для отображения ОДДС</div>';
+        return;
+    }
+    
+    // ВСЕГДА ОБНОВЛЯЕМ ОПЕРАЦИИ ПЕРЕД РЕНДЕРОМ!
+    oddsOperations = collectOddsOperations();
+
+    // === ВСТАВЬТЕ ДИАГНОСТИКУ ПРЯМО ЗДЕСЬ, ПОСЛЕ ЭТОЙ СТРОКИ ===
+    console.log(`=== ВСЕ ОПЕРАЦИИ ЗА 1 ЯНВАРЯ ===`);
+    oddsOperations.filter(op => {
+        return op.date && op.date.getMonth() === 0 && op.date.getDate() === 1 && op.date.getFullYear() === 2026;
+    }).forEach(op => {
+        console.log(`${op.date}: ${op.article}, ${op.amount} ${op.type}, ${op.currency}`);
+    });
+    console.log(`================================`);
+    
+    // Фильтрация по датам для отображения
     let filteredOps = oddsOperations;
     if (oddsDateRange.startDate && oddsDateRange.endDate) {
         filteredOps = oddsOperations.filter(op => op.date >= oddsDateRange.startDate && op.date <= oddsDateRange.endDate);
     }
     
-    // Данные за прошлый период (для сравнения)
-    let previousOps = [];
-    if (oddsDateRange.startDate && oddsDateRange.endDate) {
-        const periodDays = (oddsDateRange.endDate - oddsDateRange.startDate) / (1000 * 60 * 60 * 24);
-        const prevStart = new Date(oddsDateRange.startDate);
-        prevStart.setDate(prevStart.getDate() - periodDays);
-        const prevEnd = new Date(oddsDateRange.startDate);
-        prevEnd.setDate(prevEnd.getDate() - 1);
-        
-        previousOps = oddsOperations.filter(op => op.date >= prevStart && op.date <= prevEnd);
-    }
+    // Фильтр по валюте
+    // СТАЛО: полностью исключаем технические операции из расчётов
+const currencyFiltered = filteredOps.filter(op => op.currency === currentCurrency && !op.isTechnical);
+const incomes = currencyFiltered.filter(op => op.type === 'income');
+const expenses = currencyFiltered.filter(op => op.type === 'expense');
+
+    // ИСКЛЮЧАЕМ технические операции из ТОП-списков
+    const topIncomes = incomes.slice(0, 5);
+    const topExpenses = expenses.slice(0, 5);
     
-    // Разделяем на потоки
-    const flows = splitCashFlows(filteredOps);
-    const previousFlows = previousOps.length > 0 ? splitCashFlows(previousOps) : null;
+    const totalIncome = incomes.reduce((s, o) => s + o.amount, 0);
+    const totalExpense = expenses.reduce((s, o) => s + o.amount, 0);
+    const netFlow = totalIncome - totalExpense;
     
-    // Сравнение с прошлым периодом
-    const comparison = previousFlows ? compareWithPreviousPeriod(filteredOps, previousOps) : null;
-    
-    // ========== РАСЧЁТ ОСТАТКОВ С УЧЁТОМ ДЕПОЗИТА ==========
-    
-    function getTotalBalanceOnDate(targetDate, includeDeposit = true) {
-        if (!targetDate) return 0;
-        
-        let totalBalance = 0;
-        const processedAccounts = new Set();
-        
-        // 1. Начальные остатки
-        originalData.forEach(row => {
-            if (row.статья !== 'Начальный остаток') return;
-            
-            const account = row.Счет || row.счет || row['Счет'] || '';
-            const amount = parseFloat(row.сумма) || 0;
-            const channel = row.канал || row.Канал || '';
-            const subCategory = row.подканал || '';
-            const rowYear = row.год;
-            const rowMonth = row.месяц;
-            
-            if (!includeDeposit) {
-                if (channel === 'Депозит' || channel === 'депозит') return;
-                if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+    // ========== ПРАВИЛЬНЫЙ РАСЧЁТ НАЧАЛЬНОГО ОСТАТКА ==========
+    // ИСПРАВЛЕНО: используем originalData для начальных остатков!
+    let initialBalance = 0;
+    originalData.forEach(row => {
+        if (row.статья === 'Начальный остаток') {
+            const account = row.Счет || row['Счет'] || '';
+            if (detectCurrency(account) === currentCurrency) {
+                initialBalance += parseFloat(row.сумма) || 0;
             }
-            
-            if (detectCurrency(account) !== 'RUB') return;
-            
-            let shouldInclude = true;
-            if (rowYear && rowMonth) {
-                const yearNum = parseInt(rowYear);
-                const monthIndex = monthsOrder.indexOf(rowMonth);
-                const rowDate = new Date(yearNum, monthIndex, 1);
-                if (rowDate > targetDate) shouldInclude = false;
-            }
-            
-            if (shouldInclude && !processedAccounts.has(account)) {
-                processedAccounts.add(account);
-                totalBalance += amount;
-            }
-        });
-        
-        // 2. Операции ДО targetDate
-        originalData.forEach(row => {
-            const account = row.Счет || row.счет || row['Счет'] || '';
-            if (!account) return;
-            if (row.статья === 'Начальный остаток') return;
-            
-            const amount = parseFloat(row.сумма) || 0;
-            if (amount === 0) return;
-            
-            const date = parseOddsDate(row);
-            if (!date || date >= targetDate) return;
-            
-            const channel = row.канал || row.Канал || '';
-            const subCategory = row.подканал || '';
-            
-            if (!includeDeposit) {
-                if (channel === 'Депозит' || channel === 'депозит') return;
-                if (subCategory === 'Депозит' || subCategory === 'депозит') return;
-            }
-            
-            if (detectCurrency(account) !== 'RUB') return;
-            
-            let isIncome = false;
-            let isExpense = false;
-            
-            if (row.статья === 'Поступление на расчетный счет' || amount > 0) {
-                isIncome = true;
-            } else if (row.статья === 'Списание с расчетного счета' || amount < 0) {
-                isExpense = true;
-            }
-            
-            const absAmount = Math.abs(amount);
-            if (isIncome) totalBalance += absAmount;
-            if (isExpense) totalBalance -= absAmount;
-        });
-        
-        return totalBalance;
-    }
-    
-    // Получаем остатки
-    const startDateForBalance = oddsDateRange.startDate;
-    const endDateForBalance = oddsDateRange.endDate;
-    
-    // Остаток на ВСЕХ счетах (включая депозит)
-    const totalBalanceStart = getTotalBalanceOnDate(startDateForBalance, true);
-    const totalBalanceEnd = getTotalBalanceOnDate(endDateForBalance, true);
-    
-    // Остаток ТОЛЬКО на депозите
-    const depositBalanceStart = getTotalBalanceOnDate(startDateForBalance, false);
-    const depositBalanceEnd = getTotalBalanceOnDate(endDateForBalance, false);
-    
-    // СВОБОДНЫЙ остаток (все счета минус депозит)
-    const freeBalanceStart = totalBalanceStart - depositBalanceStart;
-    const freeBalanceEnd = totalBalanceEnd - depositBalanceEnd;
-    
-    console.log(`=== СВОБОДНЫЙ ОСТАТОК ===`);
-    console.log(`На начало: ${formatCurrency(freeBalanceStart)}`);
-    console.log(`На конец: ${formatCurrency(freeBalanceEnd)}`);
-    console.log(`Депозит на начало: ${formatCurrency(depositBalanceStart)}`);
-    console.log(`Депозит на конец: ${formatCurrency(depositBalanceEnd)}`);
-    
-    // Присваиваем значения (переменные будут объявлены позже или используем var)
-    var startBalance = freeBalanceStart;
-    var endBalance = freeBalanceEnd;
-    var netCashFlow = freeBalanceEnd - freeBalanceStart;
-    
-    // Точка безубыточности
-    const breakEven = calculateBreakEven(filteredOps);
-    
-    // Дюрация
-    const duration = calculateDuration(filteredOps);
-    
-    // Кредитная нагрузка
-    const creditLoad = calculateCreditLoad(filteredOps);
-    
-    // Налоговые напоминания
-    const upcomingTaxes = getUpcomingTaxPayments(new Date());
-    
-    // Отклонения от плана
-    const deviations = calculateDeviations(
-        flows.operating.income.total,
-        flows.operating.expense.total,
-        flows.financial.expense.total,
-        oddsPlanData
-    );
-    
-    // Данные для графика остатков
-    const balanceHistory = calculateDailyBalance(oddsOperations, startBalance, oddsDateRange);
-    
-    // Структура расходов
-    const expenseStructure = {};
-    flows.operating.expense.items.forEach(item => {
-        let category = 'Прочие';
-        if (item.article.includes('Себестоимость') || item.category.includes('Себестоимость')) category = 'Себестоимость';
-        else if (item.article.includes('Логистика') || item.category.includes('Логистика')) category = 'Логистика';
-        else if (item.article.includes('ФОТ') || item.article.includes('Заработная')) category = 'ФОТ';
-        else if (item.article.includes('Маркетинг') || item.category.includes('Продвижение')) category = 'Маркетинг';
-        else if (item.article.includes('Аренда')) category = 'Аренда';
-        else if (item.article.includes('Налог')) category = 'Налоги';
-        
-        expenseStructure[category] = (expenseStructure[category] || 0) + item.amount;
+        }
     });
     
-    // HTML (продолжение вашего существующего кода)
+    // 2. Собираем ВСЕ операции ДО начала выбранного периода (для расчёта накопленного остатка)
+    const startDate = oddsDateRange.startDate;
+    let cumulativeBalance = initialBalance;
+    let opsBeforeStartCount = 0;
+
+    // ОБНУЛЯЕМ НАКОПЛЕНИЕ ПРИ КАЖДОМ ВЫЗОВЕ
+cumulativeBalance = initialBalance;
+    
+        if (startDate) {
+    // Исключаем технические операции из расчёта начального остатка
+    const opsBeforeStart = oddsOperations.filter(op => {
+    if (op.currency !== currentCurrency) return false;
+    if (op.isTechnical) return false;  // ← ИСПРАВЛЕНО
+    return op.date < startDate;
+});
+        
+        // Логируем операции до startDate для диагностики
+        console.log(`=== ДИАГНОСТИКА НАЧАЛЬНОГО ОСТАТКА ===`);
+        console.log(`startDate: ${startDate}`);
+        console.log(`Операций ДО ${startDate}: ${opsBeforeStart.length}`);
+        opsBeforeStart.slice(0, 20).forEach(op => {
+            console.log(`  ${op.date.toISOString().split('T')[0]}: ${op.article}, ${op.amount} ${op.type}, ${op.currency}`);
+        });
+        
+        opsBeforeStartCount = opsBeforeStart.length;
+        
+        // Накопить остаток на начало периода
+        opsBeforeStart.forEach(op => {
+            if (op.type === 'income') cumulativeBalance += op.amount;
+            else if (op.type === 'expense') cumulativeBalance -= op.amount;
+        });
+        
+        console.log(`Накопленный остаток после учёта операций ДО периода: ${cumulativeBalance}`);
+        console.log(`====================================`);
+    }
+    
+    // Это и есть правильный остаток на НАЧАЛО выбранного периода
+    let startBalance = cumulativeBalance;
+    
+    console.log(`Период: с ${startDate} по ${oddsDateRange.endDate}`);
+    console.log(`Начальный остаток по справочнику: ${initialBalance}`);
+    console.log(`Операций до начала периода: ${opsBeforeStartCount}`);
+    console.log(`Остаток на начало периода: ${startBalance}`);
+    
+    // ========== РАСЧЁТ НАКОПИТЕЛЬНОГО ОСТАТКА ПО ДНЯМ ==========
+    const sortedOps = [...currencyFiltered].sort((a, b) => a.date - b.date);
+    
+    const dailyMap = new Map();
+    sortedOps.forEach(op => {
+        const key = op.date.toISOString().split('T')[0];
+        if (!dailyMap.has(key)) {
+            dailyMap.set(key, { date: op.date, income: 0, expense: 0, balance: 0 });
+        }
+        const day = dailyMap.get(key);
+        if (op.type === 'income') day.income += op.amount;
+        else day.expense += op.amount;
+    });
+    
+    // Вычисляем накопительные остатки
+    const dailyData = Array.from(dailyMap.values()).sort((a, b) => a.date - b.date);
+    let runningBalance = startBalance;
+    dailyData.forEach(day => {
+        runningBalance += day.income - day.expense;
+        day.balance = runningBalance;
+    });
+    
+    // Текущий остаток на конец периода
+    currentBalance = dailyData.length > 0 ? dailyData[dailyData.length - 1].balance : startBalance;
+    
+    console.log(`Конечный остаток: ${currentBalance}, чистый поток за период: ${netFlow}`);
+    
+    // Данные для графика
+    const balanceChartData = dailyData.map(d => ({ date: d.date, balance: d.balance / 1000 }));
+    
+    // Постоянные/переменные расходы
+    const { fixedTotal, variableTotal } = splitExpensesByType(filteredOps, currentCurrency);
+    const revenue = incomes.reduce((s, o) => s + o.amount, 0);
+    const { contributionMargin, contributionMarginRatio, breakEvenRevenue, safetyMargin, safetyMarginAbsolute } = calculateBreakEvenPoint(fixedTotal, variableTotal, revenue);
+    
+    // CCC
+    const cccData = calculateCCC(filteredOps, currentCurrency);
+    
+    // Рекомендации
+    const recommendations = getLiquidityRecommendations(currentBalance, cccData.ccc, safetyMargin, breakEvenRevenue, revenue);
+    
+    // Разбивка по счетам
+    const accountsMap = new Map();
+const currencyFilteredAll = oddsOperations.filter(op => op.currency === currentCurrency);
+currencyFilteredAll.forEach(op => {
+    if (!accountsMap.has(op.account)) {
+        accountsMap.set(op.account, { income: 0, expense: 0, operations: [] });
+    }
+    const acc = accountsMap.get(op.account);
+    if (op.type === 'income') acc.income += op.amount;
+    else acc.expense += op.amount;
+    acc.operations.push(op);
+});
+    
+    // Форматирование
+    const formatDateRange = (date) => date ? `${date.getDate()}.${date.getMonth()+1}.${date.getFullYear()}` : '';
+    
     const html = `
-        <div class="odds-dashboard">
-            <!-- Верхняя панель с кнопками -->
-            <div class="metrics-grid" style="margin-bottom: 20px;">
-                <div class="metric-card" style="padding: 12px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <span style="font-size: 20px;">📋</span>
-                            <span style="font-weight: 600;">Плановые значения</span>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button id="loadPlanBtn" class="btn btn-secondary" style="padding: 6px 16px;">📥 Загрузить план</button>
-                            <button id="clearPlanBtn" class="btn btn-danger" style="padding: 6px 16px; background: #a0aec0;" ${!oddsPlanData ? 'disabled' : ''}>🗑️ Очистить план</button>
-                            <button id="exportPdfBtn" class="export-btn" style="padding: 6px 16px;">📄 PDF</button>
-                            <button id="exportExcelBtn" class="export-btn" style="padding: 6px 16px; background: linear-gradient(135deg, #48bb78, #38a169);">📊 Excel</button>
-                        </div>
-                        <input type="file" id="planFileInput" accept=".xlsx,.xls" style="display: none;">
-                    </div>
-                    ${oddsPlanData ? '<div style="margin-top: 8px; font-size: 12px; color: #48bb78;">✅ План загружен</div>' : '<div style="margin-top: 8px; font-size: 12px; color: #a0aec0;">⚡ Файл plan.xlsx не загружен</div>'}
-                </div>
-            </div>
-            
-            <!-- Ключевые метрики -->
-            <div class="metrics-grid">
-                <div class="metric-card odds-card">
-                    <div class="metric-title">💰 Остаток на начало</div>
-                    <div class="metric-value">${formatCurrency(startBalance)}</div>
-                    <div class="metric-sub">${oddsDateRange.startDate ? formatDate(oddsDateRange.startDate) : 'Начало периода'}</div>
-                </div>
-                <div class="metric-card odds-card">
-                    <div class="metric-title">📊 Чистый денежный поток</div>
-                    <div class="metric-value ${netCashFlow >= 0 ? 'positive' : 'negative'}">
-                        ${netCashFlow >= 0 ? '+' : ''}${formatCurrency(netCashFlow)}
-                    </div>
-                    <div class="metric-sub">Операционный: ${flows.operating.net >= 0 ? '+' : ''}${formatCurrency(flows.operating.net)}</div>
-                </div>
-                <div class="metric-card odds-card">
-                    <div class="metric-title">🏦 Остаток на конец</div>
-                    <div class="metric-value ${endBalance >= 0 ? 'positive' : 'negative'}" style="${getLiquidityColor(endBalance)}">
-                        ${formatCurrency(endBalance)}
-                    </div>
-                    <div class="metric-sub">${oddsDateRange.endDate ? formatDate(oddsDateRange.endDate) : 'Конец периода'}</div>
-                </div>
-                <div class="metric-card odds-card">
-                    <div class="metric-title">🏦 Депозит (заморожено)</div>
-                    <div class="metric-value" style="color: #4299e1;">${formatCurrency(depositBalanceEnd)}</div>
-                    <div class="metric-sub">средства в банке</div>
-                </div>
-            </div>
-                <div class="metric-card odds-card">
-                    <div class="metric-title">📈 Выполнение плана</div>
-                    <div class="metric-value ${deviations.planCompletion >= 80 ? 'positive' : 'negative'}">
-                        ${deviations.planCompletion.toFixed(1)}%
-                    </div>
-                    <div class="metric-sub">Отклонение: ${deviations.totalDeviation >= 0 ? '+' : ''}${formatCurrency(deviations.totalDeviation)}</div>
-                </div>
-            </div>
-            
-            <!-- Сравнение с прошлым периодом -->
-            ${comparison ? `
-            <div class="metrics-grid" style="margin-top: 20px;">
-                <div class="metric-card" style="grid-column: span 4;">
-                    <div class="metric-title">📊 Сравнение с прошлым периодом</div>
-                    <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-around;">
-                        <div style="text-align: center;">
-                            <div class="metric-sub">Доходы</div>
-                            <div class="metric-value ${comparison.incomeChange >= 0 ? 'positive' : 'negative'}">
-                                ${comparison.incomeChange >= 0 ? '+' : ''}${comparison.incomeChange.toFixed(1)}%
-                            </div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div class="metric-sub">Расходы</div>
-                            <div class="metric-value ${comparison.expenseChange <= 0 ? 'positive' : 'negative'}">
-                                ${comparison.expenseChange >= 0 ? '+' : ''}${comparison.expenseChange.toFixed(1)}%
-                            </div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div class="metric-sub">Чистый поток</div>
-                            <div class="metric-value ${comparison.netChange >= 0 ? 'positive' : 'negative'}">
-                                ${comparison.netChange >= 0 ? '+' : ''}${comparison.netChange.toFixed(1)}%
-                            </div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div class="metric-sub">Оценка</div>
-                            <div class="metric-value" style="color: ${comparison.isBetter ? '#48bb78' : '#f56565'}">
-                                ${comparison.isBetter ? '📈 Улучшение' : '📉 Ухудшение'}
-                            </div>
-                        </div>
+        <!-- Фильтр валюты -->
+        <div class="metrics-grid" style="margin-bottom: 20px;">
+            <div class="metric-card" style="padding: 16px;">
+                <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    <span style="font-weight: 600;">💱 Валюта анализа:</span>
+                    <select id="oddsCurrencySelect" style="padding: 8px 16px; border-radius: 8px; background: rgba(102,126,234,0.1); border: none;">
+                        ${ALL_CURRENCIES.map(c => `<option value="${c}" ${c === currentCurrency ? 'selected' : ''}>${c}</option>`).join('')}
+                    </select>
+                    <div style="margin-left: auto; font-size: 12px; opacity: 0.7;">
+                        📅 ${oddsDateRange.startDate ? formatDateRange(oddsDateRange.startDate) : '—'} — ${oddsDateRange.endDate ? formatDateRange(oddsDateRange.endDate) : '—'}
                     </div>
                 </div>
             </div>
-            ` : ''}
-            
-            <!-- Три раздела ОДДС (сворачиваемые) -->
-            <div class="odds-sections">
-                <!-- Раздел I -->
-                <div class="odds-section-card">
-                    <div class="odds-section-header" data-section="operating">
-                        <span class="odds-section-icon">🏭</span>
-                        <span class="odds-section-title">I. Операционный денежный поток</span>
-                        <span class="odds-section-net ${flows.operating.net >= 0 ? 'positive' : 'negative'}">
-                            ${flows.operating.net >= 0 ? '+' : ''}${formatCurrency(flows.operating.net)}
-                        </span>
-                        <span class="expand-icon">▼</span>
-                    </div>
-                    <div class="odds-section-content" id="section-operating">
-                        <div class="odds-subsection">
-                            <div class="odds-subsection-header">📥 Поступления</div>
-                            ${renderOddsTable(flows.operating, 'income', flows.operating.income.total, deviations.incomeDeviation)}
-                        </div>
-                        <div class="odds-subsection">
-                            <div class="odds-subsection-header">📤 Платежи</div>
-                            ${renderOddsTable(flows.operating, 'expense', flows.operating.expense.total, deviations.expenseDeviation)}
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Раздел II -->
-                <div class="odds-section-card">
-                    <div class="odds-section-header" data-section="investing">
-                        <span class="odds-section-icon">🏗️</span>
-                        <span class="odds-section-title">II. Инвестиционный денежный поток</span>
-                        <span class="odds-section-net ${flows.investing.net >= 0 ? 'positive' : 'negative'}">
-                            ${flows.investing.net >= 0 ? '+' : ''}${formatCurrency(flows.investing.net)}
-                        </span>
-                        <span class="expand-icon">▼</span>
-                    </div>
-                    <div class="odds-section-content" id="section-investing">
-                        ${flows.investing.income.items.length === 0 && flows.investing.expense.items.length === 0 ?
-                            '<div class="odds-empty">Нет операций по инвестиционной деятельности</div>' : `
-                            ${flows.investing.income.items.length > 0 ? `
-                                <div class="odds-subsection">
-                                    <div class="odds-subsection-header">📥 Поступления</div>
-                                    ${renderOddsTable(flows.investing, 'income', flows.investing.income.total)}
-                                </div>
-                            ` : ''}
-                            ${flows.investing.expense.items.length > 0 ? `
-                                <div class="odds-subsection">
-                                    <div class="odds-subsection-header">📤 Платежи</div>
-                                    ${renderOddsTable(flows.investing, 'expense', flows.investing.expense.total)}
-                                </div>
-                            ` : ''}
-                        `}
-                    </div>
-                </div>
-                
-                <!-- Раздел III -->
-                <div class="odds-section-card">
-                    <div class="odds-section-header" data-section="financial">
-                        <span class="odds-section-icon">💰</span>
-                        <span class="odds-section-title">III. Финансовый денежный поток</span>
-                        <span class="odds-section-net ${flows.financial.net >= 0 ? 'positive' : 'negative'}">
-                            ${flows.financial.net >= 0 ? '+' : ''}${formatCurrency(flows.financial.net)}
-                        </span>
-                        <span class="expand-icon">▼</span>
-                    </div>
-                    <div class="odds-section-content" id="section-financial">
-                        ${flows.financial.income.items.length === 0 && flows.financial.expense.items.length === 0 ?
-                            '<div class="odds-empty">Нет операций по финансовой деятельности</div>' : `
-                            ${flows.financial.income.items.length > 0 ? `
-                                <div class="odds-subsection">
-                                    <div class="odds-subsection-header">📥 Поступления</div>
-                                    ${renderOddsTable(flows.financial, 'income', flows.financial.income.total)}
-                                </div>
-                            ` : ''}
-                            ${flows.financial.expense.items.length > 0 ? `
-                                <div class="odds-subsection">
-                                    <div class="odds-subsection-header">📤 Платежи</div>
-                                    ${renderOddsTable(flows.financial, 'expense', flows.financial.expense.total)}
-                                </div>
-                            ` : ''}
-                        `}
-                    </div>
-                </div>
+        </div>
+        
+        <!-- Основные показатели -->
+        <div class="metrics-grid" style="margin-bottom: 24px;">
+            <div class="metric-card">
+                <div class="metric-title">💰 Остаток на ${oddsDateRange.endDate ? formatDateRange(oddsDateRange.endDate) : 'конец периода'}</div>
+                <div class="metric-value ${currentBalance >= 0 ? 'positive' : 'negative'}">${formatCurrencyWithCurrency(currentBalance, currentCurrency)}</div>
+                <div class="metric-sub">на начало: ${formatCurrencyWithCurrency(startBalance, currentCurrency)}</div>
             </div>
-            
-            <!-- Аналитические блоки -->
-            <div class="metrics-grid" style="margin-top: 24px;">
+            <div class="metric-card">
+                <div class="metric-title">📥 Поступления</div>
+                <div class="metric-value positive">+${formatCurrencyWithCurrency(totalIncome, currentCurrency)}</div>
+                <div class="metric-sub">${incomes.length} операций</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">📤 Списания</div>
+                <div class="metric-value negative">-${formatCurrencyWithCurrency(totalExpense, currentCurrency)}</div>
+                <div class="metric-sub">${expenses.length} операций</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">📊 Чистый поток</div>
+                <div class="metric-value ${netFlow >= 0 ? 'positive' : 'negative'}">${netFlow >= 0 ? '+' : ''}${formatCurrencyWithCurrency(netFlow, currentCurrency)}</div>
+            </div>
+        </div>
+        
+        <!-- Вкладки -->
+        <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid rgba(102,126,234,0.2);">
+            ${['Основной анализ', 'Прогноз и планы', 'Кредитный калькулятор', 'Детали по счетам'].map((tab, idx) => `
+                <button class="odds-tab-btn" data-tab="${idx}" style="padding: 8px 20px; background: none; border: none; cursor: pointer; font-size: 13px; ${idx === activeOddsTab ? 'border-bottom: 2px solid #667eea; color: #667eea;' : 'color: #a0aec0;'}">${tab}</button>
+            `).join('')}
+        </div>
+        
+        <!-- Вкладка 1: Основной анализ -->
+        <div id="oddsTab0" class="odds-tab-content" style="${activeOddsTab === 0 ? '' : 'display: none;'}">
+            <div class="metrics-grid" style="margin-bottom: 24px;">
                 <div class="metric-card" style="grid-column: span 2;">
-                    <div class="metric-title">📈 Динамика остатков</div>
-                    <canvas id="oddsBalanceChart" style="height: 250px; width: 100%;"></canvas>
+                    <div class="metric-title">📈 Динамика остатка (накоплено)</div>
+                    <canvas id="balanceTrendChart" style="height: 250px; width: 100%;"></canvas>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-title">🥧 Структура расходов</div>
-                    <canvas id="oddsExpenseChart" style="height: 200px; width: 100%;"></canvas>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-title">🚦 Ликвидность</div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 48px; margin-bottom: 12px;">${getLiquidityIcon(endBalance)}</div>
-                        <div style="font-size: 28px; font-weight: 700; ${getLiquidityColor(endBalance)}">${formatCurrency(endBalance)}</div>
-                        <div style="margin: 16px 0; background: #e2e8f0; border-radius: 10px; height: 8px; overflow: hidden;">
-                            <div style="width: ${getLiquidityPercent(endBalance)}%; height: 100%; background: ${getLiquidityColorHex(endBalance)}; border-radius: 10px;"></div>
-                        </div>
-                        <div style="font-size: 13px; color: var(--text-secondary);">
-                            Рек. резерв: ${formatCurrency(calculateReserve())}
-                        </div>
+                    <div class="metric-title">💰 Резервный фонд (рекомендуемый)</div>
+                    <div class="metric-value" style="color: #4299e1;">${formatCurrencyWithCurrency(fixedTotal * 3, currentCurrency)}</div>
+                    <div class="metric-sub">3 месяца постоянных расходов</div>
+                    <div style="margin-top: 12px; background: rgba(102,126,234,0.15); border-radius: 8px; padding: 8px;">
+                        <div>Текущий остаток: ${formatCurrencyWithCurrency(currentBalance, currentCurrency)}</div>
+                        <div class="${currentBalance >= fixedTotal * 3 ? 'positive' : 'negative'}">${currentBalance >= fixedTotal * 3 ? '✅ Защищён' : '⚠️ Недостаточно резерва'}</div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Точка безубыточности, Дюрация, Кредитная нагрузка -->
-            <div class="metrics-grid" style="margin-top: 24px;">
                 <div class="metric-card">
                     <div class="metric-title">⚖️ Точка безубыточности</div>
-                    <div style="padding: 8px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                            <span>Выручка факт:</span>
-                            <span class="positive">${formatCurrency(breakEven.totalRevenue)}</span>
+                    <div class="metric-value">${formatCurrencyWithCurrency(breakEvenRevenue, currentCurrency)}</div>
+                    <div class="metric-sub">при выручке ${formatCurrencyWithCurrency(revenue, currentCurrency)}</div>
+                    <div class="metric-sub">Запас прочности: ${safetyMargin.toFixed(1)}%</div>
+                </div>
+            </div>
+            
+            <div class="metrics-grid" style="margin-bottom: 24px;">
+                <div class="metric-card">
+                    <div class="metric-title">📊 Cash Conversion Cycle (денежный цикл)</div>
+                    <canvas id="cccChart" style="height: 200px; width: 100%;"></canvas>
+                    <div class="metric-sub" style="margin-top: 8px;">${cccData.ccc} дней — ${cccData.ccc > 60 ? '⚠️ Длинный цикл' : cccData.ccc > 30 ? 'Средний цикл' : '✅ Короткий цикл'}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">📅 Сезонность движения денег</div>
+                    <canvas id="seasonalityChart" style="height: 200px; width: 100%;"></canvas>
+                </div>
+            </div>
+            
+            <div class="metrics-grid" style="margin-bottom: 24px;">
+                <div class="metric-card">
+                    <div class="metric-title">🏆 ТОП-5 поступлений</div>
+                    ${topIncomes.length > 0 ? topIncomes.map((op, i) => `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 6px; background: rgba(72,187,120,0.1); border-radius: 6px;">
+                            <span>${i+1}. ${op.article.substring(0, 35)}</span>
+                            <span style="color: #48bb78;">+${formatCurrencyWithCurrency(op.amount, currentCurrency)}</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                            <span>Точка безубыточности:</span>
-                            <span>${formatCurrency(breakEven.breakEvenRevenue)}</span>
+                    `).join('') : '<div style="padding: 20px; text-align: center; color: #a0aec0;">Нет данных (технические операции исключены)</div>'}
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">⚠️ ТОП-5 списаний</div>
+                    ${topExpenses.length > 0 ? topExpenses.map((op, i) => `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 6px; background: rgba(245,101,101,0.1); border-radius: 6px;">
+                            <span>${i+1}. ${op.article.substring(0, 35)}</span>
+                            <span style="color: #f56565;">-${formatCurrencyWithCurrency(op.amount, currentCurrency)}</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                            <span>Запас прочности:</span>
-                            <span class="${breakEven.safetyMargin >= 30 ? 'positive' : breakEven.safetyMargin >= 10 ? '' : 'negative'}">
-                                ${breakEven.safetyMargin.toFixed(1)}%
-                            </span>
-                        </div>
-                        <div style="background: #e2e8f0; border-radius: 10px; height: 8px; margin: 12px 0; overflow: hidden;">
-                            <div style="width: ${Math.min(breakEven.safetyMargin, 100)}%; height: 100%; background: ${breakEven.safetyMargin >= 30 ? '#48bb78' : breakEven.safetyMargin >= 10 ? '#f59e0b' : '#f56565'}; border-radius: 10px;"></div>
-                        </div>
+                    `).join('') : '<div style="padding: 20px; text-align: center; color: #a0aec0;">Нет данных (технические операции исключены)</div>'}
+                </div>
+            </div>
+            
+            <div class="odds-section-card">
+                <div class="metric-title" style="margin-bottom: 12px;">💡 Рекомендации по ликвидности</div>
+                ${recommendations.map(rec => `<div style="margin-bottom: 8px; padding: 8px; background: rgba(102,126,234,0.1); border-radius: 8px;">${rec.text}</div>`).join('')}
+            </div>
+        </div>
+        
+        <!-- Вкладка 2: Прогноз и планы -->
+        <div id="oddsTab1" class="odds-tab-content" style="${activeOddsTab === 1 ? '' : 'display: none;'}">
+            <div class="metric-card" style="margin-bottom: 20px;">
+                <div class="metric-title">📋 Плановые значения на следующие ${forecastPeriods} месяцев</div>
+                <div id="plannedExpensesContainer"></div>
+            </div>
+            <div class="odds-section-card">
+                <div class="metric-title" style="margin-bottom: 12px;">📊 Анализ постоянных и переменных расходов</div>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px;">
+                    <div style="flex: 1; padding: 16px; background: rgba(66,153,225,0.1); border-radius: 12px;">
+                        <div style="font-size: 12px; color: #4299e1;">🏢 Постоянные расходы</div>
+                        <div style="font-size: 24px; font-weight: 700;">${formatCurrencyWithCurrency(fixedTotal, currentCurrency)}</div>
+                        <div class="metric-sub">аренда, ФОТ, бухгалтерия, связь</div>
+                    </div>
+                    <div style="flex: 1; padding: 16px; background: rgba(237,137,54,0.1); border-radius: 12px;">
+                        <div style="font-size: 12px; color: #ed8936;">📦 Переменные расходы</div>
+                        <div style="font-size: 24px; font-weight: 700;">${formatCurrencyWithCurrency(variableTotal, currentCurrency)}</div>
+                        <div class="metric-sub">закупки, логистика, комиссии, маркетинг</div>
                     </div>
                 </div>
-                
-                <div class="metric-card">
-                    <div class="metric-title">⏱️ Дюрация (денежный цикл)</div>
-                    <div style="padding: 8px; text-align: center;">
-                        <div style="font-size: 48px; font-weight: 700; color: ${duration.color};">${duration.duration}</div>
-                        <div style="font-size: 14px; margin: 8px 0;">дней</div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 16px 0;">
-                            <div style="text-align: center; padding: 8px; background: rgba(102,126,234,0.1); border-radius: 8px;">
-                                <div style="font-size: 11px;">Запасы</div>
-                                <div style="font-size: 18px; font-weight: 600;">${duration.inventoryDays}</div>
-                            </div>
-                            <div style="text-align: center; padding: 8px; background: rgba(102,126,234,0.1); border-radius: 8px;">
-                                <div style="font-size: 11px;">Дебиторка</div>
-                                <div style="font-size: 18px; font-weight: 600;">${duration.receivablesDays}</div>
-                            </div>
-                            <div style="text-align: center; padding: 8px; background: rgba(102,126,234,0.1); border-radius: 8px;">
-                                <div style="font-size: 11px;">Кредиторка</div>
-                                <div style="font-size: 18px; font-weight: 600;">${duration.payablesDays}</div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 8px; font-size: 12px; padding: 8px; background: rgba(102,126,234,0.1); border-radius: 8px;">
-                            ${duration.recommendation}
-                        </div>
-                    </div>
+                <div style="margin-top: 16px; padding: 12px; background: rgba(102,126,234,0.1); border-radius: 8px;">
+                    <div>📊 Маржинальный доход: ${formatCurrencyWithCurrency(contributionMargin, currentCurrency)} (${contributionMarginRatio.toFixed(1)}% от выручки)</div>
+                    <div>⚖️ Точка безубыточности: ${formatCurrencyWithCurrency(breakEvenRevenue, currentCurrency)}</div>
+                    <div>🛡️ Запас финансовой прочности: ${safetyMargin.toFixed(1)}% (${formatCurrencyWithCurrency(safetyMarginAbsolute, currentCurrency)})</div>
                 </div>
-                
-                <div class="metric-card">
-                    <div class="metric-title">💳 Кредитная нагрузка</div>
-                    <div style="padding: 8px; text-align: center;">
-                        <div style="font-size: 28px; font-weight: 700; ${creditLoad.monthlyAvg > endBalance * 0.3 ? 'color: #f56565' : 'color: #48bb78'}">
-                            ${formatCurrency(creditLoad.monthlyAvg)}
-                        </div>
-                        <div style="font-size: 12px;">среднемесячный платеж</div>
-                        <div style="margin-top: 12px; display: flex; justify-content: space-between;">
-                            <span>Всего платежей:</span>
-                            <strong>${creditLoad.paymentsCount}</strong>
-                        </div>
+            </div>
+        </div>
+        
+        <!-- Вкладка 3: Кредитный калькулятор -->
+        <div id="oddsTab2" class="odds-tab-content" style="${activeOddsTab === 2 ? '' : 'display: none;'}">
+            <div id="creditCalculator"></div>
+        </div>
+        
+        <!-- Вкладка 4: Детали по счетам -->
+        <div id="oddsTab3" class="odds-tab-content" style="${activeOddsTab === 3 ? '' : 'display: none;'}">
+            <div class="metrics-grid" style="margin-bottom: 20px;">
+                ${Array.from(accountsMap.entries()).map(([account, data]) => `
+                    <div class="metric-card" style="cursor: pointer;" onclick="this.querySelector('.account-details').classList.toggle('show')">
+                        <div class="metric-title">🏦 ${account.substring(0, 40)}</div>
                         <div style="display: flex; justify-content: space-between;">
-                            <span>Общая сумма:</span>
-                            <strong>${formatCurrency(creditLoad.totalPayments)}</strong>
+                            <span style="color: #48bb78;">+${formatCurrencyWithCurrency(data.income, currentCurrency)}</span>
+                            <span style="color: #f56565;">-${formatCurrencyWithCurrency(data.expense, currentCurrency)}</span>
+                            <span>${formatCurrencyWithCurrency(data.income - data.expense, currentCurrency)}</span>
                         </div>
-                        <div style="margin-top: 12px; background: rgba(102,126,234,0.1); border-radius: 8px; padding: 8px;">
-                            ${creditLoad.monthlyAvg > endBalance * 0.3 ? 
-                                '⚠️ Высокая нагрузка! Рассмотрите рефинансирование.' : 
-                                '✅ Нагрузка в пределах нормы'}
+                        <div class="account-details" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; margin-top: 12px;">
+                            ${data.operations.slice(0, 10).map(op => {
+                                const isTechnicalFlag = op.isTechnical ? ' (техническая)' : '';
+return `
+    <div style="font-size: 11px; padding: 4px 0; border-bottom: 1px solid rgba(102,126,234,0.1); display: flex; justify-content: space-between;">
+        <span>${op.date.getDate()}.${op.date.getMonth()+1}: ${op.article.substring(0, 25)}${isTechnicalFlag}</span>
+        <span style="${op.type === 'income' ? 'color: #48bb78;' : 'color: #f56565;'}">${op.type === 'income' ? '+' : '-'}${formatCurrencyWithCurrency(op.amount, currentCurrency)}</span>
+    </div>
+`;
+                            }).join('')}
+                            ${data.operations.length > 10 ? '<div style="font-size: 10px; opacity: 0.6; padding: 4px;">и ещё ' + (data.operations.length - 10) + ' операций...</div>' : ''}
                         </div>
                     </div>
-                </div>
+                `).join('')}
             </div>
-            
-            <!-- Налоговый чек-лист и Календарь -->
-            <div class="metrics-grid" style="margin-top: 24px;">
-                <div class="metric-card">
-                    <div class="metric-title">⚠️ Налоговый чек-лист</div>
-                    <div class="tax-checklist">
-                        ${upcomingTaxes.length === 0 ? 
-                            '<div style="text-align: center; padding: 20px;">✅ Нет ближайших налоговых платежей</div>' :
-                            upcomingTaxes.map(tax => `
-                                <div class="tax-item ${tax.isUrgent ? 'tax-warning' : ''}">
-                                    <div class="tax-status">${tax.isUrgent ? '🔴' : '🟡'}</div>
-                                    <div class="tax-name">${tax.name}</div>
-                                    <div class="tax-date">до ${tax.date.toLocaleDateString('ru')}</div>
-                                    <div class="tax-amount">${formatCurrency(tax.amount)}</div>
-                                </div>
-                            `).join('')
-                        }
-                    </div>
-                </div>
-                
-                <div class="metric-card">
-                    <div class="metric-title">📅 Календарь событий</div>
-                    <div id="oddsCalendarContainer">
-                        ${renderOddsCalendar(oddsOperations, oddsCalendarDate)}
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Прогноз -->
-            <div class="odds-section-card" style="margin-top: 24px;">
-                <div class="odds-section-header">
-                    <span class="odds-section-icon">🔮</span>
-                    <span class="odds-section-title">Прогноз на ${oddsForecastMonths} месяца</span>
-                    <select id="forecastMonthsSelect" style="margin-left: auto; padding: 4px 8px; border-radius: 6px;">
-                        <option value="3">3 месяца</option>
-                        <option value="6">6 месяцев</option>
-                    </select>
-                </div>
-                <canvas id="oddsForecastChart" style="height: 250px; width: 100%; margin-top: 16px;"></canvas>
-                <div id="oddsRecommendations" style="margin-top: 16px; padding: 12px; background: rgba(102,126,234,0.1); border-radius: 12px;">
-                    <div style="font-weight: 600; margin-bottom: 8px;">💡 Рекомендации</div>
-                    <div id="recommendationsList"></div>
-                </div>
+            <div class="odds-section-card" style="margin-top: 16px; background: rgba(245,158,11,0.1);">
+                <div style="font-size: 12px; color: #f59e0b;">ℹ️ В этой вкладке видны ВСЕ операции, включая технические переводы между счетами. В ТОП-списках выше они исключены для корректного анализа.</div>
             </div>
         </div>
     `;
     
-    // ========== БЛОК ДЕПОЗИТА (отдельно от ОДДС) ==========
-
-// Рассчитываем депозит на выбранную дату
-function getDepositBalance(targetDate) {
-    let depositBalance = 0;
-    
-    originalData.forEach(row => {
-        if (row.статья === 'Начальный остаток') {
-            const channel = row.канал || '';
-            const subCategory = row.подканал || '';
-            if (channel === 'Депозит' || channel === 'депозит' ||
-                subCategory === 'Депозит' || subCategory === 'депозит') {
-                depositBalance += parseFloat(row.сумма) || 0;
-            }
-        }
-    });
-    
-    // Операции по депозиту ДО targetDate
-    originalData.forEach(row => {
-        const article = row.статья || '';
-        if (article === 'Начальный остаток') return;
-        
-        const channel = row.канал || '';
-        const subCategory = row.подканал || '';
-        
-        if (channel === 'Депозит' || channel === 'депозит' ||
-            subCategory === 'Депозит' || subCategory === 'депозит' ||
-            subCategory === 'Возврат депозита') {
-            
-            const amount = parseFloat(row.сумма) || 0;
-            if (amount === 0) return;
-            
-            const date = parseOddsDate(row);
-            if (!date || date >= targetDate) return;
-            
-            // Пополнение депозита (списание со счета) - увеличивает депозит
-            if (article === 'Списание с расчетного счета' && amount > 0) {
-                depositBalance += amount;
-            }
-            // Возврат с депозита (поступление на счет) - уменьшает депозит
-            else if (article === 'Поступление на расчетный счет' && amount > 0) {
-                depositBalance -= amount;
-            }
-            else if (amount > 0) {
-                depositBalance += amount;
-            } else if (amount < 0) {
-                depositBalance -= Math.abs(amount);
-            }
-        }
-    });
-    
-    return depositBalance;
-}
-
-const depositStartBalance = getDepositBalance(oddsDateRange.startDate);
-const depositEndBalance = getDepositBalance(oddsDateRange.endDate);
-const depositNetChange = depositEndBalance - depositStartBalance;
-
-// Добавляем блок депозита в HTML (после ключевых метрик)
-const depositBlockHtml = `
-<div class="metrics-grid" style="margin-top: 20px;">
-    <div class="metric-card" style="background: linear-gradient(135deg, rgba(66,153,225,0.1) 0%, rgba(102,126,234,0.1) 100%);">
-        <div class="metric-title" style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 20px;">🏦</span>
-            <span>ДЕПОЗИТ</span>
-            <span style="font-size: 11px; color: #4299e1; margin-left: auto;">средства, размещённые в банке</span>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 12px;">
-            <div style="text-align: center;">
-                <div style="font-size: 11px; opacity: 0.7;">Остаток на начало</div>
-                <div class="metric-value" style="font-size: 24px; color: #4299e1;">${formatCurrency(depositStartBalance)}</div>
-                <div class="metric-sub">${oddsDateRange.startDate ? formatDate(oddsDateRange.startDate) : 'Начало периода'}</div>
-            </div>
-            <div style="text-align: center;">
-                <div style="font-size: 11px; opacity: 0.7;">Изменение за период</div>
-                <div class="metric-value" style="font-size: 24px; ${depositNetChange >= 0 ? 'color: #48bb78' : 'color: #f56565'}">
-                    ${depositNetChange >= 0 ? '+' : ''}${formatCurrency(depositNetChange)}
-                </div>
-                <div class="metric-sub">чистое движение</div>
-            </div>
-            <div style="text-align: center;">
-                <div style="font-size: 11px; opacity: 0.7;">Остаток на конец</div>
-                <div class="metric-value" style="font-size: 24px; color: #4299e1;">${formatCurrency(depositEndBalance)}</div>
-                <div class="metric-sub">${oddsDateRange.endDate ? formatDate(oddsDateRange.endDate) : 'Конец периода'}</div>
-            </div>
-        </div>
-        <div style="margin-top: 12px; padding: 8px; background: rgba(66,153,225,0.1); border-radius: 8px; font-size: 11px; text-align: center;">
-            💡 Депозит не участвует в расчёте свободного денежного потока. Это замороженные средства.
-        </div>
-    </div>
-</div>
-`;
-
-// Вставляем блок депозита после 4 карточек с остатками
-// Найдем место в HTML где заканчиваются ключевые метрики
-html = html.replace('<!-- Ключевые метрики -->', '<!-- Ключевые метрики -->' + depositBlockHtml);
-
-
-    document.getElementById('oddsMainContent').innerHTML = html;
+    container.innerHTML = html;
     
     // Отрисовка графиков
     setTimeout(() => {
-        renderBalanceChart(balanceHistory);
-        renderExpensePieChart(expenseStructure);
-        renderForecastChart(balanceHistory);
-        renderRecommendations(breakEven, duration, endBalance, creditLoad, upcomingTaxes);
+        renderBalanceTrendChart(balanceChartData);
+        renderCCCChart(cccData);
+        renderSeasonalityChart(filteredOps, currentCurrency);
+        renderCreditCalculator();
+        renderPlannedExpenses();
         
-        // Настройка сворачивания секций
-document.querySelectorAll('.odds-section-header').forEach(header => {
-    header.onclick = () => {
-        const content = header.nextElementSibling;
-        const expandIcon = header.querySelector('.expand-icon');
+        // Переключатель валюты
+        document.getElementById('oddsCurrencySelect')?.addEventListener('change', (e) => {
+            currentCurrency = e.target.value;
+            renderOddsPage();
+        });
         
-        // Проверяем, существует ли content
-        if (!content) return;
-        
-        if (content.style.maxHeight && content.style.maxHeight !== '0px') {
-            content.style.maxHeight = '0';
-            content.style.padding = '0 20px';
-            if (expandIcon) expandIcon.innerHTML = '▶';
-        } else {
-            content.style.maxHeight = content.scrollHeight + 'px';
-            content.style.padding = '20px';
-            if (expandIcon) expandIcon.innerHTML = '▼';
-        }
-    };
-    // Открыть по умолчанию
-    const content = header.nextElementSibling;
-    if (content) {
-        content.style.maxHeight = content.scrollHeight + 'px';
-    }
-});
-        
-        // Загрузка плана
-        const loadPlanBtn = document.getElementById('loadPlanBtn');
-        const planFileInput = document.getElementById('planFileInput');
-        const clearPlanBtn = document.getElementById('clearPlanBtn');
-        
-        if (loadPlanBtn) {
-            loadPlanBtn.onclick = () => planFileInput.click();
-        }
-        
-        if (planFileInput) {
-            planFileInput.onchange = async (e) => {
-                if (e.target.files[0]) {
-                    try {
-                        oddsPlanData = await loadOddsPlan(e.target.files[0]);
-                        showNotification('✅ План загружен', 'success');
-                        renderOddsPage();
-                    } catch (error) {
-                        showNotification('❌ Ошибка загрузки плана', 'error');
-                    }
-                }
+        // Переключатель вкладок
+        document.querySelectorAll('.odds-tab-btn').forEach((btn, idx) => {
+            btn.onclick = () => {
+                activeOddsTab = idx;
+                document.querySelectorAll('.odds-tab-content').forEach((c, i) => {
+                    c.style.display = i === idx ? '' : 'none';
+                });
+                document.querySelectorAll('.odds-tab-btn').forEach((b, i) => {
+                    b.style.borderBottom = i === idx ? '2px solid #667eea' : 'none';
+                    b.style.color = i === idx ? '#667eea' : '#a0aec0';
+                });
             };
-        }
-        
-        if (clearPlanBtn) {
-            clearPlanBtn.onclick = () => {
-                oddsPlanData = null;
-                showNotification('План очищен', 'info');
-                renderOddsPage();
-            };
-        }
-        
-        // Экспорт
-        const exportPdfBtn = document.getElementById('exportPdfBtn');
-        const exportExcelBtn = document.getElementById('exportExcelBtn');
-        
-        if (exportPdfBtn) exportPdfBtn.onclick = exportOddsToPDF;
-        if (exportExcelBtn) exportExcelBtn.onclick = exportOddsToExcel;
-        
-        // Календарь
-        const calendarPrevBtn = document.getElementById('calendarPrevBtn');
-        const calendarNextBtn = document.getElementById('calendarNextBtn');
-        
-        if (calendarPrevBtn) {
-            calendarPrevBtn.onclick = () => {
-                oddsCalendarDate.setMonth(oddsCalendarDate.getMonth() - 1);
-                renderOddsPage();
-            };
-        }
-        if (calendarNextBtn) {
-            calendarNextBtn.onclick = () => {
-                oddsCalendarDate.setMonth(oddsCalendarDate.getMonth() + 1);
-                renderOddsPage();
-            };
-        }
-        
-        // Прогноз
-        const forecastSelect = document.getElementById('forecastMonthsSelect');
-        if (forecastSelect) {
-            forecastSelect.onchange = (e) => {
-                window.oddsForecastMonths = parseInt(e.target.value);
-                renderOddsPage();
-            };
-        }
+        });
     }, 100);
-}
-
-// Функция рендера рекомендаций (обновленная)
-function renderRecommendations(breakEven, duration, balance, creditLoad, upcomingTaxes) {
-    const container = document.getElementById('recommendationsList');
-    if (!container) return;
-    
-    const recommendations = [];
-    
-    // По ликвидности
-    if (balance < 500000) {
-        recommendations.push('🔴 Критический остаток на счетах! Срочно примите меры: сократите расходы или привлеките финансирование.');
-    } else if (balance < 1000000) {
-        recommendations.push('🟡 Остаток ниже рекомендуемого. Создайте резервный фонд минимум 500 000 ₽.');
-    } else {
-        recommendations.push('🟢 Достаточный остаток. Можно инвестировать в развитие.');
-    }
-    
-    // По точке безубыточности
-    if (breakEven.safetyMargin < 10) {
-        recommendations.push('🔴 Критический запас финансовой прочности! Срочно увеличивайте выручку или сокращайте затраты.');
-    } else if (breakEven.safetyMargin < 30) {
-        recommendations.push('🟡 Запас прочности ниже нормы. Работайте над увеличением маржинальности.');
-    } else {
-        recommendations.push('✅ Хороший запас прочности. Поддерживайте текущий уровень.');
-    }
-    
-    // По дюрации
-    if (duration.duration > 60) {
-        recommendations.push('⚠️ Длинный денежный цикл. Ускоряйте оборачиваемость: сократите отсрочки клиентам.');
-    } else if (duration.duration > 30) {
-        recommendations.push('📊 Средний денежный цикл. Оптимизируйте работу с дебиторской задолженностью.');
-    }
-    
-    // По кредитной нагрузке
-    if (creditLoad.monthlyAvg > balance * 0.3) {
-        recommendations.push('💳 Высокая кредитная нагрузка. Рассмотрите рефинансирование или досрочное погашение.');
-    }
-    
-    // По налогам
-    const urgentTaxes = upcomingTaxes.filter(t => t.isUrgent);
-    if (urgentTaxes.length > 0) {
-        recommendations.push(`⚠️ Срочные налоговые платежи: ${urgentTaxes.map(t => t.name).join(', ')}. Не забудьте оплатить!`);
-    }
-    
-    container.innerHTML = recommendations.map(r => `<div style="margin-bottom: 8px;">${r}</div>`).join('');
 }
 
 function renderBalanceTrendChart(data) {
@@ -11953,521 +10702,10 @@ function clearOddsCache() {
     document.getElementById('closeAdminBtn')?.addEventListener('click', () => document.getElementById('adminPanel').classList.remove('active'));
     document.getElementById('logoutBtn')?.addEventListener('click', logout);
     
-    //initAuth();
+    initAuth();
 //document.getElementById('mainApp').style.display = 'block';
 //document.getElementById('authContainer').style.display = 'none';
 //initApp();
-
-// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ОДДС ==========
-
-// Разделение потоков на операционный, инвестиционный, финансовый
-// Разделение потоков на операционный, инвестиционный, финансовый
-function splitCashFlows(operations) {
-    // ТОЛЬКО RUB операции!
-    const rubOperations = operations.filter(op => op.currency === 'RUB');
-    
-    const flows = {
-        operating: { income: { items: [], total: 0, byChannel: {} }, expense: { items: [], total: 0, byChannel: {} }, net: 0 },
-        investing: { income: { items: [], total: 0, byChannel: {} }, expense: { items: [], total: 0, byChannel: {} }, net: 0 },
-        financial: { income: { items: [], total: 0, byChannel: {} }, expense: { items: [], total: 0, byChannel: {} }, net: 0 }
-    };
-    
-    rubOperations.forEach(op => {
-        // Определяем тип потока
-        let flowName = 'operating'; // по умолчанию
-        
-        // Если в операции есть flowType из ОДДС - используем его
-        if (op.flowType) {
-            flowName = op.flowType;
-        } else {
-            // Иначе определяем по ключевым словам
-            const article = op.article;
-            const category = op.category || '';
-            const fullText = (article + ' ' + category).toLowerCase();
-            
-            const financialKeywords = ['Получение займа', 'Возврат займов', 'Проценты по займам', 'Дивиденды', 'Депозит', 'Займ'];
-            if (financialKeywords.some(k => article.includes(k) || category.includes(k))) {
-                flowName = 'financial';
-            }
-        }
-        
-        const isIncome = op.type === 'income';
-        
-        // Определяем канал
-        let channelName = 'Прочее';
-        const fullText = (op.article + ' ' + (op.category || '')).toLowerCase();
-        
-        if (fullText.includes('wildberries') || fullText.includes('wb') || op.article === 'Wildberries') {
-            channelName = 'Wildberries';
-        } else if (fullText.includes('ozon') || op.article === 'Ozon') {
-            channelName = 'Ozon';
-        } else if (fullText.includes('детский мир') || op.article === 'Детский мир') {
-            channelName = 'Детский мир';
-        } else if (fullText.includes('lamoda') || op.article === 'Lamoda') {
-            channelName = 'Lamoda';
-        } else if (fullText.includes('оптовик') || op.article === 'Оптовики') {
-            channelName = 'Оптовики';
-        } else if (fullText.includes('фулфилмент') || op.article === 'Фулфилмент') {
-            channelName = 'Фулфилмент';
-        } else if (isIncome) {
-            channelName = 'Прочие доходы';
-        } else {
-            channelName = 'Прочие расходы';
-        }
-        
-        if (isIncome) {
-            flows[flowName].income.items.push(op);
-            flows[flowName].income.total += op.amount;
-            if (!flows[flowName].income.byChannel[channelName]) flows[flowName].income.byChannel[channelName] = 0;
-            flows[flowName].income.byChannel[channelName] += op.amount;
-        } else {
-            flows[flowName].expense.items.push(op);
-            flows[flowName].expense.total += op.amount;
-            if (!flows[flowName].expense.byChannel[channelName]) flows[flowName].expense.byChannel[channelName] = 0;
-            flows[flowName].expense.byChannel[channelName] += op.amount;
-        }
-    });
-    
-    flows.operating.net = flows.operating.income.total - flows.operating.expense.total;
-    flows.investing.net = flows.investing.income.total - flows.investing.expense.total;
-    flows.financial.net = flows.financial.income.total - flows.financial.expense.total;
-    
-    return flows;
-}
-
-// Расчет точки безубыточности
-function calculateBreakEven(operations) {
-    const fixedCostKeywords = ['Аренда', 'ФОТ', 'Заработная плата', 'Бухгалтерское', 'IT', 'Услуги связи', 'Страхование'];
-    const variableCostKeywords = ['Себестоимость', 'Закупка товара', 'Логистика', 'Продвижение', 'Маркетинговые услуги', 'Комиссия банка'];
-    
-    let fixedCosts = 0;
-    let variableCosts = 0;
-    let totalRevenue = 0;
-    
-    operations.forEach(op => {
-        if (op.type === 'expense') {
-            const text = (op.article + ' ' + op.category).toLowerCase();
-            let isFixed = fixedCostKeywords.some(k => text.includes(k.toLowerCase()));
-            let isVariable = variableCostKeywords.some(k => text.includes(k.toLowerCase()));
-            
-            if (isFixed && !isVariable) {
-                fixedCosts += op.amount;
-            } else if (isVariable) {
-                variableCosts += op.amount;
-            }
-        } else if (op.type === 'income') {
-            totalRevenue += op.amount;
-        }
-    });
-    
-    const contributionMargin = totalRevenue - variableCosts;
-    const contributionMarginRatio = totalRevenue > 0 ? (contributionMargin / totalRevenue) * 100 : 0;
-    const breakEvenRevenue = contributionMarginRatio > 0 ? (fixedCosts / contributionMarginRatio) * 100 : 0;
-    const safetyMargin = totalRevenue > 0 ? ((totalRevenue - breakEvenRevenue) / totalRevenue) * 100 : 0;
-    
-    return { fixedCosts, variableCosts, totalRevenue, breakEvenRevenue, safetyMargin, contributionMarginRatio };
-}
-
-// Расчет дюрации (денежного цикла)
-function calculateDuration(operations) {
-    let inventoryDays = 45;
-    let receivablesDays = 15;
-    let payablesDays = 30;
-    
-    const purchaseOps = operations.filter(op => 
-        op.type === 'expense' && 
-        (op.article.includes('Закупка') || op.category.includes('закупк'))
-    );
-    if (purchaseOps.length > 0) {
-        inventoryDays = 30 + Math.floor(Math.random() * 30);
-    }
-    
-    const salesOps = operations.filter(op => op.type === 'income');
-    if (salesOps.length > 24) {
-        receivablesDays = 10;
-    } else if (salesOps.length > 12) {
-        receivablesDays = 20;
-    }
-    
-    const duration = inventoryDays + receivablesDays - payablesDays;
-    let risk = 'low';
-    let color = '#48bb78';
-    let recommendation = '';
-    
-    if (duration > 60) {
-        risk = 'high';
-        color = '#f56565';
-        recommendation = '⚠️ Длинный денежный цикл! Ускоряйте оборачиваемость: сократите отсрочки клиентам, договаривайтесь с поставщиками.';
-    } else if (duration > 30) {
-        risk = 'medium';
-        color = '#f59e0b';
-        recommendation = '📊 Средний денежный цикл. Работайте над его сокращением.';
-    } else {
-        risk = 'low';
-        color = '#48bb78';
-        recommendation = '✅ Короткий денежный цикл. Отлично!';
-    }
-    
-    return { duration, inventoryDays, receivablesDays, payablesDays, risk, color, recommendation };
-}
-
-
-// Функции для светофора ликвидности
-function getLiquidityIcon(balance) {
-    if (balance >= 1000000) return '🟢';
-    if (balance >= 500000) return '🟡';
-    return '🔴';
-}
-
-function getLiquidityColor(balance) {
-    if (balance >= 1000000) return 'color: #48bb78';
-    if (balance >= 500000) return 'color: #f59e0b';
-    return 'color: #f56565';
-}
-
-function getLiquidityColorHex(balance) {
-    if (balance >= 1000000) return '#48bb78';
-    if (balance >= 500000) return '#f59e0b';
-    return '#f56565';
-}
-
-function getLiquidityPercent(balance) {
-    const reserve = calculateReserve();
-    if (reserve === 0) return 0;
-    return Math.min((balance / reserve) * 100, 100);
-}
-
-function calculateReserve() {
-    return 1500000;
-}
-
-// Рендер таблицы для разделов ОДДС
-function renderOddsTable(flow, type, total, deviation = null) {
-    // Получаем данные в зависимости от типа
-    const byChannel = type === 'income' ? (flow.income?.byChannel || {}) : (flow.expense?.byChannel || {});
-    const items = type === 'income' ? (flow.income?.items || []) : (flow.expense?.items || []);
-    
-    // Если нет данных по каналам, пробуем сгруппировать items
-    if (Object.keys(byChannel).length === 0 && items.length > 0) {
-        // Группируем items по каналам
-        const grouped = {};
-        items.forEach(item => {
-            let channelName = item.category || item.article || 'Прочее';
-            // Определяем канал
-            const text = (item.article + ' ' + (item.category || '')).toLowerCase();
-            if (text.includes('wildberries') || text.includes('wb')) channelName = 'Wildberries';
-            else if (text.includes('ozon')) channelName = 'Ozon';
-            else if (text.includes('детский мир')) channelName = 'Детский мир';
-            else if (text.includes('lamoda')) channelName = 'Lamoda';
-            else if (text.includes('оптовик')) channelName = 'Оптовики';
-            else if (text.includes('фулфилмент')) channelName = 'Фулфилмент';
-            
-            grouped[channelName] = (grouped[channelName] || 0) + item.amount;
-        });
-        
-        if (Object.keys(grouped).length > 0) {
-            const isExpense = type === 'expense';
-            const sortedChannels = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
-            
-            return `
-                <div class="odds-table-container">
-                    <table class="odds-table">
-                        <thead>
-                            <tr>
-                                <th>Канал</th>
-                                <th>Сумма</th>
-                                <th>Доля</th>
-                                ${deviation !== null ? '<th>Отклонение</th>' : ''}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${sortedChannels.map(([channel, amount]) => {
-                                const percent = total > 0 ? (amount / total) * 100 : 0;
-                                return `
-                                    <tr>
-                                        <td style="font-weight: 500;">${channel}</td>
-                                        <td class="${isExpense ? 'negative' : 'positive'}">
-                                            ${isExpense ? '-' : ''}${formatCurrency(amount)}
-                                        </td>
-                                        <td>${percent.toFixed(1)}%</td>
-                                        ${deviation !== null ? '<td class="deviation-cell">—</td>' : ''}
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                        <tfoot>
-                            <tr class="odds-total-row">
-                                <td><strong>ИТОГО</strong></td>
-                                <td class="${isExpense ? 'negative' : 'positive'}">
-                                    <strong>${isExpense ? '-' : '+'}${formatCurrency(total)}</strong>
-                                </td>
-                                <td><strong>100%</strong></td>
-                                ${deviation !== null ? `
-                                    <td class="deviation-cell ${deviation >= 0 ? 'positive' : 'negative'}">
-                                        ${deviation >= 0 ? '+' : ''}${formatCurrency(deviation)}
-                                    </td>
-                                ` : ''}
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            `;
-        }
-    }
-    
-    // Если есть данные по каналам
-    if (byChannel && Object.keys(byChannel).length > 0) {
-        const isExpense = type === 'expense';
-        const sortedChannels = Object.entries(byChannel).sort((a, b) => b[1] - a[1]);
-        
-        return `
-            <div class="odds-table-container">
-                <table class="odds-table">
-                    <thead>
-                        <tr>
-                            <th>Канал</th>
-                            <th>Сумма</th>
-                            <th>Доля</th>
-                            ${deviation !== null ? '<th>Отклонение</th>' : ''}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${sortedChannels.map(([channel, amount]) => {
-                            const percent = total > 0 ? (amount / total) * 100 : 0;
-                            return `
-                                <tr>
-                                    <td style="font-weight: 500;">${channel}</td>
-                                    <td class="${isExpense ? 'negative' : 'positive'}">
-                                        ${isExpense ? '-' : ''}${formatCurrency(amount)}
-                                    </td>
-                                    <td>${percent.toFixed(1)}%</td>
-                                    ${deviation !== null ? '<td class="deviation-cell">—</td>' : ''}
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                    <tfoot>
-                        <tr class="odds-total-row">
-                            <td><strong>ИТОГО</strong></td>
-                            <td class="${isExpense ? 'negative' : 'positive'}">
-                                <strong>${isExpense ? '-' : '+'}${formatCurrency(total)}</strong>
-                            </td>
-                            <td><strong>100%</strong></td>
-                            ${deviation !== null ? `
-                                <td class="deviation-cell ${deviation >= 0 ? 'positive' : 'negative'}">
-                                    ${deviation >= 0 ? '+' : ''}${formatCurrency(deviation)}
-                                </td>
-                            ` : ''}
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        `;
-    }
-    
-    return '<div class="odds-empty">Нет операций</div>';
-}
-
-// Расчет отклонений от плана
-function calculateDeviations(actualIncome, actualExpense, actualFinExpense, planData) {
-    let plannedIncome = 0;
-    let plannedExpense = 0;
-    let plannedFinExpense = 0;
-    
-    if (planData && Object.keys(planData).length > 0) {
-        const currentMonth = monthsOrder[new Date().getMonth()];
-        plannedIncome = planData['Выручка с НДС']?.[currentMonth] || 0;
-        plannedExpense = (planData['Расходы на закупки']?.[currentMonth] || 0) + 
-                         (planData['ФОТ']?.[currentMonth] || 0) +
-                         (planData['Маркетинг']?.[currentMonth] || 0) +
-                         (planData['Логистика']?.[currentMonth] || 0) +
-                         (planData['Аренда']?.[currentMonth] || 0);
-        plannedFinExpense = planData['Проценты по займам']?.[currentMonth] || 0;
-    }
-    
-    const incomeDeviation = actualIncome - plannedIncome;
-    const expenseDeviation = actualExpense - plannedExpense;
-    const totalDeviation = (actualIncome - plannedIncome) - (actualExpense - plannedExpense);
-    const planCompletion = plannedIncome > 0 ? (actualIncome / plannedIncome) * 100 : 100;
-    
-    return { incomeDeviation, expenseDeviation, totalDeviation, planCompletion };
-}
-
-// Рендер графика остатков
-function renderBalanceChart(balanceHistory) {
-    const canvas = document.getElementById('oddsBalanceChart');
-    if (!canvas || !balanceHistory || balanceHistory.length === 0) return;
-    
-    if (window.balanceChart) {
-        try { window.balanceChart.destroy(); } catch(e) {}
-    }
-    
-    const ctx = canvas.getContext('2d');
-    const isDarkMode = document.body.classList.contains('dark');
-    
-    window.balanceChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: balanceHistory.map(b => formatDate(b.date)),
-            datasets: [{
-                label: 'Остаток',
-                data: balanceHistory.map(b => b.balance),
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102,126,234,0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 3,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => `💰 ${formatCurrency(ctx.raw)}`
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    ticks: { callback: (v) => formatCurrency(v) }
-                }
-            }
-        }
-    });
-}
-
-// Рендер круговой диаграммы расходов
-function renderExpensePieChart(expenseStructure) {
-    const canvas = document.getElementById('oddsExpenseChart');
-    if (!canvas) return;
-    
-    if (window.expenseChart) {
-        try { window.expenseChart.destroy(); } catch(e) {}
-    }
-    
-    const categories = Object.keys(expenseStructure);
-    const amounts = Object.values(expenseStructure);
-    
-    if (categories.length === 0) {
-        canvas.parentElement.innerHTML = '<div style="text-align: center; padding: 40px;">Нет данных по расходам</div>';
-        return;
-    }
-    
-    const ctx = canvas.getContext('2d');
-    const isDarkMode = document.body.classList.contains('dark');
-    
-    window.expenseChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: categories,
-            datasets: [{
-                data: amounts,
-                backgroundColor: ['#667eea', '#48bb78', '#f56565', '#f59e0b', '#4299e1', '#ed8936', '#9f7aea'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { position: 'bottom', labels: { color: isDarkMode ? '#e2e8f0' : '#4a5568' } },
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => `${ctx.label}: ${formatCurrency(ctx.raw)} (${((ctx.raw / amounts.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)`
-                    }
-                }
-            }
-        }
-    });
-}
-
-// Рендер прогноза
-function renderForecastChart(balanceHistory) {
-    const canvas = document.getElementById('oddsForecastChart');
-    if (!canvas) return;
-    
-    if (window.forecastChart) {
-        try { window.forecastChart.destroy(); } catch(e) {}
-    }
-    
-    const ctx = canvas.getContext('2d');
-    const isDarkMode = document.body.classList.contains('dark');
-    
-    const values = balanceHistory.map(b => b.balance);
-    const x = Array.from({ length: values.length }, (_, i) => i);
-    
-    const n = x.length;
-    const sumX = x.reduce((a, b) => a + b, 0);
-    const sumY = values.reduce((a, b) => a + b, 0);
-    const sumXY = x.reduce((sum, xi, i) => sum + xi * values[i], 0);
-    const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
-    
-    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-    const intercept = (sumY - slope * sumX) / n;
-    
-    const forecastValues = [];
-    const forecastLabels = [];
-    const forecastMonths = window.oddsForecastMonths || 3;  // ← Используем эту переменную
-    
-    for (let i = 0; i < forecastMonths; i++) {  // ← ИСПРАВЛЕНО: теперь forecastMonths
-        const nextX = values.length + i;
-        forecastValues.push(slope * nextX + intercept);
-        forecastLabels.push(`+${i + 1} мес`);
-    }
-    
-    window.forecastChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [...balanceHistory.map(b => formatDate(b.date)), ...forecastLabels],
-            datasets: [
-                {
-                    label: 'Факт',
-                    data: values,
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102,126,234,0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.3
-                },
-                {
-                    label: 'Прогноз',
-                    data: [...new Array(values.length).fill(null), ...forecastValues],
-                    borderColor: '#f56565',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    fill: false,
-                    tension: 0.3
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    ticks: { callback: (v) => formatCurrency(v) }
-                }
-            }
-        }
-    });
-}
-
-initAuth();
-//document.getElementById('mainApp').style.display = 'block';
-//document.getElementById('authContainer').style.display = 'none';
-//initApp();
-
     </script>
 
 <!-- Плавающая кнопка фильтров -->
@@ -12519,8 +10757,6 @@ initAuth();
         </div>
     </div>
 </div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 </body>
 </html>
