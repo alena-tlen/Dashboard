@@ -10934,110 +10934,111 @@ function renderOddsPage() {
     // Сравнение с прошлым периодом
     const comparison = previousFlows ? compareWithPreviousPeriod(filteredOps, previousOps) : null;
     
-
-
-// Функция для получения остатка по ВСЕМ счетам (включая депозит)
-function getTotalBalanceOnDate(targetDate, includeDeposit = true) {
-    if (!targetDate) return 0;
+    // ========== РАСЧЁТ ОСТАТКОВ С УЧЁТОМ ДЕПОЗИТА ==========
     
-    let totalBalance = 0;
-    const processedAccounts = new Set();
+    function getTotalBalanceOnDate(targetDate, includeDeposit = true) {
+        if (!targetDate) return 0;
+        
+        let totalBalance = 0;
+        const processedAccounts = new Set();
+        
+        // 1. Начальные остатки
+        originalData.forEach(row => {
+            if (row.статья !== 'Начальный остаток') return;
+            
+            const account = row.Счет || row.счет || row['Счет'] || '';
+            const amount = parseFloat(row.сумма) || 0;
+            const channel = row.канал || row.Канал || '';
+            const subCategory = row.подканал || '';
+            const rowYear = row.год;
+            const rowMonth = row.месяц;
+            
+            if (!includeDeposit) {
+                if (channel === 'Депозит' || channel === 'депозит') return;
+                if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+            }
+            
+            if (detectCurrency(account) !== 'RUB') return;
+            
+            let shouldInclude = true;
+            if (rowYear && rowMonth) {
+                const yearNum = parseInt(rowYear);
+                const monthIndex = monthsOrder.indexOf(rowMonth);
+                const rowDate = new Date(yearNum, monthIndex, 1);
+                if (rowDate > targetDate) shouldInclude = false;
+            }
+            
+            if (shouldInclude && !processedAccounts.has(account)) {
+                processedAccounts.add(account);
+                totalBalance += amount;
+            }
+        });
+        
+        // 2. Операции ДО targetDate
+        originalData.forEach(row => {
+            const account = row.Счет || row.счет || row['Счет'] || '';
+            if (!account) return;
+            if (row.статья === 'Начальный остаток') return;
+            
+            const amount = parseFloat(row.сумма) || 0;
+            if (amount === 0) return;
+            
+            const date = parseOddsDate(row);
+            if (!date || date >= targetDate) return;
+            
+            const channel = row.канал || row.Канал || '';
+            const subCategory = row.подканал || '';
+            
+            if (!includeDeposit) {
+                if (channel === 'Депозит' || channel === 'депозит') return;
+                if (subCategory === 'Депозит' || subCategory === 'депозит') return;
+            }
+            
+            if (detectCurrency(account) !== 'RUB') return;
+            
+            let isIncome = false;
+            let isExpense = false;
+            
+            if (row.статья === 'Поступление на расчетный счет' || amount > 0) {
+                isIncome = true;
+            } else if (row.статья === 'Списание с расчетного счета' || amount < 0) {
+                isExpense = true;
+            }
+            
+            const absAmount = Math.abs(amount);
+            if (isIncome) totalBalance += absAmount;
+            if (isExpense) totalBalance -= absAmount;
+        });
+        
+        return totalBalance;
+    }
     
-    originalData.forEach(row => {
-        if (row.статья !== 'Начальный остаток') return;
-        
-        const account = row.Счет || row.счет || row['Счет'] || '';
-        const amount = parseFloat(row.сумма) || 0;
-        const channel = row.канал || row.Канал || '';
-        const subCategory = row.подканал || '';
-        const rowYear = row.год;
-        const rowMonth = row.месяц;
-        
-        if (!includeDeposit) {
-            if (channel === 'Депозит' || channel === 'депозит') return;
-            if (subCategory === 'Депозит' || subCategory === 'депозит') return;
-        }
-        
-        if (detectCurrency(account) !== 'RUB') return;
-        
-        let shouldInclude = true;
-        if (rowYear && rowMonth) {
-            const yearNum = parseInt(rowYear);
-            const monthIndex = monthsOrder.indexOf(rowMonth);
-            const rowDate = new Date(yearNum, monthIndex, 1);
-            if (rowDate > targetDate) shouldInclude = false;
-        }
-        
-        if (shouldInclude && !processedAccounts.has(account)) {
-            processedAccounts.add(account);
-            totalBalance += amount;
-        }
-    });
+    // Получаем остатки
+    const startDateForBalance = oddsDateRange.startDate;
+    const endDateForBalance = oddsDateRange.endDate;
     
-    originalData.forEach(row => {
-        const account = row.Счет || row.счет || row['Счет'] || '';
-        if (!account) return;
-        if (row.статья === 'Начальный остаток') return;
-        
-        const amount = parseFloat(row.сумма) || 0;
-        if (amount === 0) return;
-        
-        const date = parseOddsDate(row);
-        if (!date || date >= targetDate) return;
-        
-        const channel = row.канал || row.Канал || '';
-        const subCategory = row.подканал || '';
-        
-        if (!includeDeposit) {
-            if (channel === 'Депозит' || channel === 'депозит') return;
-            if (subCategory === 'Депозит' || subCategory === 'депозит') return;
-        }
-        
-        if (detectCurrency(account) !== 'RUB') return;
-        
-        let isIncome = false;
-        let isExpense = false;
-        
-        if (row.статья === 'Поступление на расчетный счет' || amount > 0) {
-            isIncome = true;
-        } else if (row.статья === 'Списание с расчетного счета' || amount < 0) {
-            isExpense = true;
-        }
-        
-        const absAmount = Math.abs(amount);
-        if (isIncome) totalBalance += absAmount;
-        if (isExpense) totalBalance -= absAmount;
-    });
+    // Остаток на ВСЕХ счетах (включая депозит)
+    const totalBalanceStart = getTotalBalanceOnDate(startDateForBalance, true);
+    const totalBalanceEnd = getTotalBalanceOnDate(endDateForBalance, true);
     
-    return totalBalance;
-}
-
-// Получаем остатки
-const startDateForBalance = oddsDateRange.startDate;
-const endDateForBalance = oddsDateRange.endDate;
-
-// Остаток на ВСЕХ счетах (включая депозит)
-const totalBalanceStart = getTotalBalanceOnDate(startDateForBalance, true);
-const totalBalanceEnd = getTotalBalanceOnDate(endDateForBalance, true);
-
-// Остаток ТОЛЬКО на депозите
-const depositBalanceStart = getTotalBalanceOnDate(startDateForBalance, false);
-const depositBalanceEnd = getTotalBalanceOnDate(endDateForBalance, false);
-
-// СВОБОДНЫЙ остаток (все счета минус депозит)
-const freeBalanceStart = totalBalanceStart - depositBalanceStart;
-const freeBalanceEnd = totalBalanceEnd - depositBalanceEnd;
-
-console.log(`=== СВОБОДНЫЙ ОСТАТОК ===`);
-console.log(`На начало (${startDateForBalance?.toISOString().split('T')[0]}): ${formatCurrency(freeBalanceStart)}`);
-console.log(`На конец (${endDateForBalance?.toISOString().split('T')[0]}): ${formatCurrency(freeBalanceEnd)}`);
-console.log(`Изменение: ${formatCurrency(freeBalanceEnd - freeBalanceStart)}`);
-
-// Перезаписываем переменные
-startBalance = freeBalanceStart;
-endBalance = freeBalanceEnd;
-netCashFlow = freeBalanceEnd - freeBalanceStart;
+    // Остаток ТОЛЬКО на депозите
+    const depositBalanceStart = getTotalBalanceOnDate(startDateForBalance, false);
+    const depositBalanceEnd = getTotalBalanceOnDate(endDateForBalance, false);
     
+    // СВОБОДНЫЙ остаток (все счета минус депозит)
+    const freeBalanceStart = totalBalanceStart - depositBalanceStart;
+    const freeBalanceEnd = totalBalanceEnd - depositBalanceEnd;
+    
+    console.log(`=== СВОБОДНЫЙ ОСТАТОК ===`);
+    console.log(`На начало: ${formatCurrency(freeBalanceStart)}`);
+    console.log(`На конец: ${formatCurrency(freeBalanceEnd)}`);
+    console.log(`Депозит на начало: ${formatCurrency(depositBalanceStart)}`);
+    console.log(`Депозит на конец: ${formatCurrency(depositBalanceEnd)}`);
+    
+    // Присваиваем значения (переменные будут объявлены позже или используем var)
+    var startBalance = freeBalanceStart;
+    var endBalance = freeBalanceEnd;
+    var netCashFlow = freeBalanceEnd - freeBalanceStart;
     
     // Точка безубыточности
     const breakEven = calculateBreakEven(filteredOps);
@@ -11076,7 +11077,7 @@ netCashFlow = freeBalanceEnd - freeBalanceStart;
         expenseStructure[category] = (expenseStructure[category] || 0) + item.amount;
     });
     
-    // HTML
+    // HTML (продолжение вашего существующего кода)
     const html = `
         <div class="odds-dashboard">
             <!-- Верхняя панель с кнопками -->
@@ -11120,6 +11121,12 @@ netCashFlow = freeBalanceEnd - freeBalanceStart;
                     </div>
                     <div class="metric-sub">${oddsDateRange.endDate ? formatDate(oddsDateRange.endDate) : 'Конец периода'}</div>
                 </div>
+                <div class="metric-card odds-card">
+                    <div class="metric-title">🏦 Депозит (заморожено)</div>
+                    <div class="metric-value" style="color: #4299e1;">${formatCurrency(depositBalanceEnd)}</div>
+                    <div class="metric-sub">средства в банке</div>
+                </div>
+            </div>
                 <div class="metric-card odds-card">
                     <div class="metric-title">📈 Выполнение плана</div>
                     <div class="metric-value ${deviations.planCompletion >= 80 ? 'positive' : 'negative'}">
